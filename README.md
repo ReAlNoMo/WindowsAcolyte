@@ -1,4 +1,4 @@
-# ⚡ PowerTools Suite
+# ⚡ WindowsAcolyte
 
 > 🧰 **Unified WPF launcher for Windows utility scripts**
 > 🚀 One-click install via PowerShell
