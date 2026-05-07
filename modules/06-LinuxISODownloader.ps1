@@ -906,7 +906,7 @@ Register-PowerToolsModule `
             $errorLogPath = if (Get-Command -Name Get-PowerToolsErrorLogPath -ErrorAction SilentlyContinue) {
                 Get-PowerToolsErrorLogPath
             } else {
-                Join-Path $env:TEMP "PowerToolsSuite-errors.jsonl"
+                Join-Path $env:TEMP "WindowsAcolyte-errors.jsonl"
             }
             foreach ($job in $jobs) {
                 $job.ErrorLogPath = $errorLogPath

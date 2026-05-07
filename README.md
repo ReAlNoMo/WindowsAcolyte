@@ -20,7 +20,7 @@ irm "https://realnomo.tech" | iex
 <summary>🔽 Alternative (GitHub Raw)</summary>
 
 ```powershell
-irm "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main/install.ps1" | iex
+irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" | iex
 ```
 
 </details>
@@ -40,7 +40,7 @@ irm "https://realnomo.tech" -OutFile "$env:TEMP\install.ps1"
 <summary>🔽 Alternative (GitHub Raw)</summary>
 
 ```powershell
-irm "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main/install.ps1" -OutFile "$env:TEMP\install.ps1"
+irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" -OutFile "$env:TEMP\install.ps1"
 & "$env:TEMP\install.ps1"
 ```
 
@@ -534,4 +534,4 @@ Version 1.2 • April 2026
 ---
 
 ## 🔗 Repository
-https://github.com/ReAlNoMo/PowerToolsSuite_Win
+https://github.com/ReAlNoMo/WindowsAcolyte

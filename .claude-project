@@ -4,19 +4,19 @@
   "docs": [
     {
       "title": "Main Script",
-      "url": "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main/PS-PowerToolsSuite.ps1"
+      "url": "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/WindowsAcolyte.ps1"
     },
     {
       "title": "Installer",
-      "url": "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main/install.ps1"
+      "url": "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
     },
     {
       "title": "Module",
-      "url": "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main/modules/"
+      "url": "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/modules/"
     }
     {
       "title": "Logo",
-      "url": "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main/logo/"
+      "url": "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/"
     }
   ]
 }

@@ -19,12 +19,12 @@ $ProgressPreference    = "SilentlyContinue"
 # ===========================================================================
 $InstallPath  = Join-Path $env:LOCALAPPDATA "PowerTools-Suite"
 $TempPath     = Join-Path $env:TEMP "PTS-Install-$([System.Guid]::NewGuid().ToString('N'))"
-$GitHubRaw    = "https://raw.githubusercontent.com/ReAlNoMo/PowerToolsSuite_Win/main"
-$GitHubAPI    = "https://api.github.com/repos/ReAlNoMo/PowerToolsSuite_Win/contents"
+$GitHubRaw    = "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main"
+$GitHubAPI    = "https://api.github.com/repos/ReAlNoMo/WindowsAcolyte/contents"
 $MaxRetries   = 3
 
 $CoreFiles = @(
-    "PS-PowerToolsSuite.ps1",
+    "WindowsAcolyte.ps1",
     "README.md"
 )
 
@@ -229,7 +229,7 @@ try {
     # -----------------------------------------------------------------------
     # VERIFY LAUNCHER IN TEMP
     # -----------------------------------------------------------------------
-    $tempLauncher = Join-Path $TempPath "PS-PowerToolsSuite.ps1"
+    $tempLauncher = Join-Path $TempPath "WindowsAcolyte.ps1"
     if (-not (Test-FileValid $tempLauncher)) {
         throw "Main launcher missing from temp after download. Aborting install."
     }
@@ -275,7 +275,7 @@ try {
     # -----------------------------------------------------------------------
     # POST-INSTALL VERIFY
     # -----------------------------------------------------------------------
-    $finalLauncher = Join-Path $InstallPath "PS-PowerToolsSuite.ps1"
+    $finalLauncher = Join-Path $InstallPath "WindowsAcolyte.ps1"
     if (-not (Test-FileValid $finalLauncher)) {
         throw "Post-install verification failed. Launcher missing at: $finalLauncher"
     }

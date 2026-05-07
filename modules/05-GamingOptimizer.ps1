@@ -194,7 +194,7 @@ Register-PowerToolsModule `
     $script:GO_initText        = "Ready. Detecting hardware and checking current status..."
     $script:GO_checkboxes      = @{}
     $script:GO_detailWindows   = @{}
-    $script:GO_profilePath     = Join-Path $env:LOCALAPPDATA "PowerToolsSuite\GamingOptimizer"
+    $script:GO_profilePath     = Join-Path $env:LOCALAPPDATA "WindowsAcolyte\GamingOptimizer"
     if (-not (Test-Path $script:GO_profilePath)) { New-Item -ItemType Directory -Path $script:GO_profilePath -Force | Out-Null }
 
     # Apply theme-aware colors
@@ -728,7 +728,7 @@ Register-PowerToolsModule `
         if ($script:GO_cbRestore.IsChecked) {
             try { GO-AddLog "Creating System Restore Point..." "INFO"
                   Enable-ComputerRestore -Drive "C:\" -EA SilentlyContinue
-                  Checkpoint-Computer -Description "PowerToolsSuite_GameOptimizer_$ts" -RestorePointType "MODIFY_SETTINGS" -EA Stop
+                  Checkpoint-Computer -Description "WindowsAcolyte_GameOptimizer_$ts" -RestorePointType "MODIFY_SETTINGS" -EA Stop
                   GO-AddLog "Restore point created." "OK" } catch { GO-AddLog "Restore point failed: $_" "WARN" }
         }
         if ($script:GO_cbRegBkp.IsChecked) {
@@ -873,7 +873,7 @@ Register-PowerToolsModule `
             if ($r -ne [System.Windows.MessageBoxResult]::Yes) { GO-AddLog "Cancelled by user." "WARN"; return }
         }
         if ($script:GO_cbRestore.IsChecked -or $script:GO_cbRegBkp.IsChecked) {
-            GO-CreateBackup -BackupDir (Join-Path $env:USERPROFILE "Desktop\PowerToolsSuite_Backup")
+            GO-CreateBackup -BackupDir (Join-Path $env:USERPROFILE "Desktop\WindowsAcolyte_Backup")
         }
         GO-AddLog "Applying $($selected.Count) tweak(s)..." "INFO"
         $ok=0; $fail=0; $needsReboot=$false
