@@ -516,7 +516,7 @@ function Global:Update-PTSStyles {
 
                 <!-- LOGO IMAGE -->
                 <Border Grid.Row="0" x:Name="LogoBorder" Padding="12,10,12,10">
-                    <Image Source="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/WindowsAcolyte_Logo_02_cut.png"
+                    <Image Source="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/WindowsAcolyte_Logo_01.png"
                            Stretch="Uniform"
                            MaxHeight="70"
                            HorizontalAlignment="Stretch"/>
