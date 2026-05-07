@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    PowerTools Suite - Unified launcher for system utility modules.
+    WindowsAcolyte - Unified launcher for system utility modules.
 .DESCRIPTION
     Main entry point. Loads modules from .\modules\*.ps1 and hosts them in a
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
@@ -15,7 +15,7 @@
 # ===========================================================================
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Add-Type -AssemblyName System.Windows.Forms | Out-Null
-    $msg  = "PowerTools Suite requires PowerShell 7 or higher.`n`n"
+    $msg  = "WindowsAcolyte requires PowerShell 7 or higher.`n`n"
     $msg += "Installed: $($PSVersionTable.PSVersion)`n`n"
     $msg += "Download: https://aka.ms/powershell"
     [System.Windows.Forms.MessageBox]::Show(
@@ -334,7 +334,7 @@ function Global:Update-PTSStyles {
 <Window
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="PowerTools Suite"
+    Title="WindowsAcolyte"
     Width="1060" Height="792"
     MinWidth="900" MinHeight="600"
     WindowState="Maximized"
@@ -515,10 +515,10 @@ function Global:Update-PTSStyles {
                 </Grid.RowDefinitions>
 
                 <!-- LOGO IMAGE -->
-                <Border Grid.Row="0" x:Name="LogoBorder" Padding="12,10,12,10">
+                <Border Grid.Row="0" x:Name="LogoBorder" Padding="8,4,8,4">
                     <Image Source="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/WindowsAcolyte_Logo_01.png"
                            Stretch="Uniform"
-                           MaxHeight="70"
+                           MaxHeight="92"
                            HorizontalAlignment="Stretch"/>
                 </Border>
 
@@ -609,7 +609,7 @@ function Global:Update-PTSStyles {
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
                 <TextBlock x:Name="FooterMid" Grid.Column="1"
-                           Text="PowerTools Suite  |  ReAlNoMo"
+                           Text="WindowsAcolyte  |  ReAlNoMo"
                            Foreground="#B0B8D8" FontSize="11"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
@@ -1002,7 +1002,7 @@ $Global:PTS_UI.BackBtn.Add_Click({
 if ($Global:PTS_Modules.Count -eq 0) {
     [System.Windows.MessageBox]::Show(
         "No modules found in:`n$Global:PTS_ModulesPath`n`nEnsure the 'modules' folder exists next to this script.",
-        "PowerTools Suite",
+        "WindowsAcolyte",
         [System.Windows.MessageBoxButton]::OK,
         [System.Windows.MessageBoxImage]::Error
     ) | Out-Null
