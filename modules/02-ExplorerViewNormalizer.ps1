@@ -176,7 +176,8 @@ Register-PowerToolsModule `
         EVN-SetRegValue -Path $advancedPath -Name "Hidden"         -Value 1 -Kind DWord
         EVN-SetRegValue -Path $advancedPath -Name "HideFileExt"    -Value 0 -Kind DWord
         EVN-SetRegValue -Path $advancedPath -Name "ShowSuperHidden" -Value 0 -Kind DWord
-        EVN-SetRegValue -Path $advancedPath -Name "UseCompactMode"  -Value 0 -Kind DWord
+        EVN-SetRegValue -Path $advancedPath -Name "UseCompactMode"   -Value 0 -Kind DWord
+        EVN-SetRegValue -Path $advancedPath -Name "UseAutoGrouping"  -Value 0 -Kind DWord
 
         $policyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
         if (Test-Path $policyPath) {
@@ -198,7 +199,7 @@ Register-PowerToolsModule `
         $sizerPath    = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\Sizer"
 
         $advanced = Get-ItemProperty -Path $advancedPath -ErrorAction SilentlyContinue
-        if ($null -eq $advanced -or $advanced.Hidden -ne 1 -or $advanced.HideFileExt -ne 0 -or $advanced.ShowSuperHidden -ne 0 -or $advanced.UseCompactMode -ne 0) {
+        if ($null -eq $advanced -or $advanced.Hidden -ne 1 -or $advanced.HideFileExt -ne 0 -or $advanced.ShowSuperHidden -ne 0 -or $advanced.UseCompactMode -ne 0 -or $advanced.UseAutoGrouping -ne 0) {
             return $false
         }
 
@@ -220,7 +221,7 @@ Register-PowerToolsModule `
             $path = Join-Path $script:EVN_basePath $guid
             if (-not (Test-Path $path)) { $allOk = $false; break }
             $p = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
-            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort) -or -not (EVN-TestBinaryValue -Actual $p.ColInfo -Expected $script:EVN_detailsColumns)) {
+            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p.GroupView -ne 0 -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort) -or -not (EVN-TestBinaryValue -Actual $p.ColInfo -Expected $script:EVN_detailsColumns)) {
                 $allOk = $false; break
             }
         }
@@ -266,6 +267,7 @@ Register-PowerToolsModule `
                 EVN-SetRegValue -Path $_ -Name "GroupByKey:FMTID"  -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
                 EVN-SetRegValue -Path $_ -Name "GroupByKey:PID"    -Value 0 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "GroupByDirection"  -Value 1 -Kind DWord
+                EVN-SetRegValue -Path $_ -Name "GroupView"         -Value 0 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "LogicalViewMode"   -Value 1 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "Mode"              -Value 4 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "Sort"              -Value $script:EVN_sortByNameAscending -Kind Binary
@@ -280,6 +282,7 @@ Register-PowerToolsModule `
                 EVN-SetRegValue -Path $path -Name "GroupByKey:FMTID"  -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
                 EVN-SetRegValue -Path $path -Name "GroupByKey:PID"    -Value 0 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "GroupByDirection"  -Value 1 -Kind DWord
+                EVN-SetRegValue -Path $path -Name "GroupView"         -Value 0 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "LogicalViewMode"   -Value 1 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "Mode"              -Value 4 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "Sort"              -Value $script:EVN_sortByNameAscending -Kind Binary
