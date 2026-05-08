@@ -115,6 +115,13 @@ Register-PowerToolsModule `
         "Searches"  = "{7FDE1A1E-8B31-49A5-93B8-6BE14CFA4943}"
     }
     $script:EVN_basePath = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell"
+    $script:EVN_sortByNameAscending = [byte[]]@(
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x01,0x00,0x00,0x00,
+        0x30,0xF1,0x25,0xB7,0xEF,0x47,0x1A,0x10,0xA5,0xF1,0x02,0x60,0x8C,0x9E,0xEB,0xAC,
+        0x0A,0x00,0x00,0x00,
+        0x01,0x00,0x00,0x00
+    )
 
     function Global:EVN-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
@@ -126,18 +133,39 @@ Register-PowerToolsModule `
         $script:EVN_logScroller.Dispatcher.Invoke([action]{ $script:EVN_logScroller.ScrollToEnd() })
     }
 
+    function Global:EVN-SetRegValue {
+        param(
+            [Parameter(Mandatory)][string]$Path,
+            [Parameter(Mandatory)][string]$Name,
+            [Parameter(Mandatory)]$Value,
+            [Parameter(Mandatory)][Microsoft.Win32.RegistryValueKind]$Kind
+        )
+        Remove-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
+        New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType $Kind -Force -ErrorAction Stop | Out-Null
+    }
+
+    function Global:EVN-TestSortByName {
+        param([object]$Sort)
+        if (-not ($Sort -is [byte[]])) { return $false }
+        if ($Sort.Count -ne $script:EVN_sortByNameAscending.Count) { return $false }
+        for ($i = 0; $i -lt $Sort.Count; $i++) {
+            if ($Sort[$i] -ne $script:EVN_sortByNameAscending[$i]) { return $false }
+        }
+        return $true
+    }
+
     function Global:EVN-CheckStatus {
         $allOk = $true
         foreach ($guid in $script:EVN_folderTypes.Values) {
             $path = Join-Path $script:EVN_basePath $guid
             if (-not (Test-Path $path)) { $allOk = $false; break }
             $p = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
-            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p."GroupByKey:PID" -ne 0) {
+            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort)) {
                 $allOk = $false; break
             }
         }
         if ($allOk) {
-            $script:EVN_statusText.Text       = "Explorer is already configured (no grouping, Details view). No action needed."
+            $script:EVN_statusText.Text       = "Explorer is already configured (no grouping, Details view, sort by Name). No action needed."
             $script:EVN_statusText.Foreground = $Global:PTS_Brush["Success"]
             $script:EVN_apply.IsEnabled       = $false
             $script:EVN_apply.Content         = "Already Applied"
@@ -173,24 +201,26 @@ Register-PowerToolsModule `
             EVN-AddLog "Writing AllFolders defaults..." "INFO"
             @($script:EVN_basePath, (Join-Path $script:EVN_basePath "{00000000-0000-0000-0000-000000000000}")) | ForEach-Object {
                 if (-not (Test-Path $_)) { New-Item -Path $_ -Force | Out-Null }
-                Set-ItemProperty -Path $_ -Name "GroupByKey:FMTID" -Value "{00000000-0000-0000-0000-000000000000}" -Type String -EA SilentlyContinue
-                Set-ItemProperty -Path $_ -Name "GroupByKey:PID"   -Value 0 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $_ -Name "GroupByDirection" -Value 1 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $_ -Name "LogicalViewMode"  -Value 1 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $_ -Name "Mode"             -Value 4 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $_ -Name "Sort"             -Value 0 -Type DWord -EA SilentlyContinue
+                EVN-SetRegValue -Path $_ -Name "FolderType"        -Value "NotSpecified" -Kind String
+                EVN-SetRegValue -Path $_ -Name "GroupByKey:FMTID"  -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
+                EVN-SetRegValue -Path $_ -Name "GroupByKey:PID"    -Value 0 -Kind DWord
+                EVN-SetRegValue -Path $_ -Name "GroupByDirection"  -Value 1 -Kind DWord
+                EVN-SetRegValue -Path $_ -Name "LogicalViewMode"   -Value 1 -Kind DWord
+                EVN-SetRegValue -Path $_ -Name "Mode"              -Value 4 -Kind DWord
+                EVN-SetRegValue -Path $_ -Name "Sort"              -Value $script:EVN_sortByNameAscending -Kind Binary
             }
 
             foreach ($name in $script:EVN_folderTypes.Keys) {
                 $guid = $script:EVN_folderTypes[$name]
                 $path = Join-Path $script:EVN_basePath $guid
                 if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
-                Set-ItemProperty -Path $path -Name "GroupByKey:FMTID" -Value "{00000000-0000-0000-0000-000000000000}" -Type String -EA SilentlyContinue
-                Set-ItemProperty -Path $path -Name "GroupByKey:PID"   -Value 0 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $path -Name "GroupByDirection" -Value 1 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $path -Name "LogicalViewMode"  -Value 1 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $path -Name "Mode"             -Value 4 -Type DWord -EA SilentlyContinue
-                Set-ItemProperty -Path $path -Name "Sort"             -Value 0 -Type DWord -EA SilentlyContinue
+                EVN-SetRegValue -Path $path -Name "FolderType"        -Value "NotSpecified" -Kind String
+                EVN-SetRegValue -Path $path -Name "GroupByKey:FMTID"  -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
+                EVN-SetRegValue -Path $path -Name "GroupByKey:PID"    -Value 0 -Kind DWord
+                EVN-SetRegValue -Path $path -Name "GroupByDirection"  -Value 1 -Kind DWord
+                EVN-SetRegValue -Path $path -Name "LogicalViewMode"   -Value 1 -Kind DWord
+                EVN-SetRegValue -Path $path -Name "Mode"              -Value 4 -Kind DWord
+                EVN-SetRegValue -Path $path -Name "Sort"              -Value $script:EVN_sortByNameAscending -Kind Binary
                 EVN-AddLog "Fixed: $name" "OK"
             }
 
