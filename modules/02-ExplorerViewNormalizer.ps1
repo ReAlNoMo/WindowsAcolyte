@@ -25,7 +25,7 @@ Register-PowerToolsModule `
             <TextBlock Text="WHAT THIS DOES" Foreground="#8890B8" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                Text="Clears Explorer Shell Bags and applies default folder settings: no grouping, Details view, columns (Name, Date modified, Type, Size), sort by Name, hidden files, file extensions, details pane, and disabled folder type discovery."/>
+                Text="Resets saved Explorer folder views and applies one clean default: no grouping, Details view, columns (Name, Date modified, Type, Size), sort by Name, hidden files, file extensions, details pane, and disabled folder type discovery."/>
         </StackPanel>
     </Border>
 
@@ -221,7 +221,7 @@ Register-PowerToolsModule `
             $path = Join-Path $script:EVN_basePath $guid
             if (-not (Test-Path $path)) { $allOk = $false; break }
             $p = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
-            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p.GroupView -ne 0 -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort) -or -not (EVN-TestBinaryValue -Actual $p.ColInfo -Expected $script:EVN_detailsColumns)) {
+            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p.GroupView -ne 0 -or $p.GroupBy -ne "" -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort) -or -not (EVN-TestBinaryValue -Actual $p.ColInfo -Expected $script:EVN_detailsColumns)) {
                 $allOk = $false; break
             }
         }
@@ -247,12 +247,18 @@ Register-PowerToolsModule `
             Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 2
 
-            EVN-AddLog "Clearing Shell Bags..." "INFO"
+            EVN-AddLog "Clearing saved Explorer views..." "INFO"
             @(
                 "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags",
                 "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU",
                 "HKCU:\Software\Microsoft\Windows\Shell\Bags",
-                "HKCU:\Software\Microsoft\Windows\Shell\BagMRU"
+                "HKCU:\Software\Microsoft\Windows\Shell\BagMRU",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams\Desktop",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams\Defaults",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\CIDSizeMRU",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\FirstFolder",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU"
             ) | ForEach-Object {
                 if (Test-Path $_) {
                     Remove-Item -Path $_ -Recurse -Force -ErrorAction SilentlyContinue
@@ -264,6 +270,7 @@ Register-PowerToolsModule `
             @($script:EVN_basePath, (Join-Path $script:EVN_basePath "{00000000-0000-0000-0000-000000000000}")) | ForEach-Object {
                 if (-not (Test-Path $_)) { New-Item -Path $_ -Force | Out-Null }
                 EVN-SetRegValue -Path $_ -Name "FolderType"        -Value "NotSpecified" -Kind String
+                EVN-SetRegValue -Path $_ -Name "GroupBy"           -Value "" -Kind String
                 EVN-SetRegValue -Path $_ -Name "GroupByKey:FMTID"  -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
                 EVN-SetRegValue -Path $_ -Name "GroupByKey:PID"    -Value 0 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "GroupByDirection"  -Value 1 -Kind DWord
@@ -279,6 +286,7 @@ Register-PowerToolsModule `
                 $path = Join-Path $script:EVN_basePath $guid
                 if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
                 EVN-SetRegValue -Path $path -Name "FolderType"        -Value "NotSpecified" -Kind String
+                EVN-SetRegValue -Path $path -Name "GroupBy"           -Value "" -Kind String
                 EVN-SetRegValue -Path $path -Name "GroupByKey:FMTID"  -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
                 EVN-SetRegValue -Path $path -Name "GroupByKey:PID"    -Value 0 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "GroupByDirection"  -Value 1 -Kind DWord
@@ -292,12 +300,6 @@ Register-PowerToolsModule `
 
             EVN-AddLog "Applying Explorer options..." "INFO"
             EVN-ApplyExplorerOptions
-
-            $streams = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams\Desktop"
-            if (Test-Path $streams) {
-                Remove-Item -Path $streams -Recurse -Force -ErrorAction SilentlyContinue
-                EVN-AddLog "Desktop Streams cleared." "INFO"
-            }
 
             EVN-AddLog "Restarting Explorer..." "INFO"
             Start-Process explorer
