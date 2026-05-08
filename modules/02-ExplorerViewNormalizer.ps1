@@ -25,7 +25,7 @@ Register-PowerToolsModule `
             <TextBlock Text="WHAT THIS DOES" Foreground="#8890B8" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                Text="Clears Explorer Shell Bags and applies default folder settings: no grouping, Details view, sort by Name. Applies to all folder types (Generic, Downloads, Documents, Pictures, Music, Videos)."/>
+                Text="Clears Explorer Shell Bags and applies default folder settings: no grouping, Details view, columns (Name, Date modified, Type, Size), sort by Name, hidden files, file extensions, details pane, and disabled folder type discovery."/>
         </StackPanel>
     </Border>
 
@@ -122,6 +122,17 @@ Register-PowerToolsModule `
         0x0A,0x00,0x00,0x00,
         0x01,0x00,0x00,0x00
     )
+    $script:EVN_detailsColumns = [byte[]]@(
+        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0xFD,0xDF,0xDF,0xFD,0x10,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x04,0x00,0x00,0x00,0x18,0x00,0x00,0x00,
+        0x30,0xF1,0x25,0xB7,0xEF,0x47,0x1A,0x10,0xA5,0xF1,0x02,0x60,0x8C,0x9E,0xEB,0xAC,0x0A,0x00,0x00,0x00,0xE9,0x00,0x00,0x00,
+        0x30,0xF1,0x25,0xB7,0xEF,0x47,0x1A,0x10,0xA5,0xF1,0x02,0x60,0x8C,0x9E,0xEB,0xAC,0x0E,0x00,0x00,0x00,0x7E,0x00,0x00,0x00,
+        0x30,0xF1,0x25,0xB7,0xEF,0x47,0x1A,0x10,0xA5,0xF1,0x02,0x60,0x8C,0x9E,0xEB,0xAC,0x04,0x00,0x00,0x00,0x50,0x00,0x00,0x00,
+        0x30,0xF1,0x25,0xB7,0xEF,0x47,0x1A,0x10,0xA5,0xF1,0x02,0x60,0x8C,0x9E,0xEB,0xAC,0x0C,0x00,0x00,0x00,0x50,0x00,0x00,0x00
+    )
+    $script:EVN_detailsPaneState = [byte[]]@(0x02,0x00,0x00,0x00,0x02,0x00,0x00,0x00)
+    $script:EVN_detailsPaneSizer = [byte[]]@(0x15,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x5B,0x04,0x00,0x00)
 
     function Global:EVN-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
@@ -146,11 +157,60 @@ Register-PowerToolsModule `
 
     function Global:EVN-TestSortByName {
         param([object]$Sort)
-        if (-not ($Sort -is [byte[]])) { return $false }
-        if ($Sort.Count -ne $script:EVN_sortByNameAscending.Count) { return $false }
-        for ($i = 0; $i -lt $Sort.Count; $i++) {
-            if ($Sort[$i] -ne $script:EVN_sortByNameAscending[$i]) { return $false }
+        return (EVN-TestBinaryValue -Actual $Sort -Expected $script:EVN_sortByNameAscending)
+    }
+
+    function Global:EVN-TestBinaryValue {
+        param([object]$Actual, [byte[]]$Expected)
+        if (-not ($Actual -is [byte[]])) { return $false }
+        if ($Actual.Count -ne $Expected.Count) { return $false }
+        for ($i = 0; $i -lt $Actual.Count; $i++) {
+            if ($Actual[$i] -ne $Expected[$i]) { return $false }
         }
+        return $true
+    }
+
+    function Global:EVN-ApplyExplorerOptions {
+        $advancedPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        if (-not (Test-Path $advancedPath)) { New-Item -Path $advancedPath -Force | Out-Null }
+        EVN-SetRegValue -Path $advancedPath -Name "Hidden"         -Value 1 -Kind DWord
+        EVN-SetRegValue -Path $advancedPath -Name "HideFileExt"    -Value 0 -Kind DWord
+        EVN-SetRegValue -Path $advancedPath -Name "ShowSuperHidden" -Value 0 -Kind DWord
+        EVN-SetRegValue -Path $advancedPath -Name "UseCompactMode"  -Value 0 -Kind DWord
+
+        $policyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        if (Test-Path $policyPath) {
+            Remove-ItemProperty -Path $policyPath -Name "NoReadingPane" -ErrorAction SilentlyContinue
+            Remove-ItemProperty -Path $policyPath -Name "NoPreviewPane" -ErrorAction SilentlyContinue
+        }
+
+        $detailsPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\DetailsContainer"
+        $sizerPath   = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\Sizer"
+        if (-not (Test-Path $detailsPath)) { New-Item -Path $detailsPath -Force | Out-Null }
+        if (-not (Test-Path $sizerPath)) { New-Item -Path $sizerPath -Force | Out-Null }
+        EVN-SetRegValue -Path $detailsPath -Name "DetailsContainer"      -Value $script:EVN_detailsPaneState -Kind Binary
+        EVN-SetRegValue -Path $sizerPath   -Name "DetailsContainerSizer" -Value $script:EVN_detailsPaneSizer -Kind Binary
+    }
+
+    function Global:EVN-TestExplorerOptions {
+        $advancedPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        $detailsPath  = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\DetailsContainer"
+        $sizerPath    = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\Sizer"
+
+        $advanced = Get-ItemProperty -Path $advancedPath -ErrorAction SilentlyContinue
+        if ($null -eq $advanced -or $advanced.Hidden -ne 1 -or $advanced.HideFileExt -ne 0 -or $advanced.ShowSuperHidden -ne 0 -or $advanced.UseCompactMode -ne 0) {
+            return $false
+        }
+
+        $details = Get-ItemProperty -Path $detailsPath -ErrorAction SilentlyContinue
+        $sizer   = Get-ItemProperty -Path $sizerPath -ErrorAction SilentlyContinue
+        if ($null -eq $details -or -not (EVN-TestBinaryValue -Actual $details.DetailsContainer -Expected $script:EVN_detailsPaneState)) {
+            return $false
+        }
+        if ($null -eq $sizer -or -not (EVN-TestBinaryValue -Actual $sizer.DetailsContainerSizer -Expected $script:EVN_detailsPaneSizer)) {
+            return $false
+        }
+
         return $true
     }
 
@@ -160,12 +220,13 @@ Register-PowerToolsModule `
             $path = Join-Path $script:EVN_basePath $guid
             if (-not (Test-Path $path)) { $allOk = $false; break }
             $p = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
-            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort)) {
+            if ($null -eq $p -or $p.LogicalViewMode -ne 1 -or $p.Mode -ne 4 -or $p."GroupByKey:PID" -ne 0 -or -not (EVN-TestSortByName -Sort $p.Sort) -or -not (EVN-TestBinaryValue -Actual $p.ColInfo -Expected $script:EVN_detailsColumns)) {
                 $allOk = $false; break
             }
         }
+        if ($allOk -and -not (EVN-TestExplorerOptions)) { $allOk = $false }
         if ($allOk) {
-            $script:EVN_statusText.Text       = "Explorer is already configured (no grouping, Details view, sort by Name). No action needed."
+            $script:EVN_statusText.Text       = "Explorer is already configured (Details view, columns, sort by Name, hidden files, extensions, details pane). No action needed."
             $script:EVN_statusText.Foreground = $Global:PTS_Brush["Success"]
             $script:EVN_apply.IsEnabled       = $false
             $script:EVN_apply.Content         = "Already Applied"
@@ -208,6 +269,7 @@ Register-PowerToolsModule `
                 EVN-SetRegValue -Path $_ -Name "LogicalViewMode"   -Value 1 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "Mode"              -Value 4 -Kind DWord
                 EVN-SetRegValue -Path $_ -Name "Sort"              -Value $script:EVN_sortByNameAscending -Kind Binary
+                EVN-SetRegValue -Path $_ -Name "ColInfo"           -Value $script:EVN_detailsColumns -Kind Binary
             }
 
             foreach ($name in $script:EVN_folderTypes.Keys) {
@@ -221,8 +283,12 @@ Register-PowerToolsModule `
                 EVN-SetRegValue -Path $path -Name "LogicalViewMode"   -Value 1 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "Mode"              -Value 4 -Kind DWord
                 EVN-SetRegValue -Path $path -Name "Sort"              -Value $script:EVN_sortByNameAscending -Kind Binary
+                EVN-SetRegValue -Path $path -Name "ColInfo"           -Value $script:EVN_detailsColumns -Kind Binary
                 EVN-AddLog "Fixed: $name" "OK"
             }
+
+            EVN-AddLog "Applying Explorer options..." "INFO"
+            EVN-ApplyExplorerOptions
 
             $streams = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams\Desktop"
             if (Test-Path $streams) {
