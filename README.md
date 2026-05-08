@@ -95,25 +95,44 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 > **Admin:** ⚠️ Yes
 
 ### ✔ What it does
-- Force **Details view** across all folder types
-- Disable grouping
+- Reset saved Explorer folder views
+- Force **Details view** across all normal folder types
+- Disable grouping completely (`Last week`, `Last month`, etc.)
 - Sort by **Name (ASC)**
+- Apply columns: **Name**, **Date modified**, **Type**, **Size**
+- Show hidden files
+- Show file extensions
+- Keep protected operating system files hidden
+- Disable Compact View
+- Enable Details Pane and keep Preview Pane available
+- Disable Folder Type Discovery with `FolderType = NotSpecified`
 - Apply to all folder types (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)
-- Clear Shell Bags cache and Desktop Streams
+- Clear Shell Bags, BagMRU, Desktop/Defaults Streams, and common Open/Save dialog view caches
 - Restart Explorer automatically
 - Status check before and after applying (Recheck button)
 
 ⚠️ **Important**
-> Open each folder once after running to persist changes
+> This resets saved Explorer folder views. Existing custom folder layouts are removed and replaced with the WindowsAcolyte defaults.
 
 ### 🧠 Registry Changes
 ```reg
 HKCU:\...\Shell\Bags\AllFolders\Shell\*
   LogicalViewMode  = 1
   Mode             = 4
+  GroupView        = 0
+  GroupBy          = ""
   GroupByKey:PID   = 0
   GroupByDirection = 1
-  Sort             = 0
+  Sort             = Name ascending (REG_BINARY)
+  ColInfo          = Name, Date modified, Type, Size (REG_BINARY)
+  FolderType       = NotSpecified
+
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+  Hidden           = 1
+  HideFileExt      = 0
+  ShowSuperHidden  = 0
+  UseCompactMode   = 0
+  UseAutoGrouping  = 0
 ```
 
 ---
