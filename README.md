@@ -434,7 +434,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 📁 Install location:
 ```
-%LOCALAPPDATA%\PowerTools-Suite
+%LOCALAPPDATA%\WindowsAcolyte
 ```
 
 ---
@@ -442,7 +442,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 # 🧹 Uninstall
 
 ```powershell
-Remove-Item "$env:LOCALAPPDATA\PowerTools-Suite" -Recurse -Force
+Remove-Item "$env:LOCALAPPDATA\WindowsAcolyte" -Recurse -Force
 ```
 
 Remove from PowerShell profile:

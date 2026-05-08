@@ -1,9 +1,9 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    PowerTools Suite Installer
+    WindowsAcolyte Installer
 .DESCRIPTION
-    Downloads and installs PowerTools Suite from GitHub.
+    Downloads and installs WindowsAcolyte from GitHub.
     Dynamically discovers all modules and assets via GitHub API.
     Launches main application after installation.
 .NOTES
@@ -17,7 +17,7 @@ $ProgressPreference    = "SilentlyContinue"
 # ===========================================================================
 # CONFIG
 # ===========================================================================
-$InstallPath  = Join-Path $env:LOCALAPPDATA "PowerTools-Suite"
+$InstallPath  = Join-Path $env:LOCALAPPDATA "WindowsAcolyte"
 $TempPath     = Join-Path $env:TEMP "PTS-Install-$([System.Guid]::NewGuid().ToString('N'))"
 $GitHubRaw    = "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main"
 $GitHubAPI    = "https://api.github.com/repos/ReAlNoMo/WindowsAcolyte/contents"
@@ -78,7 +78,7 @@ function Get-GitHubFileList {
     )
     try {
         $apiUrl  = "$GitHubAPI/$FolderPath"
-        $headers = @{ "User-Agent" = "PowerTools-Suite-Installer" }
+        $headers = @{ "User-Agent" = "WindowsAcolyte-Installer" }
         $resp    = Invoke-WebRequest -Uri $apiUrl -Headers $headers -UseBasicParsing -TimeoutSec 20
         $items   = ($resp.Content | ConvertFrom-Json)
         return ($items | Where-Object { $_.type -eq "file" } | Select-Object -ExpandProperty name)
@@ -102,7 +102,7 @@ function Test-FileValid {
 # MAIN
 # ===========================================================================
 Write-Host ""
-Write-Log "PowerTools Suite Installer v1.3" "INFO"
+Write-Log "WindowsAcolyte Installer v1.3" "INFO"
 Write-Log "Install target : $InstallPath"   "INFO"
 Write-Log "Temp work dir  : $TempPath"      "INFO"
 Write-Host ""
@@ -244,7 +244,7 @@ try {
         Write-Log "Removing existing installation..." "WARN"
 
         Get-Process -Name "pwsh" -ErrorAction SilentlyContinue | Where-Object {
-            $_.MainWindowTitle -like "*PowerTools*"
+            $_.MainWindowTitle -like "*WindowsAcolyte*"
         } | ForEach-Object {
             Write-Log "Stopping running instance (PID $($_.Id))..." "WARN"
             Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
@@ -303,7 +303,7 @@ try {
     # LAUNCH
     # -----------------------------------------------------------------------
     Write-Host ""
-    Write-Log "Launching PowerTools Suite..." "INFO"
+    Write-Log "Launching WindowsAcolyte..." "INFO"
 
     try {
         Start-Process -FilePath "pwsh.exe" `
