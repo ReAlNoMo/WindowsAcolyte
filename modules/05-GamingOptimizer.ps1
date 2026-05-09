@@ -210,6 +210,17 @@ Register-PowerToolsModule `
     $script:GO_logAreaBorder.BorderBrush   = $Global:PTS_Brush["LogBorder"]
     $script:GO_logBox.Foreground           = $Global:PTS_Brush["TextMuted"]
 
+    # Ensure each generated row stretches to full list width.
+    # Without this, item rows can size to content and columns look misaligned.
+    $script:GO_itemContainerStyle = New-Object System.Windows.Style([System.Windows.Controls.ContentPresenter])
+    $script:GO_itemContainerStyle.Setters.Add(
+        (New-Object System.Windows.Setter(
+            [System.Windows.FrameworkElement]::HorizontalAlignmentProperty,
+            [System.Windows.HorizontalAlignment]::Stretch
+        ))
+    ) | Out-Null
+    $script:GO_tweakList.ItemContainerStyle = $script:GO_itemContainerStyle
+
     function Global:GO-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
         $ts  = Get-Date -Format "HH:mm:ss"
@@ -652,7 +663,10 @@ Register-PowerToolsModule `
                 $lastGroup = $t.Group
             }
             $isOk = & $t.Check
-            $row = New-Object System.Windows.Controls.Grid; $row.Margin = "8,2,8,2"; $row.MinHeight = 28
+            $row = New-Object System.Windows.Controls.Grid
+            $row.Margin = "8,2,8,2"
+            $row.MinHeight = 28
+            $row.HorizontalAlignment = "Stretch"
             foreach ($w in @("*","60","72","56","Auto")) {
                 $col = New-Object System.Windows.Controls.ColumnDefinition; $col.Width = $w
                 $row.ColumnDefinitions.Add($col) | Out-Null
