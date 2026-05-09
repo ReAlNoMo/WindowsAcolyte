@@ -210,16 +210,6 @@ Register-PowerToolsModule `
     $script:GO_logAreaBorder.BorderBrush   = $Global:PTS_Brush["LogBorder"]
     $script:GO_logBox.Foreground           = $Global:PTS_Brush["TextMuted"]
 
-    # Ensure each generated row stretches to full list width.
-    # Without this, item rows can size to content and columns look misaligned.
-    $script:GO_itemContainerStyle = New-Object System.Windows.Style([System.Windows.Controls.ContentPresenter])
-    $script:GO_itemContainerStyle.Setters.Add(
-        (New-Object System.Windows.Setter(
-            [System.Windows.FrameworkElement]::HorizontalAlignmentProperty,
-            [System.Windows.HorizontalAlignment]::Stretch
-        ))
-    ) | Out-Null
-    $script:GO_tweakList.ItemContainerStyle = $script:GO_itemContainerStyle
 
     function Global:GO-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
@@ -667,7 +657,7 @@ Register-PowerToolsModule `
             $row.Margin = "8,2,8,2"
             $row.MinHeight = 28
             $row.HorizontalAlignment = "Stretch"
-            foreach ($w in @("*","60","72","56","Auto")) {
+            foreach ($w in @("*","60","72","60","52")) {
                 $col = New-Object System.Windows.Controls.ColumnDefinition; $col.Width = $w
                 $row.ColumnDefinitions.Add($col) | Out-Null
             }
@@ -701,6 +691,7 @@ Register-PowerToolsModule `
             $detailBtn = New-Object System.Windows.Controls.Button
             $detailBtn.Content = "Details"; $detailBtn.Style = (Get-PowerToolsWindow).FindResource("SecondaryButton")
             $detailBtn.Padding = "10,3"; $detailBtn.FontSize = 10; $detailBtn.Margin = "4,0,4,0"; $detailBtn.VerticalAlignment = "Center"
+            $detailBtn.Width = 52; $detailBtn.HorizontalAlignment = "Center"
             $capturedTweak2 = $t; $detailBtn.Add_Click({ GO-ShowDetailWindow -Tweak $capturedTweak2 }.GetNewClosure())
             [System.Windows.Controls.Grid]::SetColumn($detailBtn, 3); $row.Children.Add($detailBtn) | Out-Null
             if ($isOk) {
