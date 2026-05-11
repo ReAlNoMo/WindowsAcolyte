@@ -24,7 +24,7 @@ Register-PowerToolsModule `
     <Border Grid.Row="0" x:Name="InfoBorder"
             BorderThickness="1.5" CornerRadius="10" Padding="18,16" Margin="0,0,0,12">
         <StackPanel>
-            <TextBlock Text="GLOBAL EXPLORER NORMALIZER" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="GLOBAL EXPLORER NORMALIZER" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
                 Text="Select exactly which defaults should be enforced globally. On module load, each option is checked and marked as ALREADY SET or NOT SET. Selected options apply to all known Explorer folder templates (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)."/>
@@ -43,7 +43,7 @@ Register-PowerToolsModule `
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="SETTINGS (SELECT TO ENFORCE)" Foreground="#8890B8" FontSize="10"
+            <TextBlock Grid.Row="0" Text="SETTINGS (SELECT TO ENFORCE)" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="6,0,0,8"/>
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="OptionsPanel" Margin="6,0,6,6"/>
@@ -74,7 +74,7 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" VerticalAlignment="Center"/>
         <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear Log"
                 Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>

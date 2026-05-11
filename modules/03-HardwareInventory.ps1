@@ -25,7 +25,7 @@ Register-PowerToolsModule `
     <Border Grid.Row="0" x:Name="InfoBorder"
             BorderThickness="1.5" CornerRadius="10" Padding="18,16" Margin="0,0,0,14">
         <StackPanel>
-            <TextBlock Text="WHAT THIS DOES" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="WHAT THIS DOES" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
                 Text="Collects hardware information via WMI/CIM and writes a styled HTML report to your Desktop."/>
@@ -33,7 +33,7 @@ Register-PowerToolsModule `
     </Border>
 
     <StackPanel Grid.Row="1" Margin="0,0,0,14">
-        <TextBlock Text="OUTPUT PATH" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="OUTPUT PATH" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,6"/>
         <Border x:Name="OutputPathBorder" BorderThickness="1.5" CornerRadius="8" Padding="12,10">
             <TextBlock x:Name="OutputPath" FontSize="12" FontFamily="Cascadia Code, Consolas"/>
@@ -75,7 +75,7 @@ Register-PowerToolsModule `
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" VerticalAlignment="Center"/>
             <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear Log"
                     Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>
@@ -262,15 +262,15 @@ Register-PowerToolsModule `
             Q-Prog 85 "Building HTML report..."
             Q-Log  "Building HTML report..."
 
-            $css  = "body{font-family:Segoe UI,Arial,sans-serif;background:#1a1a2e;color:#eee;margin:20px}"
-            $css += "h1{color:#00d4ff;text-align:center;border-bottom:2px solid #00d4ff;padding-bottom:10px}"
-            $css += "h2{color:#00d4ff;background:#16213e;padding:8px 15px;border-left:4px solid #00d4ff;margin-top:30px}"
+            $css  = "body{font-family:Segoe UI,Arial,sans-serif;background:#07111D;color:#EAF4FA;margin:20px}"
+            $css += "h1{color:#D79A00;text-align:center;border-bottom:2px solid #D79A00;padding-bottom:10px}"
+            $css += "h2{color:#D79A00;background:#0D2235;padding:8px 15px;border-left:4px solid #D79A00;margin-top:30px}"
             $css += "table{width:100%;border-collapse:collapse;margin-bottom:20px}"
-            $css += "th{background:#0f3460;color:#00d4ff;padding:10px;text-align:left}"
+            $css += "th{background:#061B2E;color:#D79A00;padding:10px;text-align:left}"
             $css += "td{padding:8px 10px;border-bottom:1px solid #333}"
-            $css += "tr:hover{background:#16213e} tr:nth-child(even){background:#0d0d1a}"
+            $css += "tr:hover{background:#102B42} tr:nth-child(even){background:#091827}"
             $css += ".info{color:#aaa;font-size:12px;text-align:center;margin-top:40px}"
-            $css += ".badge{background:#00d4ff;color:#000;padding:2px 8px;border-radius:10px;font-size:11px}"
+            $css += ".badge{background:#D79A00;color:#102A3A;padding:2px 8px;border-radius:10px;font-size:11px}"
 
             $h  = "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'>"
             $h += "<title>Hardware Report - $($CS.Name)</title><style>$css</style></head><body>"

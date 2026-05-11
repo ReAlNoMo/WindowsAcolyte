@@ -28,7 +28,7 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="160"/>
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0" Margin="0,0,12,0">
-            <TextBlock Text="ALGORITHM" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="ALGORITHM" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,6"/>
             <ComboBox x:Name="AlgoCombo" Height="40" FontSize="13" Padding="10,8">
                 <ComboBoxItem Content="SHA-256" IsSelected="True"/>
@@ -45,7 +45,7 @@ Register-PowerToolsModule `
     </Grid>
 
     <StackPanel Grid.Row="1" Margin="0,0,0,16">
-        <TextBlock Text="FILE" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="FILE" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,6"/>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -65,7 +65,7 @@ Register-PowerToolsModule `
     </StackPanel>
 
     <StackPanel Grid.Row="2" Margin="0,0,0,16">
-        <TextBlock Text="EXPECTED HASH" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="EXPECTED HASH" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,6"/>
         <TextBox x:Name="ExpectedHashBox" Height="40" FontSize="13" Padding="12,10"
                  BorderThickness="1.5"
@@ -83,10 +83,10 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <TextBlock x:Name="StatusLabel" Grid.Column="0"
-                   Text="Idle" Foreground="#8890B8" FontSize="11"
+                   Text="Idle" Foreground="{DynamicResource DynTextMuted}" FontSize="11"
                    VerticalAlignment="Center"/>
         <TextBlock x:Name="PctLabel" Grid.Column="1"
-                   Text="" Foreground="#3B5BDB" FontSize="11" FontWeight="Bold"
+                   Text="" Foreground="{DynamicResource DynAccent}" FontSize="11" FontWeight="Bold"
                    VerticalAlignment="Center"/>
     </Grid>
     <ProgressBar Grid.Row="5" x:Name="ProgressBar" Height="6"
@@ -103,7 +103,7 @@ Register-PowerToolsModule `
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" VerticalAlignment="Center"/>
             <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear Log"
                     Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>

@@ -31,7 +31,7 @@ Register-PowerToolsModule `
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
-                <TextBlock Text="DETECTED HARDWARE" Foreground="#8890B8" FontSize="9"
+                <TextBlock Text="DETECTED HARDWARE" Foreground="{DynamicResource DynSectionLabel}" FontSize="9"
                            FontWeight="Bold" Margin="0,0,0,2"/>
                 <TextBlock x:Name="HardwareText" FontSize="11" TextWrapping="Wrap" Text="Detecting..."/>
             </StackPanel>
@@ -42,7 +42,7 @@ Register-PowerToolsModule `
     </Border>
 
     <!-- ROW 1: Backup Options (intentional warning colors) -->
-    <Border Grid.Row="1" Background="#FFF4E5" BorderBrush="#D9822B"
+    <Border Grid.Row="1" Background="{DynamicResource DynAccentSoft}" BorderBrush="{DynamicResource DynAccent}"
             BorderThickness="1.5" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -51,17 +51,17 @@ Register-PowerToolsModule `
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="BACKUP:" Foreground="#8F4F0A" FontSize="10"
+            <TextBlock Grid.Column="0" Text="BACKUP:" Foreground="{DynamicResource DynTextDark}" FontSize="10"
                        FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
             <CheckBox Grid.Column="1" x:Name="CbRestorePoint"
                       Content="Create Restore Point" IsChecked="True"
-                      FontSize="11" Foreground="#1A1F3A" VerticalAlignment="Center"/>
+                      FontSize="11" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center"/>
             <CheckBox Grid.Column="2" x:Name="CbRegBackup"
                       Content="Export Registry (.reg)" IsChecked="True"
-                      FontSize="11" Foreground="#1A1F3A" VerticalAlignment="Center"/>
+                      FontSize="11" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center"/>
             <CheckBox Grid.Column="3" x:Name="CbAutoReboot"
                       Content="Prompt for Reboot" IsChecked="True"
-                      FontSize="11" Foreground="#1A1F3A" VerticalAlignment="Center"/>
+                      FontSize="11" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center"/>
         </Grid>
     </Border>
 
@@ -77,7 +77,7 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="0" Text="SELECT:" Foreground="#8890B8"
+        <TextBlock Grid.Column="0" Text="SELECT:" Foreground="{DynamicResource DynSectionLabel}"
                    FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
         <Button Grid.Column="1" x:Name="SelectAllBtn" Content="All"
                 Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,0"/>
@@ -111,7 +111,7 @@ Register-PowerToolsModule `
             <TextBlock Grid.Column="0" x:Name="EstimateText" FontSize="11"
                        Text="No tweaks selected. All estimates without warranty."/>
             <TextBlock Grid.Column="1" Text="Hover = short info  |  Click name = full details"
-                       Foreground="#8890B8" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
+                       Foreground="{DynamicResource DynTextMuted}" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
         </Grid>
     </Border>
 
@@ -144,7 +144,7 @@ Register-PowerToolsModule `
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="9"
+                <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="9"
                            FontWeight="Bold" VerticalAlignment="Center"/>
                 <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear"
                         Style="{DynamicResource SecondaryButton}" Padding="8,3" FontSize="10"/>
@@ -585,21 +585,21 @@ Register-PowerToolsModule `
             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" x:Name="DC" Foreground="#3B5BDB" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="0" x:Name="DC" Foreground="{DynamicResource DynAccent}" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
         <TextBlock Grid.Row="1" x:Name="DT" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,14"/>
         <Border Grid.Row="2" x:Name="DMB" BorderThickness="1.5" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="RISK LEVEL" Foreground="#8890B8" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="RISK LEVEL" Foreground="{DynamicResource DynSectionLabel}" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
                     <TextBlock x:Name="DR" FontSize="13" FontWeight="SemiBold"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="PERFORMANCE GAIN" Foreground="#8890B8" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="PERFORMANCE GAIN" Foreground="{DynamicResource DynSectionLabel}" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
                     <TextBlock x:Name="DG" Foreground="#2A9D5C" FontSize="13" FontWeight="SemiBold"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="REBOOT REQUIRED" Foreground="#8890B8" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="REBOOT REQUIRED" Foreground="{DynamicResource DynSectionLabel}" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
                     <TextBlock x:Name="DRB" FontSize="13" FontWeight="SemiBold"/>
                 </StackPanel>
             </Grid>
@@ -786,7 +786,7 @@ Register-PowerToolsModule `
         WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" ResizeMode="CanResize" MinWidth="520" MinHeight="480">
     <Grid Margin="22">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Text="THIRD-PARTY TOOLS" Foreground="#3B5BDB" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="0" Text="THIRD-PARTY TOOLS" Foreground="{DynamicResource DynAccent}" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
         <TextBlock Grid.Row="1" x:Name="ST" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,14" Text="Recommended tools that complement Windows optimizations"/>
         <Border Grid.Row="2" x:Name="SLB" BorderThickness="1.5" CornerRadius="8">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14"><StackPanel x:Name="SS"/></ScrollViewer>

@@ -25,7 +25,7 @@ Register-PowerToolsModule `
     <Border Grid.Row="0" x:Name="PrereqBorder"
             BorderThickness="1.5" CornerRadius="10" Padding="18,16" Margin="0,0,0,14">
         <StackPanel>
-            <TextBlock Text="PREREQUISITE CHECK" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="PREREQUISITE CHECK" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="PrereqText" FontSize="13"
                        TextWrapping="Wrap" LineHeight="20"/>
@@ -33,7 +33,7 @@ Register-PowerToolsModule `
     </Border>
 
     <StackPanel Grid.Row="1" Margin="0,0,0,14">
-        <TextBlock Text="SANDBOX NAME" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="SANDBOX NAME" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,6"/>
         <TextBox x:Name="SandboxBox" Text="DefaultBox" Height="40" FontSize="13"
                  Padding="12,10" BorderThickness="1.5"
@@ -82,7 +82,7 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" VerticalAlignment="Center"/>
         <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear Log"
                 Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>

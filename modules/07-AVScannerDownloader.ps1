@@ -23,7 +23,7 @@ Register-PowerToolsModule `
 
     <!-- DESTINATION FOLDER -->
     <StackPanel Grid.Row="0" Margin="0,0,0,14">
-        <TextBlock Text="DESTINATION FOLDER" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="DESTINATION FOLDER" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,6"/>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -42,7 +42,7 @@ Register-PowerToolsModule `
 
     <!-- SCANNER SELECTION -->
     <StackPanel Grid.Row="1" Margin="0,0,0,14">
-        <TextBlock Text="SCANNERS" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="SCANNERS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,8"/>
         <WrapPanel>
             <CheckBox x:Name="CbEEK"        Content="Emsisoft Emergency Kit"   IsChecked="True"  Margin="0,0,18,6" FontSize="13"/>
@@ -67,7 +67,7 @@ Register-PowerToolsModule `
         </Grid.ColumnDefinitions>
         <ProgressBar x:Name="ProgressBar" Grid.Column="0" Height="10"
                      Minimum="0" Maximum="100" Value="0"
-                     Foreground="#3B5BDB" Background="#E0E5F5"
+                     Foreground="{DynamicResource DynTextDark}" Background="{DynamicResource DynAccentSoft}"
                      BorderThickness="0" Margin="0,0,10,0"/>
         <TextBlock x:Name="PctLabel" Grid.Column="1" Text="0%"
                    FontSize="11" FontWeight="SemiBold"
@@ -100,7 +100,7 @@ Register-PowerToolsModule `
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="9"
+            <TextBlock Grid.Row="0" Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="9"
                        FontWeight="Bold" Margin="12,8,0,4"/>
             <TextBox Grid.Row="1" x:Name="LogBox"
                      IsReadOnly="True"

@@ -23,7 +23,7 @@ Register-PowerToolsModule `
     </Grid.RowDefinitions>
 
     <StackPanel Grid.Row="0" Margin="0,0,0,14">
-        <TextBlock Text="DESTINATION FOLDER" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="DESTINATION FOLDER" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,6"/>
         <Grid>
             <Grid.ColumnDefinitions>
@@ -41,7 +41,7 @@ Register-PowerToolsModule `
     </StackPanel>
 
     <StackPanel Grid.Row="1" Margin="0,0,0,14">
-        <TextBlock Text="DISTRIBUTIONS" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="DISTRIBUTIONS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,8"/>
         <WrapPanel>
             <CheckBox x:Name="CbUbuntu"  Content="Ubuntu"   IsChecked="True"  Margin="0,0,18,6" FontSize="13"/>
@@ -62,7 +62,7 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="140"/>
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0">
-            <TextBlock Text="MAX PARALLEL DOWNLOADS" Foreground="#8890B8" FontSize="10"
+            <TextBlock Text="MAX PARALLEL DOWNLOADS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,6"/>
             <ComboBox x:Name="ParallelCombo" Height="40" FontSize="13" Padding="10,8">
                 <ComboBoxItem Content="1"/>
@@ -86,9 +86,9 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <TextBlock x:Name="StatusLabel" Grid.Column="0"
-                   Text="Idle" Foreground="#8890B8" FontSize="11" VerticalAlignment="Center"/>
+                   Text="Idle" Foreground="{DynamicResource DynTextMuted}" FontSize="11" VerticalAlignment="Center"/>
         <TextBlock x:Name="PctLabel" Grid.Column="1"
-                   Text="" Foreground="#3B5BDB" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                   Text="" Foreground="{DynamicResource DynAccent}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
     </Grid>
     <ProgressBar Grid.Row="4" x:Name="ProgressBar" Height="8"
                  Minimum="0" Maximum="100" Value="0" Margin="0,0,0,14"/>
@@ -98,7 +98,7 @@ Register-PowerToolsModule `
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Text="ACTIVITY LOG" Foreground="#8890B8" FontSize="10"
+        <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" VerticalAlignment="Center"/>
         <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear Log"
                 Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>
