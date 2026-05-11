@@ -289,69 +289,6 @@ foreach ($k in $Global:PTS_Theme.Keys) {
 function Global:Get-PowerToolsBrush { param([string]$Name) return $Global:PTS_Brush[$Name] }
 function Global:Get-PowerToolsWindow { return $Global:PTS_Window }
 
-function Global:Set-PTSLogoSource {
-    param(
-        [Parameter(Mandatory)]
-        [System.Windows.Controls.Image]$Image
-    )
-
-    $svgPath = Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Logo.svg"
-    $svgText = $null
-
-    try {
-        if (Test-Path -LiteralPath $svgPath) {
-            $svgText = Get-Content -LiteralPath $svgPath -Raw
-        } else {
-            $svgUrl = "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/Windows_Acolyte_Logo.svg"
-            $svgText = (Invoke-WebRequest -Uri $svgUrl -UseBasicParsing).Content
-        }
-
-        if ($svgText -notmatch 'viewBox="(?<vx>[-\d.]+)\s+(?<vy>[-\d.]+)\s+(?<vw>[-\d.]+)\s+(?<vh>[-\d.]+)"') {
-            throw "SVG viewBox not found."
-        }
-        $viewX = [double]::Parse($Matches["vx"], [Globalization.CultureInfo]::InvariantCulture)
-        $viewY = [double]::Parse($Matches["vy"], [Globalization.CultureInfo]::InvariantCulture)
-        $viewW = [double]::Parse($Matches["vw"], [Globalization.CultureInfo]::InvariantCulture)
-        $viewH = [double]::Parse($Matches["vh"], [Globalization.CultureInfo]::InvariantCulture)
-
-        if ($svgText -notmatch '<image\b[^>]*\bx="(?<ix>[-\d.]+)"[^>]*\by="(?<iy>[-\d.]+)"[^>]*\bwidth="(?<iw>[-\d.]+)"[^>]*\bheight="(?<ih>[-\d.]+)"[^>]*\bhref="data:image/png;base64,(?<data>[^"]+)"') {
-            throw "Embedded SVG PNG image not found."
-        }
-        $imageX = [double]::Parse($Matches["ix"], [Globalization.CultureInfo]::InvariantCulture)
-        $imageY = [double]::Parse($Matches["iy"], [Globalization.CultureInfo]::InvariantCulture)
-        $imageW = [double]::Parse($Matches["iw"], [Globalization.CultureInfo]::InvariantCulture)
-        $imageH = [double]::Parse($Matches["ih"], [Globalization.CultureInfo]::InvariantCulture)
-        $bytes  = [Convert]::FromBase64String($Matches["data"])
-
-        $stream = [System.IO.MemoryStream]::new($bytes)
-        $bitmap = [System.Windows.Media.Imaging.BitmapImage]::new()
-        $bitmap.BeginInit()
-        $bitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-        $bitmap.StreamSource = $stream
-        $bitmap.EndInit()
-        $bitmap.Freeze()
-        $stream.Dispose()
-
-        $scaleX = $bitmap.PixelWidth / $imageW
-        $scaleY = $bitmap.PixelHeight / $imageH
-        $cropX = [Math]::Max(0, [int][Math]::Round(($viewX - $imageX) * $scaleX))
-        $cropY = [Math]::Max(0, [int][Math]::Round(($viewY - $imageY) * $scaleY))
-        $cropW = [Math]::Min($bitmap.PixelWidth - $cropX, [int][Math]::Round($viewW * $scaleX))
-        $cropH = [Math]::Min($bitmap.PixelHeight - $cropY, [int][Math]::Round($viewH * $scaleY))
-
-        $crop = [System.Windows.Media.Imaging.CroppedBitmap]::new(
-            $bitmap,
-            [System.Windows.Int32Rect]::new($cropX, $cropY, $cropW, $cropH)
-        )
-        $crop.Freeze()
-        $Image.Source = $crop
-    } catch {
-        Write-PTSExceptionReport -Context "Logo.SvgLoad" -ErrorRecord $_ -Extra @{
-            svg_path = $svgPath
-        }
-    }
-}
-
 function Global:Apply-PTSTheme {
     param([bool]$DarkMode = $false)
     $Global:PTS_DarkModeEnabled = $DarkMode
@@ -613,8 +550,7 @@ function Global:Update-PTSStyles {
                 <!-- LOGO IMAGE -->
                 <Border Grid.Row="0" x:Name="LogoBorder" Padding="8,4,8,4"
                         Background="#FFFFFF" BorderBrush="#C9D8E2" BorderThickness="0,0,0,1">
-                    <Image x:Name="LogoImage"
-                           Source="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/Windows_Acolyte_Logo.png"
+                    <Image Source="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/Windows_Acolyte_Logo.png"
                            Stretch="Uniform"
                            MaxWidth="244"
                            MaxHeight="112"
@@ -763,12 +699,10 @@ $Global:PTS_UI = @{
     DarkModeToggle   = $Global:PTS_Window.FindName("DarkModeToggle")
     DarkModeLabel    = $Global:PTS_Window.FindName("DarkModeLabel")
     LogoBorder       = $Global:PTS_Window.FindName("LogoBorder")
-    LogoImage        = $Global:PTS_Window.FindName("LogoImage")
 }
 
 $Global:PTS_UI.LogoBorder.Background  = $Global:PTS_Brush["LogoBg"]
 $Global:PTS_UI.LogoBorder.BorderBrush = $Global:PTS_Brush["LogoBorder"]
-Set-PTSLogoSource -Image $Global:PTS_UI.LogoImage
 
 $Global:PTS_UI.DarkModeToggle.Add_Click({
     $isDark = [bool]$Global:PTS_UI.DarkModeToggle.IsChecked
