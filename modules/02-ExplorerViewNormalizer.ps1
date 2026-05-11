@@ -201,6 +201,16 @@ Register-PowerToolsModule `
         New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType $Kind -Force -ErrorAction Stop | Out-Null
     }
 
+    function Global:EVN-RemoveRegValue {
+        param(
+            [Parameter(Mandatory)][string]$Path,
+            [Parameter(Mandatory)][string]$Name
+        )
+        if (Test-Path $Path) {
+            Remove-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
+        }
+    }
+
     function Global:EVN-TestBinaryValue {
         param([object]$Actual, [byte[]]$Expected)
         if (-not ($Actual -is [byte[]])) { return $false }
@@ -261,6 +271,13 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:EVN-RevertDetailsView {
+        foreach ($path in (EVN-GetTemplatePaths)) {
+            EVN-RemoveRegValue -Path $path -Name "LogicalViewMode"
+            EVN-RemoveRegValue -Path $path -Name "Mode"
+        }
+    }
+
     function Global:EVN-TestDetailsView {
         return (EVN-TestAllTemplates {
             param($p)
@@ -279,6 +296,16 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:EVN-RevertDisableGrouping {
+        foreach ($path in (EVN-GetTemplatePaths)) {
+            EVN-RemoveRegValue -Path $path -Name "GroupBy"
+            EVN-RemoveRegValue -Path $path -Name "GroupByKey:FMTID"
+            EVN-RemoveRegValue -Path $path -Name "GroupByKey:PID"
+            EVN-RemoveRegValue -Path $path -Name "GroupByDirection"
+            EVN-RemoveRegValue -Path $path -Name "GroupView"
+        }
+    }
+
     function Global:EVN-TestDisableGrouping {
         return (EVN-TestAllTemplates {
             param($p)
@@ -290,6 +317,12 @@ Register-PowerToolsModule `
         EVN-EnsureTemplatePaths
         foreach ($path in (EVN-GetTemplatePaths)) {
             EVN-SetRegValue -Path $path -Name "Sort" -Value $script:EVN_sortByNameAscending -Kind Binary
+        }
+    }
+
+    function Global:EVN-RevertSortNameAsc {
+        foreach ($path in (EVN-GetTemplatePaths)) {
+            EVN-RemoveRegValue -Path $path -Name "Sort"
         }
     }
 
@@ -307,6 +340,12 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:EVN-RevertColumnsDefault {
+        foreach ($path in (EVN-GetTemplatePaths)) {
+            EVN-RemoveRegValue -Path $path -Name "ColInfo"
+        }
+    }
+
     function Global:EVN-TestColumnsDefault {
         return (EVN-TestAllTemplates {
             param($p)
@@ -321,6 +360,12 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:EVN-RevertFolderTypeNotSpecified {
+        foreach ($path in (EVN-GetTemplatePaths)) {
+            EVN-RemoveRegValue -Path $path -Name "FolderType"
+        }
+    }
+
     function Global:EVN-TestFolderTypeNotSpecified {
         return (EVN-TestAllTemplates {
             param($p)
@@ -332,6 +377,10 @@ Register-PowerToolsModule `
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value 1 -Kind DWord
     }
 
+    function Global:EVN-RevertShowHidden {
+        EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value 2 -Kind DWord
+    }
+
     function Global:EVN-TestShowHidden {
         $p = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -ErrorAction SilentlyContinue
         return ($null -ne $p -and $p.Hidden -eq 1)
@@ -339,6 +388,10 @@ Register-PowerToolsModule `
 
     function Global:EVN-ApplyShowExtensions {
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value 0 -Kind DWord
+    }
+
+    function Global:EVN-RevertShowExtensions {
+        EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value 1 -Kind DWord
     }
 
     function Global:EVN-TestShowExtensions {
@@ -350,6 +403,10 @@ Register-PowerToolsModule `
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowSuperHidden" -Value 0 -Kind DWord
     }
 
+    function Global:EVN-RevertHideProtectedOS {
+        EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowSuperHidden" -Value 1 -Kind DWord
+    }
+
     function Global:EVN-TestHideProtectedOS {
         $p = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -ErrorAction SilentlyContinue
         return ($null -ne $p -and $p.ShowSuperHidden -eq 0)
@@ -357,6 +414,10 @@ Register-PowerToolsModule `
 
     function Global:EVN-ApplyDisableCompactMode {
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "UseCompactMode" -Value 0 -Kind DWord
+    }
+
+    function Global:EVN-RevertDisableCompactMode {
+        EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "UseCompactMode" -Value 1 -Kind DWord
     }
 
     function Global:EVN-TestDisableCompactMode {
@@ -368,6 +429,10 @@ Register-PowerToolsModule `
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "UseAutoGrouping" -Value 0 -Kind DWord
     }
 
+    function Global:EVN-RevertDisableAutoGrouping {
+        EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "UseAutoGrouping" -Value 1 -Kind DWord
+    }
+
     function Global:EVN-TestDisableAutoGrouping {
         $p = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -ErrorAction SilentlyContinue
         return ($null -ne $p -and $p.UseAutoGrouping -eq 0)
@@ -376,6 +441,11 @@ Register-PowerToolsModule `
     function Global:EVN-ApplyEnableDetailsPane {
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\DetailsContainer" -Name "DetailsContainer" -Value $script:EVN_detailsPaneState -Kind Binary
         EVN-SetRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\Sizer" -Name "DetailsContainerSizer" -Value $script:EVN_detailsPaneSizer -Kind Binary
+    }
+
+    function Global:EVN-RevertEnableDetailsPane {
+        EVN-RemoveRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\DetailsContainer" -Name "DetailsContainer"
+        EVN-RemoveRegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Modules\GlobalSettings\Sizer" -Name "DetailsContainerSizer"
     }
 
     function Global:EVN-TestEnableDetailsPane {
@@ -390,6 +460,29 @@ Register-PowerToolsModule `
         if (-not (Test-Path $policyPath)) { New-Item -Path $policyPath -Force | Out-Null }
         Remove-ItemProperty -Path $policyPath -Name "NoReadingPane" -ErrorAction SilentlyContinue
         Remove-ItemProperty -Path $policyPath -Name "NoPreviewPane" -ErrorAction SilentlyContinue
+    }
+
+    function Global:EVN-RevertEnablePreviewPane {
+        $policyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        if (-not (Test-Path $policyPath)) { New-Item -Path $policyPath -Force | Out-Null }
+        EVN-SetRegValue -Path $policyPath -Name "NoReadingPane" -Value 1 -Kind DWord
+        EVN-SetRegValue -Path $policyPath -Name "NoPreviewPane" -Value 1 -Kind DWord
+    }
+
+    function Global:EVN-ApplySmallDesktopIcons {
+        $desktopBagPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags\1\Desktop"
+        EVN-SetRegValue -Path $desktopBagPath -Name "IconSize" -Value 32 -Kind DWord
+    }
+
+    function Global:EVN-RevertSmallDesktopIcons {
+        $desktopBagPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags\1\Desktop"
+        EVN-SetRegValue -Path $desktopBagPath -Name "IconSize" -Value 48 -Kind DWord
+    }
+
+    function Global:EVN-TestSmallDesktopIcons {
+        $desktopBagPath = "HKCU:\Software\Microsoft\Windows\Shell\Bags\1\Desktop"
+        $p = Get-ItemProperty -Path $desktopBagPath -ErrorAction SilentlyContinue
+        return ($null -ne $p -and $p.IconSize -eq 32)
     }
 
     function Global:EVN-TestEnablePreviewPane {
@@ -416,84 +509,105 @@ Register-PowerToolsModule `
             Label = "Reset saved folder views/cache (Bags, BagMRU, Streams, Open/Save dialogs)"
             Test  = { EVN-TestClearSavedViews }
             Apply = { EVN-ApplyClearSavedViews }
+            Revert = $null
             DefaultChecked = $true
         }
         details_view = [ordered]@{
             Label = "Force Details View (LogicalViewMode=1, Mode=4) for all folder templates"
             Test  = { EVN-TestDetailsView }
             Apply = { EVN-ApplyDetailsView }
+            Revert = { EVN-RevertDetailsView }
             DefaultChecked = $true
         }
         disable_grouping = [ordered]@{
             Label = "Disable Grouping globally (GroupView=0, no GroupBy)"
             Test  = { EVN-TestDisableGrouping }
             Apply = { EVN-ApplyDisableGrouping }
+            Revert = { EVN-RevertDisableGrouping }
             DefaultChecked = $true
         }
         sort_name_asc = [ordered]@{
             Label = "Sort by Name (Ascending) globally"
             Test  = { EVN-TestSortNameAsc }
             Apply = { EVN-ApplySortNameAsc }
+            Revert = { EVN-RevertSortNameAsc }
             DefaultChecked = $true
         }
         columns_default = [ordered]@{
             Label = "Set default columns: Name, Date modified, Type, Size"
             Test  = { EVN-TestColumnsDefault }
             Apply = { EVN-ApplyColumnsDefault }
+            Revert = { EVN-RevertColumnsDefault }
             DefaultChecked = $true
         }
         foldertype_notspecified = [ordered]@{
             Label = "Disable Folder Type Discovery (FolderType=NotSpecified)"
             Test  = { EVN-TestFolderTypeNotSpecified }
             Apply = { EVN-ApplyFolderTypeNotSpecified }
+            Revert = { EVN-RevertFolderTypeNotSpecified }
             DefaultChecked = $true
         }
         show_hidden = [ordered]@{
             Label = "Show hidden files"
             Test  = { EVN-TestShowHidden }
             Apply = { EVN-ApplyShowHidden }
+            Revert = { EVN-RevertShowHidden }
             DefaultChecked = $true
         }
         show_extensions = [ordered]@{
             Label = "Show file extensions"
             Test  = { EVN-TestShowExtensions }
             Apply = { EVN-ApplyShowExtensions }
+            Revert = { EVN-RevertShowExtensions }
             DefaultChecked = $true
         }
         hide_protected_os = [ordered]@{
             Label = "Keep protected operating system files hidden"
             Test  = { EVN-TestHideProtectedOS }
             Apply = { EVN-ApplyHideProtectedOS }
+            Revert = { EVN-RevertHideProtectedOS }
             DefaultChecked = $true
         }
         disable_compact = [ordered]@{
             Label = "Disable Compact View"
             Test  = { EVN-TestDisableCompactMode }
             Apply = { EVN-ApplyDisableCompactMode }
+            Revert = { EVN-RevertDisableCompactMode }
             DefaultChecked = $true
         }
         disable_auto_grouping = [ordered]@{
             Label = "Disable Auto Grouping"
             Test  = { EVN-TestDisableAutoGrouping }
             Apply = { EVN-ApplyDisableAutoGrouping }
+            Revert = { EVN-RevertDisableAutoGrouping }
             DefaultChecked = $true
         }
         enable_details_pane = [ordered]@{
             Label = "Enable Details Pane"
             Test  = { EVN-TestEnableDetailsPane }
             Apply = { EVN-ApplyEnableDetailsPane }
+            Revert = { EVN-RevertEnableDetailsPane }
             DefaultChecked = $true
         }
         enable_preview_pane = [ordered]@{
             Label = "Allow Preview Pane (remove restrictive Explorer policies)"
             Test  = { EVN-TestEnablePreviewPane }
             Apply = { EVN-ApplyEnablePreviewPane }
+            Revert = { EVN-RevertEnablePreviewPane }
+            DefaultChecked = $true
+        }
+        small_desktop_icons = [ordered]@{
+            Label = "Use small desktop icons (IconSize=32, desktop only)"
+            Test  = { EVN-TestSmallDesktopIcons }
+            Apply = { EVN-ApplySmallDesktopIcons }
+            Revert = { EVN-RevertSmallDesktopIcons }
             DefaultChecked = $true
         }
         restart_explorer = [ordered]@{
             Label = "Restart Explorer automatically after apply"
             Test  = { EVN-TestRestartExplorer }
             Apply = { EVN-RestartExplorer }
+            Revert = $null
             DefaultChecked = $true
         }
     }
@@ -627,32 +741,51 @@ Register-PowerToolsModule `
 
     $script:EVN_apply.Add_Click({
         try {
-            $selected = EVN-GetSelectedOptions
-            if ($selected.Count -eq 0) {
-                EVN-AddLog "No settings selected." "WARN"
-                return
+            $selectedSet = @{}
+            foreach ($id in (EVN-GetSelectedOptions)) { $selectedSet[$id] = $true }
+
+            if ($selectedSet.Count -eq 0) {
+                EVN-AddLog "No settings selected. Revert-capable options will be reverted." "WARN"
+            } else {
+                EVN-AddLog "Applying selected settings globally..." "INFO"
+                EVN-AddLog "Selected count: $($selectedSet.Count)" "INFO"
             }
 
-            EVN-AddLog "Applying selected settings globally..." "INFO"
-            EVN-AddLog "Selected count: $($selected.Count)" "INFO"
-
-            foreach ($id in $selected) {
+            foreach ($id in $script:EVN_options.Keys) {
                 $opt = $script:EVN_options[$id]
-                try {
-                    & $opt.Apply
-                    EVN-AddLog "Applied: $($opt.Label)" "OK"
-                } catch {
-                    EVN-AddLog "Failed: $($opt.Label) - $_" "FAIL"
+                $isSelected = $selectedSet.ContainsKey($id)
+
+                if ($isSelected) {
+                    try {
+                        & $opt.Apply
+                        EVN-AddLog "Applied: $($opt.Label)" "OK"
+                    } catch {
+                        EVN-AddLog "Failed apply: $($opt.Label) - $_" "FAIL"
+                    }
+                    continue
+                }
+
+                if ($null -ne $opt.Revert) {
+                    try {
+                        & $opt.Revert
+                        EVN-AddLog "Reverted (unchecked): $($opt.Label)" "INFO"
+                    } catch {
+                        EVN-AddLog "Failed revert: $($opt.Label) - $_" "FAIL"
+                    }
+                } else {
+                    EVN-AddLog "Skipped unchecked (no revert action): $($opt.Label)" "INFO"
                 }
             }
 
-            if ($selected -contains "restart_explorer") {
+            if ($selectedSet.ContainsKey("restart_explorer")) {
                 EVN-AddLog "Explorer restarted. Global settings should now be active." "OK"
             } else {
                 EVN-AddLog "Explorer was not restarted. Some changes may require reopening Explorer windows." "WARN"
             }
 
+            # Always recheck after apply/revert so UI shows new state immediately.
             EVN-RecheckOptionStates
+            EVN-AddLog "Recheck completed after apply." "INFO"
         }
         catch {
             EVN-AddLog "Error: $_" "FAIL"
