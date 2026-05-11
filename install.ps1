@@ -307,7 +307,7 @@ try {
 
     try {
         Start-Process -FilePath "pwsh.exe" `
-                      -ArgumentList "-NoExit", "-ExecutionPolicy", "Bypass", "-File", "`"$finalLauncher`""
+                      -ArgumentList "-ExecutionPolicy", "Bypass", "-File", "`"$finalLauncher`""
         Write-Log "Launcher started successfully" "OK"
     }
     catch {

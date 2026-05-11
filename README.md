@@ -95,6 +95,9 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 > **Admin:** ⚠️ Yes
 
 ### ✔ What it does
+- Lets you compose global Explorer defaults using checkbox fields
+- Splits settings list into **Already Set** and **Not Selected**
+- Checks all settings on module load and shows current state immediately
 - Reset saved Explorer folder views
 - Force **Details view** across all normal folder types
 - Disable grouping completely (`Last week`, `Last month`, etc.)
@@ -105,11 +108,13 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 - Keep protected operating system files hidden
 - Disable Compact View
 - Enable Details Pane and keep Preview Pane available
+- Optional: use **small desktop icons** (`IconSize=32`)
 - Disable Folder Type Discovery with `FolderType = NotSpecified`
 - Apply to all folder types (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)
 - Clear Shell Bags, BagMRU, Desktop/Defaults Streams, and common Open/Save dialog view caches
 - Restart Explorer automatically
-- Status check before and after applying (Recheck button)
+- Apply now supports **apply + revert**: unchecked options are reverted when possible
+- Automatic recheck runs immediately after apply so new states are shown without manual refresh
 
 ⚠️ **Important**
 > This resets saved Explorer folder views. Existing custom folder layouts are removed and replaced with the WindowsAcolyte defaults.

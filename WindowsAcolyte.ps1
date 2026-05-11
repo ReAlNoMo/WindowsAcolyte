@@ -37,7 +37,7 @@ function Test-IsAdmin {
 
 if (-not (Test-IsAdmin)) {
     $self    = $MyInvocation.MyCommand.Path
-    $argList = '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', "`"$self`""
+    $argList = '-ExecutionPolicy', 'Bypass', '-File', "`"$self`""
     Start-Process -FilePath "pwsh.exe" -ArgumentList $argList -Verb RunAs
     exit 0
 }
