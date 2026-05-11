@@ -117,6 +117,7 @@ Register-PowerToolsModule `
     $script:EVN_initText     = "Ready."
     $script:EVN_optionControls = @{}
     $script:EVN_optionState = @{}
+    $script:EVN_selectionInitialized = $false
 
     # Apply theme-aware colors
     $script:EVN_infoBorder.Background     = $Global:PTS_Brush["Surface"]
@@ -508,16 +509,74 @@ Register-PowerToolsModule `
             $cb.FontSize = 12
             $cb.Content = $opt.Label
             $cb.Tag = $id
-            $cb.IsChecked = [bool]$opt.DefaultChecked
+            # Default is unselected until initial state check assigns it.
+            $cb.IsChecked = $false
             $cb.Foreground = $Global:PTS_Brush["TextDark"]
-            $script:EVN_optionsPanel.Children.Add($cb) | Out-Null
             $script:EVN_optionControls[$id] = $cb
+        }
+    }
+
+    function Global:EVN-AddOptionSectionHeader {
+        param([string]$Text)
+        $hdr = New-Object System.Windows.Controls.TextBlock
+        $hdr.Text = $Text
+        $hdr.FontSize = 11
+        $hdr.FontWeight = "Bold"
+        $hdr.Foreground = $Global:PTS_Brush["Primary"]
+        $hdr.Margin = "0,10,0,8"
+        $script:EVN_optionsPanel.Children.Add($hdr) | Out-Null
+    }
+
+    function Global:EVN-RebuildOptionSections {
+        $script:EVN_optionsPanel.Children.Clear()
+
+        $alreadySetIds = New-Object System.Collections.Generic.List[string]
+        $notSelectedIds = New-Object System.Collections.Generic.List[string]
+
+        foreach ($id in $script:EVN_options.Keys) {
+            if ($script:EVN_optionState[$id] -eq $true) { $alreadySetIds.Add($id) }
+            else { $notSelectedIds.Add($id) }
+        }
+
+        EVN-AddOptionSectionHeader -Text "Already Set"
+        if ($alreadySetIds.Count -eq 0) {
+            $none = New-Object System.Windows.Controls.TextBlock
+            $none.Text = "No settings currently detected as already set."
+            $none.FontSize = 11
+            $none.Foreground = $Global:PTS_Brush["TextMuted"]
+            $none.Margin = "0,0,0,8"
+            $script:EVN_optionsPanel.Children.Add($none) | Out-Null
+        } else {
+            foreach ($id in $alreadySetIds) {
+                $script:EVN_optionsPanel.Children.Add($script:EVN_optionControls[$id]) | Out-Null
+            }
+        }
+
+        $divider = New-Object System.Windows.Controls.Border
+        $divider.Height = 1
+        $divider.Margin = "0,6,0,8"
+        $divider.Background = $Global:PTS_Brush["Divider"]
+        $script:EVN_optionsPanel.Children.Add($divider) | Out-Null
+
+        EVN-AddOptionSectionHeader -Text "Not Selected"
+        if ($notSelectedIds.Count -eq 0) {
+            $none2 = New-Object System.Windows.Controls.TextBlock
+            $none2.Text = "All available settings are currently detected as set."
+            $none2.FontSize = 11
+            $none2.Foreground = $Global:PTS_Brush["TextMuted"]
+            $none2.Margin = "0,0,0,8"
+            $script:EVN_optionsPanel.Children.Add($none2) | Out-Null
+        } else {
+            foreach ($id in $notSelectedIds) {
+                $script:EVN_optionsPanel.Children.Add($script:EVN_optionControls[$id]) | Out-Null
+            }
         }
     }
 
     function Global:EVN-RecheckOptionStates {
         $setCount = 0
         $unsetCount = 0
+        $isInitialSelectionPass = -not $script:EVN_selectionInitialized
 
         foreach ($id in $script:EVN_options.Keys) {
             $opt = $script:EVN_options[$id]
@@ -539,9 +598,17 @@ Register-PowerToolsModule `
                 $cb.Content = "$($opt.Label)  [ACTION]"
                 $cb.Foreground = $Global:PTS_Brush["TextDark"]
             }
+
+            if ($isInitialSelectionPass) {
+                # Default behavior requested: items not in "Already Set" start unselected.
+                $cb.IsChecked = ($state -eq $true)
+            }
         }
 
-        $script:EVN_statusText.Text = "Checked options: $setCount already set, $unsetCount not set. Selected options will be enforced globally for all configured folder templates."
+        $script:EVN_selectionInitialized = $true
+        EVN-RebuildOptionSections
+
+        $script:EVN_statusText.Text = "Checked options: $setCount already set, $unsetCount not set. List is grouped into 'Already Set' and 'Not Selected'."
         $script:EVN_statusText.Foreground = if ($unsetCount -eq 0) { $Global:PTS_Brush["Success"] } else { $Global:PTS_Brush["Warning"] }
     }
 
