@@ -19,6 +19,7 @@ Register-PowerToolsModule `
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
@@ -93,7 +94,16 @@ Register-PowerToolsModule `
     <ProgressBar Grid.Row="4" x:Name="ProgressBar" Height="8"
                  Minimum="0" Maximum="100" Value="0" Margin="0,0,0,14"/>
 
-    <Grid Grid.Row="5" Margin="0,0,0,8">
+    <Border Grid.Row="5" x:Name="ProgressListBorder"
+            BorderThickness="1.5" CornerRadius="10"
+            Padding="10" Margin="0,0,0,14"
+            Visibility="Collapsed" MaxHeight="260">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="DownloadProgressPanel"/>
+        </ScrollViewer>
+    </Border>
+
+    <Grid Grid.Row="6" Margin="0,0,0,8">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -104,7 +114,7 @@ Register-PowerToolsModule `
                 Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>
     </Grid>
 
-    <Border Grid.Row="6" x:Name="LogBorder"
+    <Border Grid.Row="7" x:Name="LogBorder"
             BorderThickness="1.5" CornerRadius="10">
         <TextBox x:Name="LogBox"
                  IsReadOnly="True"
@@ -147,6 +157,8 @@ Register-PowerToolsModule `
     $Global:ISO_progress    = $view.FindName("ProgressBar")
     $Global:ISO_statusLabel = $view.FindName("StatusLabel")
     $Global:ISO_pctLabel    = $view.FindName("PctLabel")
+    $Global:ISO_progressListBorder = $view.FindName("ProgressListBorder")
+    $Global:ISO_progressPanel = $view.FindName("DownloadProgressPanel")
     $Global:ISO_clearLog    = $view.FindName("ClearLogBtn")
     $Global:ISO_logBox      = $view.FindName("LogBox")
     $Global:ISO_logBorder   = $view.FindName("LogBorder")
@@ -185,6 +197,9 @@ Register-PowerToolsModule `
     $Global:ISO_logBox.Foreground   = $Global:PTS_Brush["TextMuted"]
     $Global:ISO_logBorder.Background   = $Global:PTS_Brush["LogBg"]
     $Global:ISO_logBorder.BorderBrush  = $Global:PTS_Brush["LogBorder"]
+    $Global:ISO_progressListBorder.Background  = $Global:PTS_Brush["Surface"]
+    $Global:ISO_progressListBorder.BorderBrush = $Global:PTS_Brush["Border"]
+    $Global:ISO_progressRows = @{}
 
     # ===========================================================================
     # HELPERS
@@ -273,6 +288,148 @@ Register-PowerToolsModule `
         $Global:ISO_msgQueue.Enqueue($Msg)
     }
 
+    function Global:ISO-ClearProgressRows {
+        $Global:ISO_progressRows = @{}
+        $Global:ISO_progressPanel.Children.Clear()
+        $Global:ISO_progressListBorder.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+
+    function Global:ISO-CreateProgressRow {
+        param(
+            [string]$Key,
+            [string]$Name,
+            [string]$FileName
+        )
+
+        $outer = New-Object System.Windows.Controls.Border
+        $outer.Background = $Global:PTS_Brush["LogBg"]
+        $outer.BorderBrush = $Global:PTS_Brush["LogBorder"]
+        $outer.BorderThickness = "1"
+        $outer.CornerRadius = New-Object System.Windows.CornerRadius(8)
+        $outer.Padding = "10,8"
+        $outer.Margin = "0,0,0,8"
+
+        $grid = New-Object System.Windows.Controls.Grid
+        $grid.RowDefinitions.Add((New-Object System.Windows.Controls.RowDefinition -Property @{ Height = "Auto" }))
+        $grid.RowDefinitions.Add((New-Object System.Windows.Controls.RowDefinition -Property @{ Height = "Auto" }))
+        $grid.RowDefinitions.Add((New-Object System.Windows.Controls.RowDefinition -Property @{ Height = "Auto" }))
+
+        $top = New-Object System.Windows.Controls.Grid
+        $top.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{ Width = "*" }))
+        $top.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{ Width = "Auto" }))
+
+        $title = New-Object System.Windows.Controls.TextBlock
+        $title.Text = $Name
+        $title.FontSize = 12
+        $title.FontWeight = "SemiBold"
+        $title.Foreground = $Global:PTS_Brush["TextDark"]
+        [System.Windows.Controls.Grid]::SetColumn($title, 0)
+        $top.Children.Add($title) | Out-Null
+
+        $pct = New-Object System.Windows.Controls.TextBlock
+        $pct.Text = "Queued"
+        $pct.FontSize = 11
+        $pct.FontWeight = "Bold"
+        $pct.Foreground = $Global:PTS_Brush["TextMuted"]
+        [System.Windows.Controls.Grid]::SetColumn($pct, 1)
+        $top.Children.Add($pct) | Out-Null
+
+        [System.Windows.Controls.Grid]::SetRow($top, 0)
+        $grid.Children.Add($top) | Out-Null
+
+        $bar = New-Object System.Windows.Controls.ProgressBar
+        $bar.Minimum = 0
+        $bar.Maximum = 100
+        $bar.Value = 0
+        $bar.Height = 8
+        $bar.Margin = "0,7,0,5"
+        [System.Windows.Controls.Grid]::SetRow($bar, 1)
+        $grid.Children.Add($bar) | Out-Null
+
+        $detail = New-Object System.Windows.Controls.TextBlock
+        $detail.Text = "$FileName  |  waiting for available slot..."
+        $detail.FontSize = 10
+        $detail.Foreground = $Global:PTS_Brush["TextMuted"]
+        $detail.TextTrimming = "CharacterEllipsis"
+        [System.Windows.Controls.Grid]::SetRow($detail, 2)
+        $grid.Children.Add($detail) | Out-Null
+
+        $outer.Child = $grid
+        $Global:ISO_progressPanel.Children.Add($outer) | Out-Null
+        $Global:ISO_progressRows[$Key] = [PSCustomObject]@{
+            Border = $outer
+            Title = $title
+            Percent = $pct
+            Bar = $bar
+            Detail = $detail
+            State = "Queued"
+        }
+        $Global:ISO_progressListBorder.Visibility = [System.Windows.Visibility]::Visible
+    }
+
+    function Global:ISO-InitializeProgressRows {
+        param([object[]]$Jobs)
+        ISO-ClearProgressRows
+        foreach ($job in $Jobs) {
+            ISO-CreateProgressRow -Key $job.JobKey -Name $job.IsoName -FileName $job.FileName
+        }
+    }
+
+    function Global:ISO-UpdateProgressRow {
+        param(
+            [string]$Key,
+            [string]$State,
+            [int]$Pct,
+            [string]$Detail
+        )
+
+        if (-not $Global:ISO_progressRows.ContainsKey($Key)) { return }
+        $row = $Global:ISO_progressRows[$Key]
+        $row.State = $State
+        if ($Pct -lt 0) { $Pct = 0 }
+        if ($Pct -gt 100) { $Pct = 100 }
+        $row.Bar.Value = $Pct
+        $row.Detail.Text = $Detail
+
+        switch ($State) {
+            "Running" {
+                $row.Percent.Text = "$Pct%"
+                $row.Percent.Foreground = $Global:PTS_Brush["Accent"]
+            }
+            "Done" {
+                $row.Bar.Value = 100
+                $row.Percent.Text = "Done"
+                $row.Percent.Foreground = $Global:PTS_Brush["Success"]
+                $row.Detail.Text = $Detail
+            }
+            "Failed" {
+                $row.Percent.Text = "Failed"
+                $row.Percent.Foreground = $Global:PTS_Brush["Danger"]
+                $row.Detail.Text = $Detail
+            }
+            "Cancelled" {
+                $row.Percent.Text = "Cancelled"
+                $row.Percent.Foreground = $Global:PTS_Brush["Warning"]
+                $row.Detail.Text = $Detail
+            }
+            default {
+                $row.Percent.Text = $State
+                $row.Percent.Foreground = $Global:PTS_Brush["TextMuted"]
+            }
+        }
+    }
+
+    function Global:ISO-MarkUnfinishedProgressRows {
+        param([string]$State, [string]$Detail)
+
+        foreach ($key in @($Global:ISO_progressRows.Keys)) {
+            $row = $Global:ISO_progressRows[$key]
+            if ($row.State -ne "Done" -and $row.State -ne "Failed" -and $row.State -ne "Cancelled") {
+                ISO-UpdateProgressRow -Key $key -State $State -Pct ([int]$row.Bar.Value) -Detail $Detail
+            }
+        }
+    }
+
     function Global:ISO-StartTimer {
         $Global:ISO_timer = New-Object System.Windows.Threading.DispatcherTimer
         $Global:ISO_timer.Interval = [TimeSpan]::FromMilliseconds(200)
@@ -288,6 +445,12 @@ Register-PowerToolsModule `
                         $Global:ISO_statusLabel.Text = $item.Status
                         $Global:ISO_pctLabel.Text    = "$($item.Pct)%"
                     }
+                    "FILE_PROGRESS" {
+                        ISO-UpdateProgressRow -Key $item.JobKey -State "Running" -Pct $item.Pct -Detail $item.Detail
+                    }
+                    "FILE_STATE" {
+                        ISO-UpdateProgressRow -Key $item.JobKey -State $item.State -Pct $item.Pct -Detail $item.Detail
+                    }
                     "DONE" {
                         $Global:ISO_timer.Stop()
                         $Global:ISO_progress.Value        = 100
@@ -299,6 +462,7 @@ Register-PowerToolsModule `
                     }
                     "CANCELLED" {
                         $Global:ISO_timer.Stop()
+                        ISO-MarkUnfinishedProgressRows -State "Cancelled" -Detail "Download operation cancelled."
                         $Global:ISO_statusLabel.Text      = "Cancelled."
                         $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["Warning"]
                         ISO-SetUI-Busy $false
@@ -306,6 +470,7 @@ Register-PowerToolsModule `
                     }
                     "ERROR" {
                         $Global:ISO_timer.Stop()
+                        ISO-MarkUnfinishedProgressRows -State "Cancelled" -Detail "Stopped because download operation ended with errors."
                         $Global:ISO_statusLabel.Text      = "Error."
                         $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
                         ISO-SetUI-Busy $false
@@ -580,7 +745,8 @@ Register-PowerToolsModule `
         param($Job, $Queue, $CancelToken, $TotalJobs, $JobIndex)
 
         function Q-Log  { param($M,$T) $Queue.Enqueue([PSCustomObject]@{Type="LOG";Msg=$M;Tag=$T}) }
-        function Q-Prog { param($P,$S) $Queue.Enqueue([PSCustomObject]@{Type="PROGRESS";Pct=$P;Status=$S}) }
+        function Q-FileProg { param($P,$D) $Queue.Enqueue([PSCustomObject]@{Type="FILE_PROGRESS";JobKey=$Job["JobKey"];Pct=$P;Detail=$D}) }
+        function Q-FileState { param($S,$P,$D) $Queue.Enqueue([PSCustomObject]@{Type="FILE_STATE";JobKey=$Job["JobKey"];State=$S;Pct=$P;Detail=$D}) }
         function Q-Err {
             param(
                 [string]$Context,
@@ -644,6 +810,7 @@ Register-PowerToolsModule `
         }
 
         Q-Log "Starting: $($Job.IsoName)" "INFO"
+        Q-FileState "Running" 0 "$($Job.FileName)  |  connecting..."
         $downloaded = $false
 
         foreach ($url in $Job.UrlList) {
@@ -684,8 +851,7 @@ Register-PowerToolsModule `
                                 "$([math]::Round(($total - $read) / 1MB / $speed))s"
                             } else { "..." }
                             $filePct    = if ($total -gt 0) { [int](($read / $total) * 100) } else { 0 }
-                            $overallPct = [int](($JobIndex / $TotalJobs) * 100) + [int]($filePct / $TotalJobs)
-                            Q-Prog $overallPct "$($Job.IsoName)  |  ${mbDone}MB / ${mbTotal}MB  |  ${speed} MB/s  |  ETA: $eta"
+                            Q-FileProg $filePct "$($Job.FileName)  |  ${mbDone}MB / ${mbTotal}MB  |  ${speed} MB/s  |  ETA: $eta"
                         }
                     }
 
@@ -700,6 +866,7 @@ Register-PowerToolsModule `
                         Move-Item -Path $tmp -Destination $Job.OutFile -Force
                         $sizeMB = [math]::Round((Get-Item $Job.OutFile).Length / 1MB, 1)
                         Q-Log "Downloaded: $($Job.FileName) (${sizeMB} MB)" "OK"
+                        Q-FileState "Done" 100 "$($Job.FileName)  |  complete (${sizeMB} MB)"
                         $result.Success = $true
                         $downloaded = $true
                         break
@@ -729,8 +896,12 @@ Register-PowerToolsModule `
         if (-not $downloaded -and -not $CancelToken.IsCancellationRequested) {
             $result.Message = "All URLs failed"
             Q-Log "FAILED: $($Job.IsoName) — all URLs exhausted" "FAIL"
+            Q-FileState "Failed" 0 "$($Job.FileName)  |  all URLs exhausted"
         }
-        if ($CancelToken.IsCancellationRequested) { $result.Message = "Cancelled" }
+        if ($CancelToken.IsCancellationRequested) {
+            $result.Message = "Cancelled"
+            Q-FileState "Cancelled" 0 "$($Job.FileName)  |  cancelled"
+        }
 
         return $result
     }
@@ -902,6 +1073,9 @@ Register-PowerToolsModule `
                 ISO-AddLog "No distributions selected." "WARN"
                 return
             }
+            for ($idx = 0; $idx -lt $jobs.Count; $idx++) {
+                $jobs[$idx]["JobKey"] = "iso-$idx"
+            }
 
             $errorLogPath = if (Get-Command -Name Get-PowerToolsErrorLogPath -ErrorAction SilentlyContinue) {
                 Get-PowerToolsErrorLogPath
@@ -922,10 +1096,11 @@ Register-PowerToolsModule `
             $item = $null
             while ($Global:ISO_msgQueue.TryDequeue([ref]$item)) {}
 
+            ISO-InitializeProgressRows -Jobs $jobs
             $Global:ISO_progress.Value         = 0
-            $Global:ISO_pctLabel.Text          = ""
+            $Global:ISO_pctLabel.Text          = "0%"
             $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["TextMuted"]
-            $Global:ISO_statusLabel.Text       = "Starting..."
+            $Global:ISO_statusLabel.Text       = "Downloading $($jobs.Count) ISO(s)..."
             ISO-SetUI-Busy $true
             ISO-StartTimer
 
