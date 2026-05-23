@@ -338,6 +338,8 @@ Integrated recommendations for:
 ### ✔ What it does
 - Download latest ISOs from official sources
 - Parallel downloads (1–5 concurrent)
+- Parent/child distro selection (main distro = all variants, sub-option = single variant)
+- Separate live progress row for every selected ISO
 - SHA256 verification (where available)
 - Auto mirror fallback
 - Resume / skip existing files
@@ -347,22 +349,24 @@ Integrated recommendations for:
 
 ### 📦 Supported Distributions
 
-| Distro | Type | Hash | Source |
-|--------|------|------|--------|
-| Ubuntu | Latest LTS Desktop | ✅ | ubuntu.com |
-| Debian | Latest Netinst | ✅ | debian.org |
-| Fedora | Latest Workstation | ❌ | fedoraproject.org |
-| Arch | Monthly Snapshot | ❌ | archlinux.org |
-| CachyOS | Latest Desktop | ❌ | cachyos.org |
-| Pop!_OS | Intel/NVIDIA Latest | ✅ | pop-os.org |
+| Distro | Variants | Default | Source |
+|--------|----------|---------|--------|
+| Ubuntu | Desktop (Consumer), Server | ✅ Both | ubuntu.com |
+| Debian | Netinst (Server), Live Desktop | ✅ Both | debian.org |
+| Fedora | Workstation (Consumer), Server | ✅ Both | fedoraproject.org |
+| Arch Linux | Installer ISO | ✅ | archlinux.org |
+| CachyOS | Desktop | ❌ Opt-in | cachyos.org |
+| Pop!_OS | Desktop NVIDIA, Desktop Intel/AMD | ❌ Opt-in | pop-os.org |
 
-> Ubuntu, Debian, Fedora, and Arch are pre-selected by default. CachyOS and Pop!_OS are opt-in.
+> Clicking a main distro selects or clears all of its variants. Selecting only a sub-option downloads only that specific ISO.
 
 ---
 
 ### ✨ Features
-- Progress bar (per-file + overall)
+- Overall progress bar plus one persistent progress row per selected ISO
 - Speed indicator (MB/s) and ETA
+- Queued/running/done/failed/cancelled state per ISO
+- Activity log dynamically resizes under the progress area
 - Resume / skip existing files
 - Activity log
 - Mirror failover
