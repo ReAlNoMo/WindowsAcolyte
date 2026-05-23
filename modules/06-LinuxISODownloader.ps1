@@ -44,13 +44,35 @@ Register-PowerToolsModule `
     <StackPanel Grid.Row="1" Margin="0,0,0,14">
         <TextBlock Text="DISTRIBUTIONS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" Margin="0,0,0,8"/>
-        <WrapPanel>
-            <CheckBox x:Name="CbUbuntu"  Content="Ubuntu"   IsChecked="True"  Margin="0,0,18,6" FontSize="13"/>
-            <CheckBox x:Name="CbDebian"  Content="Debian"   IsChecked="True"  Margin="0,0,18,6" FontSize="13"/>
-            <CheckBox x:Name="CbFedora"  Content="Fedora"   IsChecked="True"  Margin="0,0,18,6" FontSize="13"/>
-            <CheckBox x:Name="CbArch"    Content="Arch"     IsChecked="True"  Margin="0,0,18,6" FontSize="13"/>
-            <CheckBox x:Name="CbCachyOS" Content="CachyOS"  IsChecked="False" Margin="0,0,18,6" FontSize="13"/>
-            <CheckBox x:Name="CbPopOS"   Content="Pop!_OS"  IsChecked="False" Margin="0,0,18,6" FontSize="13"/>
+        <WrapPanel ItemWidth="210">
+            <StackPanel Margin="0,0,16,10">
+                <CheckBox x:Name="CbUbuntu" Content="Ubuntu" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
+                <CheckBox x:Name="CbUbuntuDesktop" Content="Desktop (Consumer)" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
+                <CheckBox x:Name="CbUbuntuServer" Content="Server" IsChecked="True" Margin="18,4,0,0" FontSize="12"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,16,10">
+                <CheckBox x:Name="CbDebian" Content="Debian" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
+                <CheckBox x:Name="CbDebianNetinst" Content="Netinst (Server)" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
+                <CheckBox x:Name="CbDebianLive" Content="Live Desktop" IsChecked="True" Margin="18,4,0,0" FontSize="12"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,16,10">
+                <CheckBox x:Name="CbFedora" Content="Fedora" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
+                <CheckBox x:Name="CbFedoraWorkstation" Content="Workstation (Consumer)" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
+                <CheckBox x:Name="CbFedoraServer" Content="Server" IsChecked="True" Margin="18,4,0,0" FontSize="12"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,16,10">
+                <CheckBox x:Name="CbArch" Content="Arch Linux" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
+                <CheckBox x:Name="CbArchInstaller" Content="Installer ISO" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,16,10">
+                <CheckBox x:Name="CbCachyOS" Content="CachyOS" IsThreeState="True" IsChecked="False" FontSize="13" FontWeight="SemiBold"/>
+                <CheckBox x:Name="CbCachyOSDesktop" Content="Desktop" IsChecked="False" Margin="18,6,0,0" FontSize="12"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,16,10">
+                <CheckBox x:Name="CbPopOS" Content="Pop!_OS" IsThreeState="True" IsChecked="False" FontSize="13" FontWeight="SemiBold"/>
+                <CheckBox x:Name="CbPopOSNvidia" Content="Desktop NVIDIA" IsChecked="False" Margin="18,6,0,0" FontSize="12"/>
+                <CheckBox x:Name="CbPopOSIntel" Content="Desktop Intel/AMD" IsChecked="False" Margin="18,4,0,0" FontSize="12"/>
+            </StackPanel>
         </WrapPanel>
     </StackPanel>
 
@@ -146,11 +168,21 @@ Register-PowerToolsModule `
     $Global:ISO_destBox     = $view.FindName("DestBox")
     $Global:ISO_browseBtn   = $view.FindName("BrowseBtn")
     $Global:ISO_cbUbuntu    = $view.FindName("CbUbuntu")
+    $Global:ISO_cbUbuntuDesktop = $view.FindName("CbUbuntuDesktop")
+    $Global:ISO_cbUbuntuServer  = $view.FindName("CbUbuntuServer")
     $Global:ISO_cbDebian    = $view.FindName("CbDebian")
+    $Global:ISO_cbDebianNetinst = $view.FindName("CbDebianNetinst")
+    $Global:ISO_cbDebianLive    = $view.FindName("CbDebianLive")
     $Global:ISO_cbFedora    = $view.FindName("CbFedora")
+    $Global:ISO_cbFedoraWorkstation = $view.FindName("CbFedoraWorkstation")
+    $Global:ISO_cbFedoraServer      = $view.FindName("CbFedoraServer")
     $Global:ISO_cbArch      = $view.FindName("CbArch")
+    $Global:ISO_cbArchInstaller = $view.FindName("CbArchInstaller")
     $Global:ISO_cbCachyOS   = $view.FindName("CbCachyOS")
+    $Global:ISO_cbCachyOSDesktop = $view.FindName("CbCachyOSDesktop")
     $Global:ISO_cbPopOS     = $view.FindName("CbPopOS")
+    $Global:ISO_cbPopOSNvidia = $view.FindName("CbPopOSNvidia")
+    $Global:ISO_cbPopOSIntel  = $view.FindName("CbPopOSIntel")
     $Global:ISO_parallel    = $view.FindName("ParallelCombo")
     $Global:ISO_startBtn    = $view.FindName("StartBtn")
     $Global:ISO_cancelBtn   = $view.FindName("CancelBtn")
@@ -179,12 +211,16 @@ Register-PowerToolsModule `
     $Global:ISO_destBox.Background  = $Global:PTS_Brush["InputBg"]
     $Global:ISO_destBox.Foreground  = $Global:PTS_Brush["InputFg"]
     $Global:ISO_destBox.BorderBrush = $Global:PTS_Brush["Border"]
-    $Global:ISO_cbUbuntu.Foreground = $Global:PTS_Brush["TextMid"]
-    $Global:ISO_cbDebian.Foreground = $Global:PTS_Brush["TextMid"]
-    $Global:ISO_cbFedora.Foreground = $Global:PTS_Brush["TextMid"]
-    $Global:ISO_cbArch.Foreground   = $Global:PTS_Brush["TextMid"]
-    $Global:ISO_cbCachyOS.Foreground= $Global:PTS_Brush["TextMid"]
-    $Global:ISO_cbPopOS.Foreground  = $Global:PTS_Brush["TextMid"]
+    foreach ($cb in @(
+        $Global:ISO_cbUbuntu, $Global:ISO_cbUbuntuDesktop, $Global:ISO_cbUbuntuServer,
+        $Global:ISO_cbDebian, $Global:ISO_cbDebianNetinst, $Global:ISO_cbDebianLive,
+        $Global:ISO_cbFedora, $Global:ISO_cbFedoraWorkstation, $Global:ISO_cbFedoraServer,
+        $Global:ISO_cbArch, $Global:ISO_cbArchInstaller,
+        $Global:ISO_cbCachyOS, $Global:ISO_cbCachyOSDesktop,
+        $Global:ISO_cbPopOS, $Global:ISO_cbPopOSNvidia, $Global:ISO_cbPopOSIntel
+    )) {
+        if ($cb) { $cb.Foreground = $Global:PTS_Brush["TextMid"] }
+    }
     $Global:ISO_parallel.Foreground = $Global:PTS_Brush["InputFg"]
     $Global:ISO_parallel.Background = $Global:PTS_Brush["InputBg"]
     $Global:ISO_parallel.BorderBrush= $Global:PTS_Brush["Border"]
@@ -266,6 +302,70 @@ Register-PowerToolsModule `
             [System.Windows.Forms.Application]::DoEvents()
         } catch {}
     }
+
+    $Global:ISO_optionSync = $false
+
+    function Global:ISO-IsChecked {
+        param([System.Windows.Controls.CheckBox]$CheckBox)
+        return ($null -ne $CheckBox -and $CheckBox.IsChecked -eq $true)
+    }
+
+    function Global:ISO-UpdateParentSelection {
+        param(
+            [System.Windows.Controls.CheckBox]$Parent,
+            [System.Windows.Controls.CheckBox[]]$Children
+        )
+
+        if ($Global:ISO_optionSync) { return }
+        try {
+            $Global:ISO_optionSync = $true
+            $checked = @($Children | Where-Object { $_.IsChecked -eq $true }).Count
+            if ($checked -eq 0) {
+                $Parent.IsChecked = $false
+            } elseif ($checked -eq $Children.Count) {
+                $Parent.IsChecked = $true
+            } else {
+                $Parent.IsChecked = $null
+            }
+        } finally {
+            $Global:ISO_optionSync = $false
+        }
+    }
+
+    function Global:ISO-WireDistroSelection {
+        param(
+            [System.Windows.Controls.CheckBox]$Parent,
+            [System.Windows.Controls.CheckBox[]]$Children
+        )
+
+        $Parent.Add_Click({
+            if ($Global:ISO_optionSync) { return }
+            try {
+                $Global:ISO_optionSync = $true
+                $allChecked = (@($Children | Where-Object { $_.IsChecked -eq $true }).Count -eq $Children.Count)
+                $value = -not $allChecked
+                foreach ($child in $Children) { $child.IsChecked = $value }
+                $Parent.IsChecked = $value
+            } finally {
+                $Global:ISO_optionSync = $false
+            }
+        }.GetNewClosure())
+
+        foreach ($child in $Children) {
+            $child.Add_Click({
+                ISO-UpdateParentSelection -Parent $Parent -Children $Children
+            }.GetNewClosure())
+        }
+
+        ISO-UpdateParentSelection -Parent $Parent -Children $Children
+    }
+
+    ISO-WireDistroSelection -Parent $Global:ISO_cbUbuntu  -Children @($Global:ISO_cbUbuntuDesktop, $Global:ISO_cbUbuntuServer)
+    ISO-WireDistroSelection -Parent $Global:ISO_cbDebian  -Children @($Global:ISO_cbDebianNetinst, $Global:ISO_cbDebianLive)
+    ISO-WireDistroSelection -Parent $Global:ISO_cbFedora  -Children @($Global:ISO_cbFedoraWorkstation, $Global:ISO_cbFedoraServer)
+    ISO-WireDistroSelection -Parent $Global:ISO_cbArch    -Children @($Global:ISO_cbArchInstaller)
+    ISO-WireDistroSelection -Parent $Global:ISO_cbCachyOS -Children @($Global:ISO_cbCachyOSDesktop)
+    ISO-WireDistroSelection -Parent $Global:ISO_cbPopOS   -Children @($Global:ISO_cbPopOSNvidia, $Global:ISO_cbPopOSIntel)
 
     function Global:ISO-CleanupBackground {
         if ($null -ne $Global:ISO_bgPS) {
@@ -545,6 +645,31 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:ISO-GetLatestUbuntuServerUrls {
+        ISO-EnableTls
+        try {
+            $index = (Invoke-WebRequest -UseBasicParsing -Uri "https://releases.ubuntu.com/releases/" -TimeoutSec 8 -ErrorAction Stop).Content
+            $versions = [regex]::Matches($index, "Ubuntu\s+(\d+\.\d+(?:\.\d+)?)") | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
+            $latest = ISO-GetNewestVersion -Versions $versions
+            if (-not $latest) { return @() }
+
+            $dirContent = (Invoke-WebRequest -UseBasicParsing -Uri ("https://releases.ubuntu.com/{0}/" -f $latest) -TimeoutSec 8 -ErrorAction Stop).Content
+            $isoFiles = [regex]::Matches($dirContent, "ubuntu-[0-9.]+-live-server-amd64\.iso") | ForEach-Object { $_.Value } | Select-Object -Unique
+            if (-not $isoFiles -or $isoFiles.Count -eq 0) {
+                $isoFiles = @("ubuntu-$latest-live-server-amd64.iso")
+            }
+
+            $urls = New-Object System.Collections.Generic.List[string]
+            foreach ($iso in $isoFiles) {
+                $urls.Add("https://mirrors.edge.kernel.org/ubuntu-releases/$latest/$iso")
+                $urls.Add("https://releases.ubuntu.com/$latest/$iso")
+            }
+            return @($urls | Select-Object -Unique)
+        } catch {
+            return @()
+        }
+    }
+
     function Global:ISO-GetLatestDebianUrls {
         ISO-EnableTls
         try {
@@ -561,6 +686,29 @@ Register-PowerToolsModule `
             $list.Add($knownMirror)
             $list.Add($primary)
             return @($list | Select-Object -Unique)
+        } catch {
+            return @()
+        }
+    }
+
+    function Global:ISO-GetLatestDebianLiveUrls {
+        ISO-EnableTls
+        try {
+            $basePath = "debian-cd/current-live/amd64/iso-hybrid"
+            $dirUrl = "https://cdimage.debian.org/$basePath/"
+            $dirPage = Invoke-WebRequest -UseBasicParsing -Uri $dirUrl -TimeoutSec 8 -ErrorAction Stop
+            $isoName = $dirPage.Links |
+                Where-Object { $_.href -match "^debian-live-\d+(?:\.\d+){2}-amd64-gnome\.iso$" } |
+                Select-Object -First 1 -ExpandProperty href
+            if (-not $isoName) {
+                $isoName = ([regex]::Match($dirPage.Content, "debian-live-\d+(?:\.\d+){2}-amd64-gnome\.iso")).Value
+            }
+            if (-not $isoName) { return @() }
+
+            return @(
+                "https://saimei.ftp.acc.umu.se/debian-cd/current-live/amd64/iso-hybrid/$isoName",
+                "https://cdimage.debian.org/$basePath/$isoName"
+            )
         } catch {
             return @()
         }
@@ -616,6 +764,56 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:ISO-GetLatestFedoraServerUrls {
+        ISO-EnableTls
+        try {
+            $pkgPage = (Invoke-WebRequest -UseBasicParsing -Uri "https://packages.fedoraproject.org/pkgs/fedora-release/fedora-release/" -TimeoutSec 8 -ErrorAction Stop).Content
+            $versions = [regex]::Matches($pkgPage, "Fedora\s+(\d+)") | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
+            $release = ($versions | ForEach-Object { [int]$_ } | Sort-Object -Descending | Select-Object -First 1)
+            if (-not $release) { return @() }
+
+            $bases = @(
+                "https://download.fedoraproject.org/pub/fedora/linux/releases",
+                "https://download-ib01.fedoraproject.org/pub/fedora/linux/releases"
+            )
+
+            $resolvedName = $null
+            try {
+                $dirUrl = "$($bases[0])/$release/Server/x86_64/iso/"
+                $isoIndex = Invoke-WebRequest -UseBasicParsing -Uri $dirUrl -TimeoutSec 8 -ErrorAction Stop
+                $candidates = $isoIndex.Links |
+                    Where-Object { $_.href -match "^Fedora-Server-dvd.*\.iso$" } |
+                    Select-Object -ExpandProperty href -Unique
+                $parsed = foreach ($name in $candidates) {
+                    if ($name -match "^Fedora-Server-dvd(?:-x86_64)?-\d+-1\.(\d+)(?:\.x86_64)?\.iso$") {
+                        [PSCustomObject]@{ Name = $name; RevMinor = [int]$Matches[1] }
+                    }
+                }
+                if ($parsed) {
+                    $resolvedName = ($parsed | Sort-Object RevMinor -Descending | Select-Object -First 1).Name
+                } elseif ($candidates) {
+                    $resolvedName = $candidates | Select-Object -First 1
+                }
+            } catch {}
+
+            if ($resolvedName) {
+                return @($bases | ForEach-Object { "$_/$release/Server/x86_64/iso/$resolvedName" })
+            }
+
+            $urls = New-Object System.Collections.Generic.List[string]
+            foreach ($base in $bases) {
+                for ($minor = 9; $minor -ge 0; $minor--) {
+                    $rev = "1.$minor"
+                    $urls.Add("$base/$release/Server/x86_64/iso/Fedora-Server-dvd-x86_64-$release-$rev.iso")
+                    $urls.Add("$base/$release/Server/x86_64/iso/Fedora-Server-dvd-$release-$rev.x86_64.iso")
+                }
+            }
+            return @($urls | Select-Object -Unique)
+        } catch {
+            return @()
+        }
+    }
+
     function Global:ISO-GetLatestCachyOSUrls {
         ISO-EnableTls
         try {
@@ -642,7 +840,7 @@ Register-PowerToolsModule `
 
         $jobs = @()
 
-        if ($Global:ISO_cbUbuntu.IsChecked) {
+        if (ISO-IsChecked $Global:ISO_cbUbuntuDesktop) {
             $ubuntuUrls = ISO-GetLatestUbuntuUrls
             if (-not $ubuntuUrls -or $ubuntuUrls.Count -eq 0) {
                 $ubuntuUrls = @(
@@ -653,14 +851,32 @@ Register-PowerToolsModule `
             }
 
             $jobs += @{
-                IsoName  = "Ubuntu"
-                FileName = "ubuntu-latest-amd64.iso"
-                OutFile  = Join-Path $Dest "ubuntu-latest-amd64.iso"
+                IsoName  = "Ubuntu Desktop"
+                FileName = "ubuntu-desktop-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "ubuntu-desktop-latest-amd64.iso"
                 UrlList  = @($ubuntuUrls)
             }
         }
 
-        if ($Global:ISO_cbDebian.IsChecked) {
+        if (ISO-IsChecked $Global:ISO_cbUbuntuServer) {
+            $ubuntuServerUrls = ISO-GetLatestUbuntuServerUrls
+            if (-not $ubuntuServerUrls -or $ubuntuServerUrls.Count -eq 0) {
+                $ubuntuServerUrls = @(
+                    "https://mirrors.edge.kernel.org/ubuntu-releases/24.04.4/ubuntu-24.04.4-live-server-amd64.iso",
+                    "https://releases.ubuntu.com/24.04.4/ubuntu-24.04.4-live-server-amd64.iso",
+                    "https://releases.ubuntu.com/24.04/ubuntu-24.04.4-live-server-amd64.iso"
+                )
+            }
+
+            $jobs += @{
+                IsoName  = "Ubuntu Server"
+                FileName = "ubuntu-server-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "ubuntu-server-latest-amd64.iso"
+                UrlList  = @($ubuntuServerUrls)
+            }
+        }
+
+        if (ISO-IsChecked $Global:ISO_cbDebianNetinst) {
             $debianUrls = ISO-GetLatestDebianUrls
             if (-not $debianUrls -or $debianUrls.Count -eq 0) {
                 $debianUrls = @(
@@ -670,14 +886,31 @@ Register-PowerToolsModule `
             }
 
             $jobs += @{
-                IsoName  = "Debian"
-                FileName = "debian-latest-amd64.iso"
-                OutFile  = Join-Path $Dest "debian-latest-amd64.iso"
+                IsoName  = "Debian Netinst"
+                FileName = "debian-netinst-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "debian-netinst-latest-amd64.iso"
                 UrlList  = @($debianUrls)
             }
         }
 
-        if ($Global:ISO_cbFedora.IsChecked) {
+        if (ISO-IsChecked $Global:ISO_cbDebianLive) {
+            $debianLiveUrls = ISO-GetLatestDebianLiveUrls
+            if (-not $debianLiveUrls -or $debianLiveUrls.Count -eq 0) {
+                $debianLiveUrls = @(
+                    "https://saimei.ftp.acc.umu.se/debian-cd/current-live/amd64/iso-hybrid/debian-live-13.4.0-amd64-gnome.iso",
+                    "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-13.4.0-amd64-gnome.iso"
+                )
+            }
+
+            $jobs += @{
+                IsoName  = "Debian Live Desktop"
+                FileName = "debian-live-desktop-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "debian-live-desktop-latest-amd64.iso"
+                UrlList  = @($debianLiveUrls)
+            }
+        }
+
+        if (ISO-IsChecked $Global:ISO_cbFedoraWorkstation) {
             $fedoraUrls = ISO-GetLatestFedoraUrls
             if (-not $fedoraUrls -or $fedoraUrls.Count -eq 0) {
                 $fedoraUrls = @(
@@ -687,14 +920,31 @@ Register-PowerToolsModule `
             }
 
             $jobs += @{
-                IsoName  = "Fedora"
-                FileName = "fedora-latest-amd64.iso"
-                OutFile  = Join-Path $Dest "fedora-latest-amd64.iso"
+                IsoName  = "Fedora Workstation"
+                FileName = "fedora-workstation-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "fedora-workstation-latest-amd64.iso"
                 UrlList  = @($fedoraUrls)
             }
         }
 
-        if ($Global:ISO_cbArch.IsChecked) {
+        if (ISO-IsChecked $Global:ISO_cbFedoraServer) {
+            $fedoraServerUrls = ISO-GetLatestFedoraServerUrls
+            if (-not $fedoraServerUrls -or $fedoraServerUrls.Count -eq 0) {
+                $fedoraServerUrls = @(
+                    "https://download.fedoraproject.org/pub/fedora/linux/releases/44/Server/x86_64/iso/Fedora-Server-dvd-x86_64-44-1.7.iso",
+                    "https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/44/Server/x86_64/iso/Fedora-Server-dvd-x86_64-44-1.7.iso"
+                )
+            }
+
+            $jobs += @{
+                IsoName  = "Fedora Server"
+                FileName = "fedora-server-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "fedora-server-latest-amd64.iso"
+                UrlList  = @($fedoraServerUrls)
+            }
+        }
+
+        if (ISO-IsChecked $Global:ISO_cbArchInstaller) {
             $jobs += @{
                 IsoName  = "Arch Linux"
                 FileName = "archlinux-latest-amd64.iso"
@@ -706,7 +956,7 @@ Register-PowerToolsModule `
             }
         }
 
-        if ($Global:ISO_cbCachyOS.IsChecked) {
+        if (ISO-IsChecked $Global:ISO_cbCachyOSDesktop) {
             $cachyUrls = ISO-GetLatestCachyOSUrls
             if (-not $cachyUrls -or $cachyUrls.Count -eq 0) {
                 $cachyUrls = @(
@@ -716,20 +966,30 @@ Register-PowerToolsModule `
             }
 
             $jobs += @{
-                IsoName  = "CachyOS"
+                IsoName  = "CachyOS Desktop"
                 FileName = "cachyos-latest-amd64.iso"
                 OutFile  = Join-Path $Dest "cachyos-latest-amd64.iso"
                 UrlList  = @($cachyUrls)
             }
         }
 
-        if ($Global:ISO_cbPopOS.IsChecked) {
+        if (ISO-IsChecked $Global:ISO_cbPopOSNvidia) {
             $jobs += @{
-                IsoName  = "Pop!_OS"
-                FileName = "pop-os-latest-amd64.iso"
-                OutFile  = Join-Path $Dest "pop-os-latest-amd64.iso"
+                IsoName  = "Pop!_OS NVIDIA"
+                FileName = "pop-os-nvidia-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "pop-os-nvidia-latest-amd64.iso"
                 UrlList  = @(
-                    "https://iso.pop-os.org/22.04/amd64/nvidia/41/pop-os_22.04_amd64_nvidia_41.iso",
+                    "https://iso.pop-os.org/22.04/amd64/nvidia/41/pop-os_22.04_amd64_nvidia_41.iso"
+                )
+            }
+        }
+
+        if (ISO-IsChecked $Global:ISO_cbPopOSIntel) {
+            $jobs += @{
+                IsoName  = "Pop!_OS Intel/AMD"
+                FileName = "pop-os-intel-amd-latest-amd64.iso"
+                OutFile  = Join-Path $Dest "pop-os-intel-amd-latest-amd64.iso"
+                UrlList  = @(
                     "https://iso.pop-os.org/22.04/amd64/intel/41/pop-os_22.04_amd64_intel_41.iso"
                 )
             }
@@ -1058,12 +1318,16 @@ Register-PowerToolsModule `
             }
             
             $selectedNames = @()
-            if ($Global:ISO_cbUbuntu.IsChecked)  { $selectedNames += "Ubuntu" }
-            if ($Global:ISO_cbDebian.IsChecked)  { $selectedNames += "Debian" }
-            if ($Global:ISO_cbFedora.IsChecked)  { $selectedNames += "Fedora" }
-            if ($Global:ISO_cbArch.IsChecked)    { $selectedNames += "Arch Linux" }
-            if ($Global:ISO_cbCachyOS.IsChecked) { $selectedNames += "CachyOS" }
-            if ($Global:ISO_cbPopOS.IsChecked)   { $selectedNames += "Pop!_OS" }
+            if (ISO-IsChecked $Global:ISO_cbUbuntuDesktop)    { $selectedNames += "Ubuntu Desktop" }
+            if (ISO-IsChecked $Global:ISO_cbUbuntuServer)     { $selectedNames += "Ubuntu Server" }
+            if (ISO-IsChecked $Global:ISO_cbDebianNetinst)    { $selectedNames += "Debian Netinst" }
+            if (ISO-IsChecked $Global:ISO_cbDebianLive)       { $selectedNames += "Debian Live Desktop" }
+            if (ISO-IsChecked $Global:ISO_cbFedoraWorkstation){ $selectedNames += "Fedora Workstation" }
+            if (ISO-IsChecked $Global:ISO_cbFedoraServer)     { $selectedNames += "Fedora Server" }
+            if (ISO-IsChecked $Global:ISO_cbArchInstaller)    { $selectedNames += "Arch Linux Installer" }
+            if (ISO-IsChecked $Global:ISO_cbCachyOSDesktop)   { $selectedNames += "CachyOS Desktop" }
+            if (ISO-IsChecked $Global:ISO_cbPopOSNvidia)      { $selectedNames += "Pop!_OS NVIDIA" }
+            if (ISO-IsChecked $Global:ISO_cbPopOSIntel)       { $selectedNames += "Pop!_OS Intel/AMD" }
             ISO-AddLog "Selected distributions: $($selectedNames -join ', ')" "INFO"
             ISO-AddLog "Resolving latest ISO URLs..." "INFO"
             ISO-PumpUi
