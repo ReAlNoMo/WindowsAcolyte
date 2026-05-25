@@ -1,6 +1,6 @@
 # 🔒 Security Policy
 
-PowerTools Suite includes modules that interact with:
+WindowsAcolyte includes modules that interact with:
 
 * Windows Registry
 * Security settings
@@ -18,7 +18,9 @@ Only the latest stable release receives active security updates and vulnerabilit
 
 | Version | Supported |
 | ------- | --------- |
-| 1.2.x   | ✅ Yes     |
+| 1.4.x   | ✅ Yes     |
+| 1.3.x   | ❌ No      |
+| 1.2.x   | ❌ No      |
 | 1.1.x   | ❌ No      |
 | 1.0.x   | ❌ No      |
 | < 1.0   | ❌ No      |
@@ -124,9 +126,9 @@ This project is provided under the MIT License without warranty; however, securi
 ## 👤 Maintainer
 
 **ReAlNoMo**
-PowerTools Suite Security Team
+WindowsAcolyte Security Team
 
 ---
 
 > 🛡️ Security is a shared responsibility.
-> Please report issues responsibly to help improve PowerTools Suite for everyone.
+> Please report issues responsibly to help improve WindowsAcolyte for everyone.

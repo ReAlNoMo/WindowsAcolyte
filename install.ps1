@@ -8,7 +8,7 @@
     Launches main application after installation.
 .NOTES
     Author  : ReAlNoMo
-    Version : 1.3
+    Version : 1.4
 #>
 
 $ErrorActionPreference = "Stop"
@@ -102,7 +102,7 @@ function Test-FileValid {
 # MAIN
 # ===========================================================================
 Write-Host ""
-Write-Log "WindowsAcolyte Installer v1.3" "INFO"
+Write-Log "WindowsAcolyte Installer v1.4" "INFO"
 Write-Log "Install target : $InstallPath"   "INFO"
 Write-Log "Temp work dir  : $TempPath"      "INFO"
 Write-Host ""

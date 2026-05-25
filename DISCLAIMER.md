@@ -174,5 +174,5 @@ Before applying advanced or high-risk changes, users are strongly encouraged to:
 
 ---
 
-**PowerTools Suite**
-Version 1.2 • ReAlNoMo
+**WindowsAcolyte**
+Version 1.4 • ReAlNoMo

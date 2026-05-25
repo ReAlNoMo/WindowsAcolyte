@@ -56,6 +56,8 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
+**Current version:** `v1.4`
+
 ---
 
 # 🧰 Modules (8 Total)
@@ -538,11 +540,15 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.2 (Current)
-- ✅ All 7 modules fully functional
+## v1.4 (Current)
+- ✅ All 8 modules fully functional
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
-- ✅ **Logo border dynamic** (fixes color mismatch in dark mode)
-- ✅ **ISO downloader auto-detects user** (no more hardcoded paths)
+- ✅ Logo updated to `logo/Windows_Acolyte_Logo.png`
+- ✅ Theme colors aligned with the logo palette
+- ✅ Explorer View Normalizer: checkbox UI, grouped state view, apply/revert, auto-recheck, small desktop icons
+- ✅ Linux ISO Downloader: distro variant selection and one progress row per ISO
+- ✅ Desktop Shortcut Creator: local start and online installer links from Windows Tools
+- ✅ Shortcut launch paths cleaned up without `-NoExit`
 - ✅ Gaming Optimizer: 29 tweaks + profiles
 - ✅ AV Scanner: RunspacePool orchestration
 - ✅ All modules use PTS_Brush theming
@@ -576,7 +582,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.2 • April 2026
+Version 1.4 • May 2026
 
 ---
 

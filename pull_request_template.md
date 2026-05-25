@@ -27,6 +27,7 @@ Please provide a clear and concise description of the changes.
 * [ ] Gaming Optimizer
 * [ ] Linux ISO Downloader
 * [ ] AV Scanner Downloader
+* [ ] Desktop Shortcut Creator
 * [ ] Core Framework
 * [ ] Custom Module
 
@@ -88,4 +89,4 @@ Provide any additional context, warnings, or reviewer guidance.
 
 ---
 
-> ⚡ Thank you for contributing responsibly to PowerTools Suite.
+> ⚡ Thank you for contributing responsibly to WindowsAcolyte.
