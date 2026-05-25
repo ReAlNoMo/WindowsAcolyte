@@ -60,6 +60,25 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 
 ---
 
+## 🖼️ Screenshots
+
+| Main Window | Main Window |
+|---|---|
+| <img src="screenshots/00-main-window-light.png" alt="WindowsAcolyte main window light mode" width="420"> | <img src="screenshots/00-main-window-dark.png" alt="WindowsAcolyte main window dark mode" width="420"> |
+
+| Module | Preview |
+|---|---|
+| Hash Verifier | <img src="screenshots/01-hash-verifier.png" alt="Hash Verifier module" width="520"> |
+| Explorer View Normalizer | <img src="screenshots/02-explorer-view-normalizer.png" alt="Explorer View Normalizer module" width="520"> |
+| Hardware Inventory | <img src="screenshots/03-hardware-inventory.png" alt="Hardware Inventory module" width="520"> |
+| Sandboxie Browser Launcher | <img src="screenshots/04-sandboxie-browser-launcher.png" alt="Sandboxie Browser Launcher module" width="520"> |
+| Windows 11 Gaming Optimizer | <img src="screenshots/05-gaming-optimizer.png" alt="Windows 11 Gaming Optimizer module" width="520"> |
+| Linux ISO Downloader | <img src="screenshots/06-linux-iso-downloader.png" alt="Linux ISO Downloader module" width="520"> |
+| AV Scanner Downloader | <img src="screenshots/07-av-scanner-downloader.png" alt="AV Scanner Downloader module" width="520"> |
+| Desktop Shortcut Creator | <img src="screenshots/08-desktop-shortcut-creator.png" alt="Desktop Shortcut Creator module" width="520"> |
+
+---
+
 # 🧰 Modules (8 Total)
 
 ---
