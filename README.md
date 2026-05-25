@@ -58,7 +58,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 
 ---
 
-# 🧰 Modules (7 Total)
+# 🧰 Modules (8 Total)
 
 ---
 
@@ -431,6 +431,25 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 💡 **Use case**
 > Bulk download of portable security tools for offline scanning
+
+---
+
+## 🖥️ 8. Desktop Shortcut Creator
+> **Category:** Windows Tools
+> **Admin:** ❌ No
+
+### ✔ What it does
+- Creates WindowsAcolyte shortcuts on the current user's Desktop
+- Supports **Local Start** and **Online Installer** shortcut variants
+- Uses English shortcut names:
+  - `WindowsAcolyte - Start (Local).lnk`
+  - `WindowsAcolyte - Installer (Online).lnk`
+- Uses PowerShell 7 (`pwsh.exe`) with `-NoProfile` and `-ExecutionPolicy Bypass`
+- Uses a built-in Windows icon resource from `shell32.dll`
+- Logs created shortcut paths and missing local install warnings
+
+💡 **Use case**
+> Recreate WindowsAcolyte Desktop launch shortcuts directly from the app.
 
 ---
 
