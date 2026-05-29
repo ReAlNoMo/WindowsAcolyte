@@ -124,7 +124,6 @@ try {
     New-Item -ItemType Directory -Path $TempPath                          -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $TempPath "modules")    -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $TempPath "logo")       -Force | Out-Null
-    New-Item -ItemType Directory -Path (Join-Path $TempPath "screenshots") -Force | Out-Null
 }
 catch {
     Write-Log "Failed to create temp directory: $_" "ERR"
@@ -158,20 +157,6 @@ try {
     }
     else {
         Write-Log "Found $($LogoFiles.Count) logo file(s): $($LogoFiles -join ', ')" "OK"
-    }
-
-    # -----------------------------------------------------------------------
-    # DISCOVER SCREENSHOT FILES VIA GITHUB API
-    # -----------------------------------------------------------------------
-    Write-Host ""
-    Write-Log "Discovering screenshot assets from GitHub..." "INFO"
-    $ScreenshotFiles = Get-GitHubFileList -FolderPath "screenshots"
-
-    if ($ScreenshotFiles.Count -eq 0) {
-        Write-Log "No screenshot files found. Screenshots folder may be empty." "WARN"
-    }
-    else {
-        Write-Log "Found $($ScreenshotFiles.Count) screenshot file(s): $($ScreenshotFiles -join ', ')" "OK"
     }
 
     # -----------------------------------------------------------------------
@@ -237,29 +222,6 @@ try {
             catch {
                 Write-Host "FAIL" -ForegroundColor Red
                 Write-Log "Logo download failed (non-critical): $logo - $_" "WARN"
-            }
-        }
-    }
-
-    # -----------------------------------------------------------------------
-    # DOWNLOAD SCREENSHOT FILES
-    # -----------------------------------------------------------------------
-    if ($ScreenshotFiles.Count -gt 0) {
-        Write-Host ""
-        Write-Log "Downloading screenshot assets..." "INFO"
-
-        foreach ($screenshot in $ScreenshotFiles) {
-            $url  = "$GitHubRaw/screenshots/$screenshot"
-            $dest = Join-Path $TempPath "screenshots\$screenshot"
-            Write-Host "  Downloading $screenshot... " -NoNewline -ForegroundColor Gray
-            try {
-                Invoke-DownloadFile -Url $url -Destination $dest
-                if (-not (Test-FileValid $dest)) { throw "File empty or missing after download" }
-                Write-Host "OK" -ForegroundColor Green
-            }
-            catch {
-                Write-Host "FAIL" -ForegroundColor Red
-                Write-Log "Screenshot download failed (non-critical): $screenshot - $_" "WARN"
             }
         }
     }
@@ -336,7 +298,6 @@ try {
     Write-Host ""
     Write-Log "Installed $($ModuleFiles.Count) module(s)" "OK"
     Write-Log "Installed $($LogoFiles.Count) logo file(s)" "OK"
-    Write-Log "Installed $($ScreenshotFiles.Count) screenshot file(s)" "OK"
 
     # -----------------------------------------------------------------------
     # LAUNCH

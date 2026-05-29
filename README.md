@@ -69,7 +69,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 
 | Light Mode | Dark Mode |
 |---|---|
-| <img src="screenshots/00-main-window-light.png" alt="WindowsAcolyte main window light mode" width="420"> | <img src="screenshots/00-main-window-dark.png" alt="WindowsAcolyte main window dark mode" width="420"> |
+| <img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/00-main-window-light.png" alt="WindowsAcolyte main window light mode" width="420"> | <img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/00-main-window-dark.png" alt="WindowsAcolyte main window dark mode" width="420"> |
 
 - Toggle button (bottom-left sidebar)
 - **Light + Dark themes** (all 50+ colors)
@@ -84,7 +84,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 > **Category:** Security
 > **Admin:** ❌ No
 
-<img src="screenshots/01-hash-verifier.png" alt="Hash Verifier module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/01-hash-verifier.png" alt="Hash Verifier module" width="720">
 
 ### ✔ What it does
 - Generate file hashes (SHA-256, SHA-512, SHA-384, SHA-1, MD5)
@@ -103,7 +103,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 > **Category:** Windows Tools
 > **Admin:** ⚠️ Yes
 
-<img src="screenshots/02-explorer-view-normalizer.png" alt="Explorer View Normalizer module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/02-explorer-view-normalizer.png" alt="Explorer View Normalizer module" width="720">
 
 ### ✔ What it does
 - Lets you compose global Explorer defaults using checkbox fields
@@ -157,7 +157,7 @@ HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
 > **Category:** Diagnostics
 > **Admin:** ⚠️ Yes
 
-<img src="screenshots/03-hardware-inventory.png" alt="Hardware Inventory module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/03-hardware-inventory.png" alt="Hardware Inventory module" width="720">
 
 ### ✔ What it does
 - System / Mainboard info (manufacturer, model, BIOS version and date)
@@ -191,7 +191,7 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 > **Category:** Security
 > **Admin:** ❌ No
 
-<img src="screenshots/04-sandboxie-browser-launcher.png" alt="Sandboxie Browser Launcher module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/04-sandboxie-browser-launcher.png" alt="Sandboxie Browser Launcher module" width="720">
 
 ### ✔ What it does
 - Launch browsers sandboxed via Sandboxie-Plus
@@ -232,7 +232,7 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 > **Category:** Gaming Performance
 > **Admin:** ⚠️ Yes
 
-<img src="screenshots/05-gaming-optimizer.png" alt="Windows 11 Gaming Optimizer module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/05-gaming-optimizer.png" alt="Windows 11 Gaming Optimizer module" width="720">
 
 > 🚀 Applies **29 performance tweaks** with risk levels (fully idempotent)
 
@@ -352,7 +352,7 @@ Integrated recommendations for:
 > **Category:** Downloader
 > **Admin:** ❌ No
 
-<img src="screenshots/06-linux-iso-downloader.png" alt="Linux ISO Downloader module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/06-linux-iso-downloader.png" alt="Linux ISO Downloader module" width="720">
 
 ### ✔ What it does
 - Download latest ISOs from official sources
@@ -404,7 +404,7 @@ C:\Users\[CurrentUser]\Downloads\ISOs
 > **Category:** Downloader
 > **Admin:** ❌ No
 
-<img src="screenshots/07-av-scanner-downloader.png" alt="AV Scanner Downloader module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/07-av-scanner-downloader.png" alt="AV Scanner Downloader module" width="720">
 
 ### ✔ What it does
 - Download portable AV scanner tools from official vendor servers
@@ -459,7 +459,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 > **Category:** Windows Tools
 > **Admin:** ❌ No
 
-<img src="screenshots/08-desktop-shortcut-creator.png" alt="Desktop Shortcut Creator module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/08-desktop-shortcut-creator.png" alt="Desktop Shortcut Creator module" width="720">
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
@@ -480,7 +480,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 > **Category:** Downloader
 > **Admin:** ❌ No
 
-<img src="screenshots/09-rescue-iso-downloader.png" alt="Rescue ISO Downloader module" width="720">
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/09-rescue-iso-downloader.png" alt="Rescue ISO Downloader module" width="720">
 
 ### ✔ What it does
 - Downloads current rescue, partitioning, cloning, malware cleanup, RAM test, wipe, and boot repair images
