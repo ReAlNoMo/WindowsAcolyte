@@ -475,6 +475,41 @@ Register-PowerToolsModule `
         return ($assets | Select-Object -First 1)
     }
 
+    function Global:RISO-GetSourceForgeDirectUrl {
+        param(
+            [Parameter(Mandatory)][string]$DownloadPageUrl,
+            [Parameter(Mandatory)][string]$ExpectedFileName
+        )
+        RISO-EnableTls
+        $headers = @{
+            "User-Agent" = "Mozilla/5.0 WindowsAcolyte"
+            "Accept"     = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        }
+        $page = (Invoke-WebRequest -UseBasicParsing -Uri $DownloadPageUrl -Headers $headers -TimeoutSec 25 -ErrorAction Stop).Content
+        $meta = [regex]::Match(
+            $page,
+            'url=(https://downloads\.sourceforge\.net/[^"<>]+?' + [regex]::Escape($ExpectedFileName) + '[^"<>]*)"',
+            [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+        )
+        if (-not $meta.Success) {
+            $meta = [regex]::Match(
+                $page,
+                'https://downloads\.sourceforge\.net/[^"<>]+?' + [regex]::Escape($ExpectedFileName) + '[^"<>]*',
+                [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+            )
+        }
+        if (-not $meta.Success) {
+            throw "SourceForge direct mirror URL not found for $ExpectedFileName."
+        }
+
+        $raw = if ($meta.Groups.Count -gt 1 -and -not [string]::IsNullOrWhiteSpace($meta.Groups[1].Value)) {
+            $meta.Groups[1].Value
+        } else {
+            $meta.Value
+        }
+        return [System.Web.HttpUtility]::HtmlDecode($raw)
+    }
+
     function Global:RISO-ResolveSystemRescue {
         RISO-EnableTls
         $page = (Invoke-WebRequest -UseBasicParsing -Uri "https://www.system-rescue.org/Download/" -TimeoutSec 20 -ErrorAction Stop).Content
@@ -498,7 +533,9 @@ Register-PowerToolsModule `
         $releasePage = (Invoke-WebRequest -UseBasicParsing -Uri "$base$latest/" -TimeoutSec 20 -ErrorAction Stop).Content
         $name = ([regex]::Match($releasePage, "gparted-live-[0-9.]+-[0-9]+-amd64\.iso")).Value
         if (-not $name) { throw "GParted ISO name not found." }
-        return @("$base$latest/$name/download")
+        $downloadPage = "$base$latest/$name/download"
+        $directUrl = RISO-GetSourceForgeDirectUrl -DownloadPageUrl $downloadPage -ExpectedFileName $name
+        return @($directUrl, $downloadPage)
     }
 
     function Global:RISO-ResolveRescuezilla {
@@ -529,7 +566,9 @@ Register-PowerToolsModule `
         $releasePage = (Invoke-WebRequest -UseBasicParsing -Uri "$base$latest/" -TimeoutSec 20 -ErrorAction Stop).Content
         $name = ([regex]::Match($releasePage, "clonezilla-live-[0-9.]+-[0-9]+-amd64\.iso")).Value
         if (-not $name) { throw "Clonezilla ISO name not found." }
-        return @("$base$latest/$name/download")
+        $downloadPage = "$base$latest/$name/download"
+        $directUrl = RISO-GetSourceForgeDirectUrl -DownloadPageUrl $downloadPage -ExpectedFileName $name
+        return @($directUrl, $downloadPage)
     }
 
     function Global:RISO-ResolveHiren {
@@ -565,7 +604,25 @@ Register-PowerToolsModule `
 
     function Global:RISO-ResolveSuperGrub {
         RISO-EnableTls
-        return @("https://sourceforge.net/projects/supergrub2/files/latest/download")
+        [xml]$rss = (Invoke-WebRequest -UseBasicParsing -Uri "https://sourceforge.net/projects/supergrub2/rss?path=/" -TimeoutSec 20 -ErrorAction Stop).Content
+        $items = @($rss.rss.channel.item)
+        $preferred = $items | Where-Object {
+            $title = if ($_.title.'#cdata-section') { $_.title.'#cdata-section' } else { [string]$_.title }
+            $title -match "supergrub2-classic-.*x86_64_efi-CD\.iso$"
+        } | Select-Object -First 1
+
+        if (-not $preferred) {
+            $preferred = $items | Where-Object {
+                $title = if ($_.title.'#cdata-section') { $_.title.'#cdata-section' } else { [string]$_.title }
+                $title -match "supergrub2-classic-.*multiarch-CD\.iso$"
+            } | Select-Object -First 1
+        }
+
+        if (-not $preferred) { throw "Super Grub2 Disk ISO not found in SourceForge RSS." }
+        $link = [string]$preferred.link
+        $name = [System.IO.Path]::GetFileName(($link -replace "/download$", ""))
+        $directUrl = RISO-GetSourceForgeDirectUrl -DownloadPageUrl $link -ExpectedFileName $name
+        return @($directUrl, $link)
     }
 
     function Global:RISO-NewJob {
@@ -729,6 +786,11 @@ Register-PowerToolsModule `
                     $req.ReadWriteTimeout = 90000
                     $resp = $req.GetResponse()
                     $total = $resp.ContentLength
+                    $contentType = $resp.ContentType
+                    $finalUrl = $resp.ResponseUri.AbsoluteUri
+                    if ($contentType -match "text/html" -or ($finalUrl -match "sourceforge\.net/projects/.*/files/" -and $finalUrl -notmatch "\.dl\.sourceforge\.net")) {
+                        throw "Source returned HTML instead of a downloadable ISO/archive. Resolver needs a direct mirror URL."
+                    }
                     $stream = $resp.GetResponseStream()
                     $fs = [System.IO.File]::Create($tmp)
                     $buf = New-Object byte[] (256KB)
