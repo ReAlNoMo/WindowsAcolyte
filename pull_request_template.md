@@ -28,6 +28,7 @@ Please provide a clear and concise description of the changes.
 * [ ] Linux ISO Downloader
 * [ ] AV Scanner Downloader
 * [ ] Desktop Shortcut Creator
+* [ ] Rescue ISO Downloader
 * [ ] Core Framework
 * [ ] Custom Module
 

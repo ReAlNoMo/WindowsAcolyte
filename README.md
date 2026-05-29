@@ -56,11 +56,11 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.4`
+**Current version:** `v1.5`
 
 ---
 
-# 🧰 Modules (8 Total)
+# 🧰 Modules (9 Total)
 
 ---
 
@@ -476,6 +476,44 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ---
 
+## 🧯 9. Rescue ISO Downloader
+> **Category:** Downloader
+> **Admin:** ❌ No
+
+<img src="screenshots/09-rescue-iso-downloader.png" alt="Rescue ISO Downloader module" width="720">
+
+### ✔ What it does
+- Downloads current rescue, partitioning, cloning, malware cleanup, RAM test, wipe, and boot repair images
+- Keeps stable local filenames like `systemrescue-latest-amd64.iso`
+- Replaces older matching files in the destination folder after a successful download
+- Supports parallel downloads with one progress row per selected tool
+- Extracts ISO files from upstream ZIP packages where required (`Memtest86+`, `Super Grub2 Disk`)
+- Uses official project pages, GitHub Releases, SourceForge project pages, and vendor latest URLs
+
+### 📦 Supported Rescue Tools
+
+| Tool | Purpose | Source |
+|------|---------|--------|
+| SystemRescue | Data rescue and system recovery | system-rescue.org / SourceForge |
+| GParted Live | Partitioning | SourceForge |
+| Rescuezilla | Backup, restore, clone | GitHub Releases |
+| Clonezilla Live | Disk and partition cloning | SourceForge |
+| Hiren's BootCD PE | Windows PE repair toolkit | hirensbootcd.org |
+| Kaspersky Rescue Disk | Offline malware cleanup | Kaspersky latest URL |
+| Avira Rescue System | Offline malware cleanup | Avira latest URL |
+| Memtest86+ | RAM testing | memtest.org |
+| ShredOS | Secure disk wiping | GitHub Releases |
+| Super Grub2 Disk | Boot repair | SourceForge |
+
+📁 **Default Output** (Auto-Detected)
+```
+C:\Users\[CurrentUser]\Downloads\RescueISOs
+```
+
+> ℹ️ Existing older matching ISO files are removed only after the new download has completed successfully.
+
+---
+
 # 🛠️ Installation (Manual)
 
 ```powershell
@@ -561,8 +599,9 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.4 (Current)
-- ✅ All 8 modules fully functional
+## v1.5 (Current)
+- ✅ All 9 modules fully functional
+- ✅ Rescue ISO Downloader: latest rescue/partition/cloning/malware/memory/wipe/boot images with replacement cleanup
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
 - ✅ Logo updated to `logo/Windows_Acolyte_Logo.png`
 - ✅ Theme colors aligned with the logo palette
@@ -603,7 +642,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.4 • May 2026
+Version 1.5 • May 2026
 
 ---
 
