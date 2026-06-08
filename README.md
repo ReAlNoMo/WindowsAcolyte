@@ -352,6 +352,8 @@ Integrated recommendations for:
 > **Category:** Gaming Performance
 > **Admin:** ⚠️ Yes
 
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/10-ultimate-performance-power-plan.png" alt="Ultimate Performance Power Plan module" width="720">
+
 ### ✔ What it does
 - Creates a dedicated **WindowsAcolyte Ultimate Performance** power plan from the Windows Ultimate Performance template
 - Activates the plan and applies maximum-performance AC/DC settings
