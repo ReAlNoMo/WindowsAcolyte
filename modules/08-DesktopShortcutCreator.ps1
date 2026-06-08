@@ -136,6 +136,23 @@ Register-PowerToolsModule `
         throw "PowerShell 7 executable (pwsh.exe) was not found."
     }
 
+    function Global:DSC-GetIconLocation {
+        $candidates = @()
+        if (-not [string]::IsNullOrWhiteSpace($Global:PTS_RootPath)) {
+            $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Icon.ico")
+        }
+        $candidates += (Join-Path $env:LOCALAPPDATA "WindowsAcolyte\logo\Windows_Acolyte_Icon.ico")
+
+        foreach ($candidate in $candidates | Select-Object -Unique) {
+            if (Test-Path -LiteralPath $candidate) {
+                return $candidate
+            }
+        }
+
+        $fallback = Join-Path $env:SystemRoot "System32\shell32.dll"
+        return ("{0},13" -f $fallback)
+    }
+
     function Global:DSC-NewShortcut {
         param(
             [Parameter(Mandatory)][string]$Name,
@@ -183,8 +200,7 @@ Register-PowerToolsModule `
             $desktop = DSC-GetDesktopPath
             $installPath = Join-Path $env:LOCALAPPDATA "WindowsAcolyte"
             $launcherPath = Join-Path $installPath "WindowsAcolyte.ps1"
-            $iconLocation = Join-Path $env:SystemRoot "System32\shell32.dll"
-            $iconLocation = "{0},13" -f $iconLocation
+            $iconLocation = DSC-GetIconLocation
 
             DSC-AddLog "Desktop target: $desktop"
             DSC-AddLog "PowerShell target: $pwshPath"
@@ -223,12 +239,12 @@ Register-PowerToolsModule `
     }
 
     $desktopPath = DSC-GetDesktopPath
-    $iconDll = Join-Path $env:SystemRoot "System32\shell32.dll"
+    $iconLocation = DSC-GetIconLocation
     $Global:DSC_desktopPathText.Text = "Desktop target: $desktopPath"
-    $Global:DSC_iconInfoText.Text = "Icon: Windows built-in shell32.dll resource"
+    $Global:DSC_iconInfoText.Text = "Icon: $iconLocation"
 
-    if (-not (Test-Path -LiteralPath $iconDll)) {
-        DSC-AddLog "Windows icon resource was not found: $iconDll" "WARN"
+    if ($iconLocation -like "*,13") {
+        DSC-AddLog "WindowsAcolyte icon was not found. Falling back to Windows shell32.dll icon." "WARN"
     }
 
     $Global:DSC_createBtn.Add_Click({ DSC-CreateSelectedShortcuts })

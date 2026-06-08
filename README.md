@@ -490,7 +490,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
   - `WindowsAcolyte - Start (Local).lnk`
   - `WindowsAcolyte - Installer (Online).lnk`
 - Uses PowerShell 7 (`pwsh.exe`) with `-NoProfile` and `-ExecutionPolicy Bypass`
-- Uses a built-in Windows icon resource from `shell32.dll`
+- Uses the WindowsAcolyte icon from `logo/Windows_Acolyte_Icon.ico`
 - Logs created shortcut paths and missing local install warnings
 
 💡 **Use case**
