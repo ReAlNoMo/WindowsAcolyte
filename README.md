@@ -56,11 +56,11 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.5`
+**Current version:** `v1.6`
 
 ---
 
-# 🧰 Modules (9 Total)
+# 🧰 Modules (10 Total)
 
 ---
 
@@ -348,7 +348,28 @@ Integrated recommendations for:
 
 ---
 
-## 🐧 6. Linux ISO Downloader
+## ⚡ 6. Ultimate Performance Power Plan
+> **Category:** Gaming Performance
+> **Admin:** ⚠️ Yes
+
+### ✔ What it does
+- Creates a dedicated **WindowsAcolyte Ultimate Performance** power plan from the Windows Ultimate Performance template
+- Activates the plan and applies maximum-performance AC/DC settings
+- Keeps monitors awake forever (`Turn off display after = Never`)
+- Disables sleep, hibernate, hybrid sleep, and hard-disk idle timers
+- Sets CPU minimum and maximum processor state to 100%
+- Applies aggressive CPU boost, maximum boost policy, performance-first EPP, and core parking disablement where Windows exposes those settings
+- Disables PCIe Link State Power Management, USB selective suspend, and wireless adapter power saving
+- Sets video playback to quality/performance mode
+- Includes Recheck, Apply, Set Balanced, and Activity Log actions
+- Skips unsupported hardware-specific settings safely and logs them as warnings
+
+⚠️ **Important**
+> This profile is built for maximum responsiveness, not battery life. Expect higher idle power use, heat, and fan activity.
+
+---
+
+## 🐧 7. Linux ISO Downloader
 > **Category:** Downloader
 > **Admin:** ❌ No
 
@@ -400,7 +421,7 @@ C:\Users\[CurrentUser]\Downloads\ISOs
 
 ---
 
-## 🦠 7. AV Scanner Downloader
+## 🦠 8. AV Scanner Downloader
 > **Category:** Downloader
 > **Admin:** ❌ No
 
@@ -455,7 +476,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ---
 
-## 🖥️ 8. Desktop Shortcut Creator
+## 🖥️ 9. Desktop Shortcut Creator
 > **Category:** Windows Tools
 > **Admin:** ❌ No
 
@@ -476,7 +497,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ---
 
-## 🧯 9. Rescue ISO Downloader
+## 🧯 10. Rescue ISO Downloader
 > **Category:** Downloader
 > **Admin:** ❌ No
 
@@ -599,8 +620,9 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.5 (Current)
-- ✅ All 9 modules fully functional
+## v1.6 (Current)
+- ✅ All 10 modules fully functional
+- ✅ Ultimate Performance Power Plan: creates a dedicated WindowsAcolyte power plan, activates it, disables monitor standby/sleep/disk idle, and enforces maximum CPU/PCIe/USB/WLAN performance settings
 - ✅ Rescue ISO Downloader: latest rescue/partition/cloning/malware/memory/wipe/boot images with replacement cleanup
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
 - ✅ Logo updated to `logo/Windows_Acolyte_Logo.png`
