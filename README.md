@@ -627,6 +627,7 @@ Register-PowerToolsModule `
 - ✅ Rescue ISO Downloader: latest rescue/partition/cloning/malware/memory/wipe/boot images with replacement cleanup
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
 - ✅ Logo updated to `logo/Windows_Acolyte_Logo.png`
+- ✅ Windows icon generated from the logo as `logo/Windows_Acolyte_Icon.ico`
 - ✅ Theme colors aligned with the logo palette
 - ✅ Explorer View Normalizer: checkbox UI, grouped state view, apply/revert, auto-recheck, small desktop icons
 - ✅ Linux ISO Downloader: distro variant selection and one progress row per ISO
