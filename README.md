@@ -492,7 +492,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
   - `WindowsAcolyte - Start (Local).lnk`
   - `WindowsAcolyte - Installer (Online).lnk`
 - Uses PowerShell 7 (`pwsh.exe`) with `-NoProfile` and `-ExecutionPolicy Bypass`
-- Uses the WindowsAcolyte icon from `logo/Windows_Acolyte_Icon.ico`
+- Uses the dedicated white-background shortcut icon from `logo/Windows_Acolyte_Shortcut_Icon.ico`
 - Logs created shortcut paths and missing local install warnings
 
 💡 **Use case**
@@ -630,6 +630,7 @@ Register-PowerToolsModule `
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
 - ✅ Logo updated to `logo/Windows_Acolyte_Logo.png`
 - ✅ Windows icon generated from the logo as `logo/Windows_Acolyte_Icon.ico`
+- ✅ Desktop shortcut icon uses white background via `logo/Windows_Acolyte_Shortcut_Icon.ico`
 - ✅ Theme colors aligned with the logo palette
 - ✅ Explorer View Normalizer: checkbox UI, grouped state view, apply/revert, auto-recheck, small desktop icons
 - ✅ Linux ISO Downloader: distro variant selection and one progress row per ISO
