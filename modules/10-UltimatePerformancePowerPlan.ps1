@@ -16,6 +16,7 @@ Register-PowerToolsModule `
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
     </Grid.RowDefinitions>
 
@@ -65,7 +66,25 @@ Register-PowerToolsModule `
         </Border>
     </Grid>
 
-    <Grid Grid.Row="2" Margin="0,0,0,8">
+    <Border Grid.Row="2" x:Name="SettingsBorder"
+            BorderThickness="1.5" CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="SETTINGS APPLIED BY THIS MODULE"
+                       Foreground="{DynamicResource DynSectionLabel}" FontSize="9"
+                       FontWeight="Bold" Margin="0,0,0,6"/>
+            <ScrollViewer Grid.Row="1" MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="SettingsText"
+                           FontFamily="Cascadia Code, Consolas, Courier New"
+                           FontSize="10.5" TextWrapping="Wrap" LineHeight="16"/>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+
+    <Grid Grid.Row="3" Margin="0,0,0,8">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="120"/>
@@ -82,7 +101,7 @@ Register-PowerToolsModule `
                 Style="{DynamicResource SecondaryButton}" Height="40" FontSize="12"/>
     </Grid>
 
-    <Grid Grid.Row="3">
+    <Grid Grid.Row="4">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -120,6 +139,8 @@ Register-PowerToolsModule `
     $script:UPP_managedText  = $view.FindName("ManagedPlanText")
     $script:UPP_monitorBorder= $view.FindName("MonitorBorder")
     $script:UPP_monitorText  = $view.FindName("MonitorText")
+    $script:UPP_settingsBorder = $view.FindName("SettingsBorder")
+    $script:UPP_settingsText = $view.FindName("SettingsText")
     $script:UPP_applyBtn     = $view.FindName("ApplyBtn")
     $script:UPP_recheckBtn   = $view.FindName("RecheckBtn")
     $script:UPP_balancedBtn  = $view.FindName("BalancedBtn")
@@ -138,9 +159,12 @@ Register-PowerToolsModule `
     $script:UPP_managedBorder.BorderBrush= $Global:PTS_Brush["Border"]
     $script:UPP_monitorBorder.Background = $Global:PTS_Brush["Surface"]
     $script:UPP_monitorBorder.BorderBrush= $Global:PTS_Brush["Border"]
+    $script:UPP_settingsBorder.Background= $Global:PTS_Brush["Surface"]
+    $script:UPP_settingsBorder.BorderBrush = $Global:PTS_Brush["Border"]
     $script:UPP_activeText.Foreground    = $Global:PTS_Brush["TextDark"]
     $script:UPP_managedText.Foreground   = $Global:PTS_Brush["TextDark"]
     $script:UPP_monitorText.Foreground   = $Global:PTS_Brush["TextDark"]
+    $script:UPP_settingsText.Foreground  = $Global:PTS_Brush["TextMid"]
     $script:UPP_logBorder.Background     = $Global:PTS_Brush["LogBg"]
     $script:UPP_logBorder.BorderBrush    = $Global:PTS_Brush["LogBorder"]
     $script:UPP_logBox.Foreground        = $Global:PTS_Brush["TextMuted"]
@@ -171,6 +195,31 @@ Register-PowerToolsModule `
         @{ Group="Multimedia"; Name="Video playback quality bias"; Subgroup="9596fb26-9850-41fd-ac3e-f7c3c00afd4b"; Setting="10778347-1370-4ee0-8bbd-33bdacaade49"; AC=1; DC=1; Detail="Favors video playback quality over power saving." }
         @{ Group="Multimedia"; Name="When playing video"; Subgroup="9596fb26-9850-41fd-ac3e-f7c3c00afd4b"; Setting="34c7b99f-9a6d-4b3c-8dc7-b6693b78cef4"; AC=0; DC=0; Detail="Optimizes video playback quality." }
     )
+
+    function Global:UPP-FormatSettingsSummary {
+        $lines = New-Object System.Collections.Generic.List[string]
+        $lines.Add("Target plan: $script:UPP_planName")
+        $lines.Add("All values are written to both AC and DC power modes.")
+        $lines.Add("")
+
+        $lastGroup = $null
+        foreach ($setting in ($script:UPP_settings | Sort-Object Group, Name)) {
+            if ($lastGroup -ne $setting.Group) {
+                if ($lastGroup) { $lines.Add("") }
+                $lines.Add($setting.Group.ToUpper())
+                $lastGroup = $setting.Group
+            }
+            $lines.Add("- $($setting.Name)")
+            $lines.Add("  Subgroup: $($setting.Subgroup)")
+            $lines.Add("  Setting : $($setting.Setting)")
+            $lines.Add("  AC/DC   : $($setting.AC) / $($setting.DC)")
+            $lines.Add("  Effect  : $($setting.Detail)")
+        }
+
+        return ($lines -join "`n")
+    }
+
+    $script:UPP_settingsText.Text = UPP-FormatSettingsSummary
 
     function Global:UPP-AddLog {
         param([string]$Msg, [string]$Type = "INFO")

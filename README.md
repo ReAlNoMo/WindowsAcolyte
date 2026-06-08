@@ -361,6 +361,7 @@ Integrated recommendations for:
 - Applies aggressive CPU boost, maximum boost policy, performance-first EPP, and core parking disablement where Windows exposes those settings
 - Disables PCIe Link State Power Management, USB selective suspend, and wireless adapter power saving
 - Sets video playback to quality/performance mode
+- Shows the exact `powercfg` subgroup, setting, AC/DC value, and effect before applying
 - Includes Recheck, Apply, Set Balanced, and Activity Log actions
 - Skips unsupported hardware-specific settings safely and logs them as warnings
 
