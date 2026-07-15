@@ -8,43 +8,13 @@
 
 ## 🟢 Quick Start
 
-### ⚡ Direct Install (Recommended)
+### ⚡ Install / Update
 
 > ✅ Fast • Trusted • No setup
 
 ```powershell
-irm "https://realnomo.tech" | iex
-```
-
-<details>
-<summary>🔽 Alternative (GitHub Raw)</summary>
-
-```powershell
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" | iex
 ```
-
-</details>
-
----
-
-### 🔍 Safe Install (Review First)
-
-> 🛡️ Download script before execution
-
-```powershell
-irm "https://realnomo.tech" -OutFile "$env:TEMP\install.ps1"
-& "$env:TEMP\install.ps1"
-```
-
-<details>
-<summary>🔽 Alternative (GitHub Raw)</summary>
-
-```powershell
-irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" -OutFile "$env:TEMP\install.ps1"
-& "$env:TEMP\install.ps1"
-```
-
-</details>
 
 ---
 
