@@ -127,13 +127,35 @@ Register-PowerToolsModule `
     }
 
     function Global:DSC-GetPowerShellPath {
-        $aliasPath = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
-        if (Test-Path -LiteralPath $aliasPath) { return $aliasPath }
+        $windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
+        $candidates = @()
 
-        $cmd = Get-Command "pwsh.exe" -ErrorAction SilentlyContinue
-        if ($cmd -and $cmd.Source) { return $cmd.Source }
+        try {
+            $currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+            if ($currentPath) { $candidates += $currentPath }
+        } catch {}
 
-        throw "PowerShell 7 executable (pwsh.exe) was not found."
+        $candidates += @(
+            (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe"),
+            (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe"),
+            (Join-Path ${env:ProgramFiles(x86)} "PowerShell\7\pwsh.exe")
+        )
+
+        $cmds = Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue
+        foreach ($cmd in $cmds) {
+            if ($cmd.Source) { $candidates += $cmd.Source }
+        }
+
+        foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
+            if ((Test-Path -LiteralPath $candidate) -and
+                ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
+                ($candidate -ine $windowsAppsAlias) -and
+                ($candidate -notlike "*\Microsoft\WindowsApps\pwsh.exe")) {
+                return $candidate
+            }
+        }
+
+        throw "A real PowerShell 7 executable was not found. The WindowsApps pwsh.exe alias is ignored because it can cause access errors in shortcuts."
     }
 
     function Global:DSC-GetIconLocation {

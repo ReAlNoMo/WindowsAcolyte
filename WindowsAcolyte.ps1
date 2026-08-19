@@ -38,7 +38,9 @@ function Test-IsAdmin {
 if (-not (Test-IsAdmin)) {
     $self    = $MyInvocation.MyCommand.Path
     $argList = '-ExecutionPolicy', 'Bypass', '-File', "`"$self`""
-    Start-Process -FilePath "pwsh.exe" -ArgumentList $argList -Verb RunAs
+    $pwshPath = try { [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName } catch { "pwsh.exe" }
+    if ([string]::IsNullOrWhiteSpace($pwshPath) -or -not (Test-Path -LiteralPath $pwshPath)) { $pwshPath = "pwsh.exe" }
+    Start-Process -FilePath $pwshPath -ArgumentList $argList -Verb RunAs
     exit 0
 }
 

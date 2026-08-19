@@ -306,7 +306,10 @@ try {
     Write-Log "Launching WindowsAcolyte..." "INFO"
 
     try {
-        Start-Process -FilePath "pwsh.exe" `
+        $pwshPath = try { [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName } catch { "pwsh.exe" }
+        if ([string]::IsNullOrWhiteSpace($pwshPath) -or -not (Test-Path -LiteralPath $pwshPath)) { $pwshPath = "pwsh.exe" }
+
+        Start-Process -FilePath $pwshPath `
                       -ArgumentList "-ExecutionPolicy", "Bypass", "-File", "`"$finalLauncher`""
         Write-Log "Launcher started successfully" "OK"
     }
