@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     WindowsAcolyte Installer
@@ -8,7 +8,7 @@
     Launches main application after installation.
 .NOTES
     Author  : ReAlNoMo
-    Version : 1.5
+    Version : 1.6
 #>
 
 $ErrorActionPreference = "Stop"
@@ -98,11 +98,58 @@ function Test-FileValid {
     return (Get-Item $Path).Length -gt 0
 }
 
+function Resolve-WindowsAcolytePowerShell7 {
+    $windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
+    $candidates = @()
+
+    try {
+        $currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+        if ($currentPath) { $candidates += $currentPath }
+    } catch {}
+
+    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+        $candidates += (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe")
+        $candidates += (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe")
+    }
+
+    $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
+    if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
+        $candidates += (Join-Path $programFilesX86 "PowerShell\7\pwsh.exe")
+    }
+
+    $windowsAppsDir = Split-Path -Parent $windowsAppsAlias
+    if (-not [string]::IsNullOrWhiteSpace($windowsAppsDir)) {
+        $candidates += (Join-Path $windowsAppsDir "Microsoft.PowerShell_8wekyb3d8bbwe\pwsh.exe")
+    }
+
+    $cmds = Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue
+    foreach ($cmd in $cmds) {
+        if ($cmd.Source) { $candidates += $cmd.Source }
+    }
+
+    foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
+        if ((Test-Path -LiteralPath $candidate) -and
+            ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
+            ($candidate -ine $windowsAppsAlias) -and
+            ($candidate -notlike "*\Microsoft\WindowsApps\pwsh.exe")) {
+            try {
+                $majorText = & $candidate -NoProfile -Command '$PSVersionTable.PSVersion.Major' 2>$null
+                $major = 0
+                if ([int]::TryParse([string]($majorText | Select-Object -First 1), [ref]$major) -and $major -ge 7) {
+                    return $candidate
+                }
+            } catch {}
+        }
+    }
+
+    throw "PowerShell 7 (pwsh.exe) was not found. Install PowerShell 7 from https://aka.ms/powershell and run the installer again."
+}
+
 # ===========================================================================
 # MAIN
 # ===========================================================================
 Write-Host ""
-Write-Log "WindowsAcolyte Installer v1.5" "INFO"
+Write-Log "WindowsAcolyte Installer v1.6" "INFO"
 Write-Log "Install target : $InstallPath"   "INFO"
 Write-Log "Temp work dir  : $TempPath"      "INFO"
 Write-Host ""
@@ -306,16 +353,16 @@ try {
     Write-Log "Launching WindowsAcolyte..." "INFO"
 
     try {
-        $pwshPath = try { [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName } catch { "pwsh.exe" }
-        if ([string]::IsNullOrWhiteSpace($pwshPath) -or -not (Test-Path -LiteralPath $pwshPath)) { $pwshPath = "pwsh.exe" }
+        $pwshPath = Resolve-WindowsAcolytePowerShell7
+        Write-Log "PowerShell target: $pwshPath" "INFO"
 
         Start-Process -FilePath $pwshPath `
-                      -ArgumentList "-ExecutionPolicy", "Bypass", "-File", "`"$finalLauncher`""
+                      -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-STA", "-File", "`"$finalLauncher`""
         Write-Log "Launcher started successfully" "OK"
     }
     catch {
         Write-Log "Failed to launch: $_" "ERR"
-        Write-Log "Run manually: pwsh -File `"$finalLauncher`"" "WARN"
+        Write-Log "Run manually with PowerShell 7: pwsh -NoProfile -ExecutionPolicy Bypass -STA -File `"$finalLauncher`"" "WARN"
     }
 
     Write-Host ""

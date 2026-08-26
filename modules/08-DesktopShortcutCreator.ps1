@@ -135,11 +135,15 @@ Register-PowerToolsModule `
             if ($currentPath) { $candidates += $currentPath }
         } catch {}
 
-        $candidates += @(
-            (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe"),
-            (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe"),
-            (Join-Path ${env:ProgramFiles(x86)} "PowerShell\7\pwsh.exe")
-        )
+        if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+            $candidates += (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe")
+            $candidates += (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe")
+        }
+
+        $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
+        if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
+            $candidates += (Join-Path $programFilesX86 "PowerShell\7\pwsh.exe")
+        }
 
         $cmds = Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue
         foreach ($cmd in $cmds) {
@@ -151,7 +155,13 @@ Register-PowerToolsModule `
                 ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
                 ($candidate -ine $windowsAppsAlias) -and
                 ($candidate -notlike "*\Microsoft\WindowsApps\pwsh.exe")) {
-                return $candidate
+                try {
+                    $majorText = & $candidate -NoProfile -Command '$PSVersionTable.PSVersion.Major' 2>$null
+                    $major = 0
+                    if ([int]::TryParse([string]($majorText | Select-Object -First 1), [ref]$major) -and $major -ge 7) {
+                        return $candidate
+                    }
+                } catch {}
             }
         }
 
@@ -238,7 +248,7 @@ Register-PowerToolsModule `
                 $path = DSC-NewShortcut `
                     -Name "WindowsAcolyte - Start (Local)" `
                     -TargetPath $pwshPath `
-                    -Arguments ('-NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $launcherPath) `
+                    -Arguments ('-NoProfile -ExecutionPolicy Bypass -STA -File "{0}"' -f $launcherPath) `
                     -WorkingDirectory $installPath `
                     -Description "Start WindowsAcolyte from the local installation." `
                     -IconLocation $iconLocation
@@ -249,7 +259,7 @@ Register-PowerToolsModule `
                 $path = DSC-NewShortcut `
                     -Name "WindowsAcolyte - Installer (Online)" `
                     -TargetPath $pwshPath `
-                    -Arguments '-NoProfile -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1 | iex"' `
+                    -Arguments '-NoProfile -ExecutionPolicy Bypass -STA -Command "irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1 | iex"' `
                     -WorkingDirectory $desktop `
                     -Description "Install or update WindowsAcolyte from GitHub." `
                     -IconLocation $iconLocation

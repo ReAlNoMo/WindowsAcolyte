@@ -35,11 +35,46 @@ function Test-IsAdmin {
     return $pr.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Resolve-PTSLauncherPowerShell7 {
+    $windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
+    $candidates = @()
+
+    try {
+        $currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+        if ($currentPath) { $candidates += $currentPath }
+    } catch {}
+
+    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
+        $candidates += (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe")
+        $candidates += (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe")
+    }
+
+    $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
+    if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
+        $candidates += (Join-Path $programFilesX86 "PowerShell\7\pwsh.exe")
+    }
+
+    $cmds = Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue
+    foreach ($cmd in $cmds) {
+        if ($cmd.Source) { $candidates += $cmd.Source }
+    }
+
+    foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
+        if ((Test-Path -LiteralPath $candidate) -and
+            ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
+            ($candidate -ine $windowsAppsAlias) -and
+            ($candidate -notlike "*\Microsoft\WindowsApps\pwsh.exe")) {
+            return $candidate
+        }
+    }
+
+    return "pwsh.exe"
+}
+
 if (-not (Test-IsAdmin)) {
     $self    = $MyInvocation.MyCommand.Path
-    $argList = '-ExecutionPolicy', 'Bypass', '-File', "`"$self`""
-    $pwshPath = try { [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName } catch { "pwsh.exe" }
-    if ([string]::IsNullOrWhiteSpace($pwshPath) -or -not (Test-Path -LiteralPath $pwshPath)) { $pwshPath = "pwsh.exe" }
+    $argList = '-NoProfile', '-ExecutionPolicy', 'Bypass', '-STA', '-File', "`"$self`""
+    $pwshPath = Resolve-PTSLauncherPowerShell7
     Start-Process -FilePath $pwshPath -ArgumentList $argList -Verb RunAs
     exit 0
 }
