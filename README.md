@@ -352,6 +352,7 @@ Integrated recommendations for:
 - Download latest ISOs from official sources
 - Parallel downloads (1–5 concurrent)
 - Parent/child distro selection (main distro = all variants, sub-option = single variant)
+- Preset buttons for All, Only Server, and Only Desktop selections
 - Separate live progress row for every selected ISO
 - SHA256 verification (where available)
 - Auto mirror fallback
@@ -371,7 +372,7 @@ Integrated recommendations for:
 | CachyOS | Desktop | ❌ Opt-in | cachyos.org |
 | Pop!_OS | Desktop NVIDIA, Desktop Intel/AMD | ❌ Opt-in | pop-os.org |
 
-> Clicking a main distro selects or clears all of its variants. Selecting only a sub-option downloads only that specific ISO.
+> Clicking a main distro selects or clears all of its variants. Selecting only a sub-option downloads only that specific ISO. Presets can quickly select all variants, server-oriented ISOs only, or desktop-oriented ISOs only.
 
 ---
 
@@ -603,7 +604,7 @@ Register-PowerToolsModule `
 - ✅ Desktop shortcut icon uses white background via `logo/Windows_Acolyte_Shortcut_Icon.ico`
 - ✅ Theme colors aligned with the logo palette
 - ✅ Explorer View Normalizer: checkbox UI, grouped state view, apply/revert, auto-recheck, small desktop icons
-- ✅ Linux ISO Downloader: distro variant selection and one progress row per ISO
+- ✅ Linux ISO Downloader: distro variant selection, All/Only Server/Only Desktop presets, and one progress row per ISO
 - ✅ Active operation guard: downloads/hash/report jobs survive theme changes and warn before module switches or app close
 - ✅ Desktop Shortcut Creator: local start and online installer links from Windows Tools
 - ✅ Installer and shortcuts resolve a real PowerShell 7 executable, ignore the WindowsApps alias, and launch WPF with `-STA`

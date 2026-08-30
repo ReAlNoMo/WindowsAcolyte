@@ -42,8 +42,24 @@ Register-PowerToolsModule `
     </StackPanel>
 
     <StackPanel Grid.Row="1" Margin="0,0,0,14">
-        <TextBlock Text="DISTRIBUTIONS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
-                   FontWeight="Bold" Margin="0,0,0,8"/>
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="120"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="DISTRIBUTIONS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
+                       FontWeight="Bold" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" x:Name="SelectAllDistBtn" Content="All"
+                    Style="{DynamicResource SecondaryButton}" Height="32" FontSize="11"/>
+            <Button Grid.Column="3" x:Name="OnlyServerDistBtn" Content="Only Server"
+                    Style="{DynamicResource SecondaryButton}" Height="32" FontSize="11"/>
+            <Button Grid.Column="5" x:Name="OnlyDesktopDistBtn" Content="Only Desktop"
+                    Style="{DynamicResource SecondaryButton}" Height="32" FontSize="11"/>
+        </Grid>
         <WrapPanel ItemWidth="210">
             <StackPanel Margin="0,0,16,10">
                 <CheckBox x:Name="CbUbuntu" Content="Ubuntu" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
@@ -183,6 +199,9 @@ Register-PowerToolsModule `
     $Global:ISO_cbPopOS     = $view.FindName("CbPopOS")
     $Global:ISO_cbPopOSNvidia = $view.FindName("CbPopOSNvidia")
     $Global:ISO_cbPopOSIntel  = $view.FindName("CbPopOSIntel")
+    $Global:ISO_selectAllDistBtn = $view.FindName("SelectAllDistBtn")
+    $Global:ISO_onlyServerDistBtn = $view.FindName("OnlyServerDistBtn")
+    $Global:ISO_onlyDesktopDistBtn = $view.FindName("OnlyDesktopDistBtn")
     $Global:ISO_parallel    = $view.FindName("ParallelCombo")
     $Global:ISO_startBtn    = $view.FindName("StartBtn")
     $Global:ISO_cancelBtn   = $view.FindName("CancelBtn")
@@ -360,12 +379,71 @@ Register-PowerToolsModule `
         ISO-UpdateParentSelection -Parent $Parent -Children $Children
     }
 
+    function Global:ISO-RefreshParentSelections {
+        ISO-UpdateParentSelection -Parent $Global:ISO_cbUbuntu  -Children @($Global:ISO_cbUbuntuDesktop, $Global:ISO_cbUbuntuServer)
+        ISO-UpdateParentSelection -Parent $Global:ISO_cbDebian  -Children @($Global:ISO_cbDebianNetinst, $Global:ISO_cbDebianLive)
+        ISO-UpdateParentSelection -Parent $Global:ISO_cbFedora  -Children @($Global:ISO_cbFedoraWorkstation, $Global:ISO_cbFedoraServer)
+        ISO-UpdateParentSelection -Parent $Global:ISO_cbArch    -Children @($Global:ISO_cbArchInstaller)
+        ISO-UpdateParentSelection -Parent $Global:ISO_cbCachyOS -Children @($Global:ISO_cbCachyOSDesktop)
+        ISO-UpdateParentSelection -Parent $Global:ISO_cbPopOS   -Children @($Global:ISO_cbPopOSNvidia, $Global:ISO_cbPopOSIntel)
+    }
+
+    function Global:ISO-SetVariantPreset {
+        param([ValidateSet("All","Server","Desktop")][string]$Mode)
+
+        $children = @(
+            $Global:ISO_cbUbuntuDesktop, $Global:ISO_cbUbuntuServer,
+            $Global:ISO_cbDebianNetinst, $Global:ISO_cbDebianLive,
+            $Global:ISO_cbFedoraWorkstation, $Global:ISO_cbFedoraServer,
+            $Global:ISO_cbArchInstaller,
+            $Global:ISO_cbCachyOSDesktop,
+            $Global:ISO_cbPopOSNvidia, $Global:ISO_cbPopOSIntel
+        )
+
+        try {
+            $Global:ISO_optionSync = $true
+            foreach ($child in $children) {
+                if ($child) { $child.IsChecked = $false }
+            }
+
+            switch ($Mode) {
+                "All" {
+                    foreach ($child in $children) {
+                        if ($child) { $child.IsChecked = $true }
+                    }
+                }
+                "Server" {
+                    $Global:ISO_cbUbuntuServer.IsChecked = $true
+                    $Global:ISO_cbDebianNetinst.IsChecked = $true
+                    $Global:ISO_cbFedoraServer.IsChecked = $true
+                }
+                "Desktop" {
+                    $Global:ISO_cbUbuntuDesktop.IsChecked = $true
+                    $Global:ISO_cbDebianLive.IsChecked = $true
+                    $Global:ISO_cbFedoraWorkstation.IsChecked = $true
+                    $Global:ISO_cbCachyOSDesktop.IsChecked = $true
+                    $Global:ISO_cbPopOSNvidia.IsChecked = $true
+                    $Global:ISO_cbPopOSIntel.IsChecked = $true
+                }
+            }
+        } finally {
+            $Global:ISO_optionSync = $false
+        }
+
+        ISO-RefreshParentSelections
+        ISO-AddLog "Distribution preset selected: $Mode" "INFO"
+    }
+
     ISO-WireDistroSelection -Parent $Global:ISO_cbUbuntu  -Children @($Global:ISO_cbUbuntuDesktop, $Global:ISO_cbUbuntuServer)
     ISO-WireDistroSelection -Parent $Global:ISO_cbDebian  -Children @($Global:ISO_cbDebianNetinst, $Global:ISO_cbDebianLive)
     ISO-WireDistroSelection -Parent $Global:ISO_cbFedora  -Children @($Global:ISO_cbFedoraWorkstation, $Global:ISO_cbFedoraServer)
     ISO-WireDistroSelection -Parent $Global:ISO_cbArch    -Children @($Global:ISO_cbArchInstaller)
     ISO-WireDistroSelection -Parent $Global:ISO_cbCachyOS -Children @($Global:ISO_cbCachyOSDesktop)
     ISO-WireDistroSelection -Parent $Global:ISO_cbPopOS   -Children @($Global:ISO_cbPopOSNvidia, $Global:ISO_cbPopOSIntel)
+
+    $Global:ISO_selectAllDistBtn.Add_Click({ ISO-SetVariantPreset -Mode "All" })
+    $Global:ISO_onlyServerDistBtn.Add_Click({ ISO-SetVariantPreset -Mode "Server" })
+    $Global:ISO_onlyDesktopDistBtn.Add_Click({ ISO-SetVariantPreset -Mode "Desktop" })
 
     function Global:ISO-CleanupBackground {
         if ($null -ne $Global:ISO_bgPS) {
