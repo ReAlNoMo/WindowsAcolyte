@@ -54,11 +54,14 @@ Register-PowerToolsModule `
             <TextBlock Grid.Column="0" Text="DISTRIBUTIONS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" VerticalAlignment="Center"/>
             <Button Grid.Column="1" x:Name="SelectAllDistBtn" Content="All"
-                    Style="{DynamicResource SecondaryButton}" Height="32" FontSize="11"/>
+                    Style="{DynamicResource SecondaryButton}" Height="36" FontSize="11"
+                    Padding="12,4" VerticalContentAlignment="Center"/>
             <Button Grid.Column="3" x:Name="OnlyServerDistBtn" Content="Only Server"
-                    Style="{DynamicResource SecondaryButton}" Height="32" FontSize="11"/>
+                    Style="{DynamicResource SecondaryButton}" Height="36" FontSize="11"
+                    Padding="12,4" VerticalContentAlignment="Center"/>
             <Button Grid.Column="5" x:Name="OnlyDesktopDistBtn" Content="Only Desktop"
-                    Style="{DynamicResource SecondaryButton}" Height="32" FontSize="11"/>
+                    Style="{DynamicResource SecondaryButton}" Height="36" FontSize="11"
+                    Padding="12,4" VerticalContentAlignment="Center"/>
         </Grid>
         <WrapPanel ItemWidth="210">
             <StackPanel Margin="0,0,16,10">
