@@ -326,6 +326,112 @@ foreach ($k in $Global:PTS_Theme.Keys) {
 function Global:Get-PowerToolsBrush { param([string]$Name) return $Global:PTS_Brush[$Name] }
 function Global:Get-PowerToolsWindow { return $Global:PTS_Window }
 
+$Global:PTS_ActiveOperations = @{}
+
+function Global:Get-PTSActiveOperations {
+    return @($Global:PTS_ActiveOperations.Values | Where-Object { $null -ne $_ })
+}
+
+function Global:Register-PTSActiveOperation {
+    param(
+        [Parameter(Mandatory)][string]$ModuleId,
+        [Parameter(Mandatory)][string]$ModuleName,
+        [Parameter(Mandatory)][string]$Description,
+        [scriptblock]$Cancel
+    )
+
+    $Global:PTS_ActiveOperations[$ModuleId] = [PSCustomObject]@{
+        ModuleId        = $ModuleId
+        ModuleName      = $ModuleName
+        Description     = $Description
+        Cancel          = $Cancel
+        CancelRequested = $false
+        StartedAt       = Get-Date
+    }
+    Set-PTSFooterStatus "Running: $ModuleName"
+}
+
+function Global:Unregister-PTSActiveOperation {
+    param([Parameter(Mandatory)][string]$ModuleId)
+
+    if ($Global:PTS_ActiveOperations.ContainsKey($ModuleId)) {
+        $Global:PTS_ActiveOperations.Remove($ModuleId)
+    }
+
+    if ((Get-PTSActiveOperations).Count -eq 0) {
+        Set-PTSFooterStatus "Ready"
+    }
+}
+
+function Global:Confirm-PTSActiveOperations {
+    param(
+        [Parameter(Mandatory)][string]$ActionName,
+        [Parameter(Mandatory)][string]$ContinueAction
+    )
+
+    $ops = @(Get-PTSActiveOperations)
+    if ($ops.Count -eq 0) { return $true }
+
+    $pendingCancel = @($ops | Where-Object { $_.CancelRequested }).Count -gt 0
+    if ($pendingCancel -and $ActionName -notlike "Close*") {
+        [System.Windows.MessageBox]::Show(
+            $Global:PTS_Window,
+            "Cancellation is already requested for a running operation.`n`nPlease wait until it finishes cleanup before switching views.",
+            $ActionName,
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Information
+        ) | Out-Null
+        return $false
+    }
+
+    $lines = ($ops | ForEach-Object {
+        $suffix = if ($_.CancelRequested) { " (cancellation requested)" } else { "" }
+        "- $($_.ModuleName): $($_.Description)$suffix"
+    }) -join "`n"
+
+    $cancelableCount = @($ops | Where-Object { $null -ne $_.Cancel }).Count
+    $nonCancelableCount = $ops.Count - $cancelableCount
+    $tail = if ($cancelableCount -gt 0 -and $nonCancelableCount -gt 0) {
+        "Choose Yes to request cancellation where possible and $ContinueAction.`nChoose No to stay in the current view."
+    } elseif ($cancelableCount -gt 0) {
+        "Choose Yes to request cancellation and $ContinueAction.`nChoose No to stay in the current view."
+    } elseif ($ActionName -like "Close*") {
+        "Choose Yes to close WindowsAcolyte. The running operation will be interrupted.`nChoose No to keep the app open."
+    } else {
+        "Choose Yes to $ContinueAction anyway. Progress for this operation may no longer be visible.`nChoose No to stay in the current view."
+    }
+
+    $msg = "The following operation is still running:`n`n$lines`n`n$tail"
+    if ($ops.Count -gt 1) {
+        $msg = "The following operations are still running:`n`n$lines`n`n$tail"
+    }
+
+    $result = [System.Windows.MessageBox]::Show(
+        $Global:PTS_Window,
+        $msg,
+        $ActionName,
+        [System.Windows.MessageBoxButton]::YesNo,
+        [System.Windows.MessageBoxImage]::Warning
+    )
+
+    if ($result -ne [System.Windows.MessageBoxResult]::Yes) {
+        return $false
+    }
+
+    foreach ($op in $ops) {
+        if ($null -ne $op.Cancel -and -not $op.CancelRequested) {
+            try {
+                $op.CancelRequested = $true
+                & $op.Cancel
+            } catch {
+                Write-PTSExceptionReport -Context "ActiveOperation.Cancel" -ModuleId $op.ModuleId -ModuleName $op.ModuleName -ErrorRecord $_
+            }
+        }
+    }
+
+    return $true
+}
+
 function Global:Apply-PTSTheme {
     param([bool]$DarkMode = $false)
     $Global:PTS_DarkModeEnabled = $DarkMode
@@ -356,10 +462,6 @@ function Global:Apply-PTSTheme {
 
         Update-PTSStyles
         Build-PTSSidebar
-
-        if ($Global:PTS_ActiveSidebarBtn -ne $null) {
-            Show-PTSCategoryView -DisplayName ($Global:PTS_ActiveSidebarBtn.Tag.DisplayName)
-        }
     }
 }
  
@@ -746,6 +848,13 @@ $Global:PTS_UI.DarkModeToggle.Add_Click({
     Apply-PTSTheme -DarkMode $isDark
 })
 
+$Global:PTS_Window.Add_Closing({
+    param($sender, $e)
+    if (-not (Confirm-PTSActiveOperations -ActionName "Close WindowsAcolyte" -ContinueAction "close WindowsAcolyte")) {
+        $e.Cancel = $true
+    }
+})
+
 $Global:PTS_ActiveSidebarBtn = $null
 
 # ===========================================================================
@@ -818,6 +927,10 @@ function Global:Invoke-SidebarMouseLeave {
 function Global:Invoke-SidebarClick {
     param($SenderBtn, $EventArgs)
 
+    if (-not (Confirm-PTSActiveOperations -ActionName "Switch category" -ContinueAction "switch category")) {
+        return
+    }
+
     if ($Global:PTS_ActiveSidebarBtn -ne $null -and $Global:PTS_ActiveSidebarBtn -ne $SenderBtn) {
         $prevBtn = $Global:PTS_ActiveSidebarBtn
         $prevBtn.Background = $Global:PTS_Brush["SidebarBg"]
@@ -843,7 +956,12 @@ function Global:Invoke-SidebarClick {
 function Global:Invoke-TileClick {
     param($SenderBtn, $EventArgs)
     $module = $SenderBtn.Tag
-    if ($module) { Show-PTSModuleView -Module $module }
+    if ($module) {
+        if (-not (Confirm-PTSActiveOperations -ActionName "Open module" -ContinueAction "open another module")) {
+            return
+        }
+        Show-PTSModuleView -Module $module
+    }
 }
 
 # ===========================================================================
@@ -1063,6 +1181,9 @@ function Global:Show-PTSCategoryView {
 }
 
 $Global:PTS_UI.BackBtn.Add_Click({
+    if (-not (Confirm-PTSActiveOperations -ActionName "Leave module" -ContinueAction "leave this module")) {
+        return
+    }
     if ($Global:PTS_ActiveSidebarBtn -ne $null) {
         Show-PTSCategoryView -DisplayName ($Global:PTS_ActiveSidebarBtn.Tag.DisplayName)
     }

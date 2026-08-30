@@ -604,6 +604,7 @@ Register-PowerToolsModule `
 - ✅ Theme colors aligned with the logo palette
 - ✅ Explorer View Normalizer: checkbox UI, grouped state view, apply/revert, auto-recheck, small desktop icons
 - ✅ Linux ISO Downloader: distro variant selection and one progress row per ISO
+- ✅ Active operation guard: downloads/hash/report jobs survive theme changes and warn before module switches or app close
 - ✅ Desktop Shortcut Creator: local start and online installer links from Windows Tools
 - ✅ Installer and shortcuts resolve a real PowerShell 7 executable, ignore the WindowsApps alias, and launch WPF with `-STA`
 - ✅ Shortcut launch paths cleaned up without `-NoExit`

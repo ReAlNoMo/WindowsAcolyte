@@ -145,6 +145,21 @@ Register-PowerToolsModule `
         $Global:HW_logScroller.ScrollToEnd()
     }
 
+    function Global:HW-RegisterActiveOperation {
+        if (Get-Command -Name Register-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Register-PTSActiveOperation `
+                -ModuleId "hardware-inventory" `
+                -ModuleName "Hardware Inventory" `
+                -Description "Generating hardware report"
+        }
+    }
+
+    function Global:HW-UnregisterActiveOperation {
+        if (Get-Command -Name Unregister-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Unregister-PTSActiveOperation -ModuleId "hardware-inventory"
+        }
+    }
+
     function Global:HW-StartTimer {
         $Global:HW_timer = New-Object System.Windows.Threading.DispatcherTimer
         $Global:HW_timer.Interval = [TimeSpan]::FromMilliseconds(150)
@@ -169,6 +184,7 @@ Register-PowerToolsModule `
                         $Global:HW_lastReport             = $item.ReportPath
                         $Global:HW_outputLbl.Text         = $item.ReportPath
                         $Global:HW_openLast.IsEnabled     = $true
+                        HW-UnregisterActiveOperation
                         if ($item.ReportPath -ne "") { Start-Process $item.ReportPath }
                     }
                     "ERROR"    {
@@ -177,6 +193,7 @@ Register-PowerToolsModule `
                         $Global:HW_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
                         $Global:HW_generate.IsEnabled     = $true
                         $Global:HW_generate.Content       = "Generate Report"
+                        HW-UnregisterActiveOperation
                     }
                 }
             }
@@ -397,16 +414,31 @@ Register-PowerToolsModule `
         $Global:HW_outputLbl.Text = $rp
 
         HW-AddLog "Starting hardware inventory..." "INFO"
+        HW-RegisterActiveOperation
         HW-StartTimer
 
-        $rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
-        $rs.Open()
-        $ps = [System.Management.Automation.PowerShell]::Create()
-        $ps.Runspace = $rs
-        $ps.AddScript($Global:HW_reportScript) | Out-Null
-        $ps.AddArgument($rp)                   | Out-Null
-        $ps.AddArgument($Global:HW_msgQueue)   | Out-Null
-        $ps.BeginInvoke() | Out-Null
+        $rs = $null
+        $ps = $null
+        try {
+            $rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
+            $rs.Open()
+            $ps = [System.Management.Automation.PowerShell]::Create()
+            $ps.Runspace = $rs
+            $ps.AddScript($Global:HW_reportScript) | Out-Null
+            $ps.AddArgument($rp)                   | Out-Null
+            $ps.AddArgument($Global:HW_msgQueue)   | Out-Null
+            $ps.BeginInvoke() | Out-Null
+        } catch {
+            if ($null -ne $Global:HW_timer) { try { $Global:HW_timer.Stop() } catch {} }
+            if ($null -ne $ps) { try { $ps.Dispose() } catch {} }
+            if ($null -ne $rs) { try { $rs.Close(); $rs.Dispose() } catch {} }
+            HW-AddLog "Failed to start report generation: $($_.Exception.Message)" "FAIL"
+            $Global:HW_statusLabel.Text       = "Error"
+            $Global:HW_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
+            $Global:HW_generate.IsEnabled     = $true
+            $Global:HW_generate.Content       = "Generate Report"
+            HW-UnregisterActiveOperation
+        }
     })
 
     $Global:HW_openLast.Add_Click({

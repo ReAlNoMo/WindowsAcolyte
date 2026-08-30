@@ -181,6 +181,21 @@ Register-PowerToolsModule `
         )
     }
 
+    function Global:HV-RegisterActiveOperation {
+        if (Get-Command -Name Register-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Register-PTSActiveOperation `
+                -ModuleId "hash-verifier" `
+                -ModuleName "Hash Verifier" `
+                -Description "Verifying file hash"
+        }
+    }
+
+    function Global:HV-UnregisterActiveOperation {
+        if (Get-Command -Name Unregister-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Unregister-PTSActiveOperation -ModuleId "hash-verifier"
+        }
+    }
+
     function Global:HV-StartTimer {
         $Global:HV_timer = New-Object System.Windows.Threading.DispatcherTimer
         $Global:HV_timer.Interval = [TimeSpan]::FromMilliseconds(150)
@@ -202,6 +217,8 @@ Register-PowerToolsModule `
                         $Global:HV_pctLabel.Text    = "100%"
                         $Global:HV_verify.IsEnabled = $true
                         $Global:HV_verify.Content   = "Verify Hash"
+                        $Global:HV_reset.IsEnabled   = $true
+                        HV-UnregisterActiveOperation
 
                         if ($item.Match) {
                             $Global:HV_statusLabel.Text      = "PASS - Hash values match"
@@ -219,6 +236,8 @@ Register-PowerToolsModule `
                         $Global:HV_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
                         $Global:HV_verify.IsEnabled      = $true
                         $Global:HV_verify.Content        = "Verify Hash"
+                        $Global:HV_reset.IsEnabled        = $true
+                        HV-UnregisterActiveOperation
                     }
                 }
             }
@@ -315,20 +334,37 @@ Register-PowerToolsModule `
         $Global:HV_statusLabel.Foreground  = $Global:PTS_Brush["TextMuted"]
         $Global:HV_logBox.Foreground       = $Global:PTS_Brush["TextMuted"]
         $Global:HV_msgQueue               = [System.Collections.Concurrent.ConcurrentQueue[object]]::new()
+        $Global:HV_reset.IsEnabled         = $false
 
         HV-AddLog "Starting verification: $algoName" "INFO"
+        HV-RegisterActiveOperation
         HV-StartTimer
 
-        $rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
-        $rs.Open()
-        $ps = [System.Management.Automation.PowerShell]::Create()
-        $ps.Runspace = $rs
-        $ps.AddScript($Global:HV_hashScript) | Out-Null
-        $ps.AddArgument($Global:HV_selectedFile) | Out-Null
-        $ps.AddArgument($algoKey)                | Out-Null
-        $ps.AddArgument($inputHash)              | Out-Null
-        $ps.AddArgument($Global:HV_msgQueue)     | Out-Null
-        $ps.BeginInvoke() | Out-Null
+        $rs = $null
+        $ps = $null
+        try {
+            $rs = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace()
+            $rs.Open()
+            $ps = [System.Management.Automation.PowerShell]::Create()
+            $ps.Runspace = $rs
+            $ps.AddScript($Global:HV_hashScript) | Out-Null
+            $ps.AddArgument($Global:HV_selectedFile) | Out-Null
+            $ps.AddArgument($algoKey)                | Out-Null
+            $ps.AddArgument($inputHash)              | Out-Null
+            $ps.AddArgument($Global:HV_msgQueue)     | Out-Null
+            $ps.BeginInvoke() | Out-Null
+        } catch {
+            if ($null -ne $Global:HV_timer) { try { $Global:HV_timer.Stop() } catch {} }
+            if ($null -ne $ps) { try { $ps.Dispose() } catch {} }
+            if ($null -ne $rs) { try { $rs.Close(); $rs.Dispose() } catch {} }
+            HV-AddLog "Failed to start verification: $($_.Exception.Message)" "FAIL"
+            $Global:HV_statusLabel.Text       = "Error"
+            $Global:HV_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
+            $Global:HV_verify.IsEnabled       = $true
+            $Global:HV_verify.Content         = "Verify Hash"
+            $Global:HV_reset.IsEnabled        = $true
+            HV-UnregisterActiveOperation
+        }
     })
 
     $Global:HV_reset.Add_Click({

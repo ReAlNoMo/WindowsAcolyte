@@ -256,6 +256,30 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:RISO-RequestCancel {
+        if ($Global:RISO_cancelFlag -and -not $Global:RISO_cancelFlag.IsCancellationRequested) {
+            $Global:RISO_cancelFlag.Cancel()
+            RISO-AddLog "Cancellation requested..." "WARN"
+            if ($null -ne $Global:RISO_cancelBtn) { $Global:RISO_cancelBtn.IsEnabled = $false }
+        }
+    }
+
+    function Global:RISO-RegisterActiveDownload {
+        if (Get-Command -Name Register-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Register-PTSActiveOperation `
+                -ModuleId "rescue-iso-downloader" `
+                -ModuleName "Rescue ISO Downloader" `
+                -Description "Downloading rescue ISO files" `
+                -Cancel { RISO-RequestCancel }
+        }
+    }
+
+    function Global:RISO-UnregisterActiveDownload {
+        if (Get-Command -Name Unregister-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Unregister-PTSActiveOperation -ModuleId "rescue-iso-downloader"
+        }
+    }
+
     function Global:RISO-ClearProgressRows {
         $Global:RISO_progressRows = @{}
         $Global:RISO_progressPanel.Children.Clear()
@@ -410,6 +434,7 @@ Register-PowerToolsModule `
                         $Global:RISO_statusLabel.Text = "All downloads complete."
                         $Global:RISO_statusLabel.Foreground = $Global:PTS_Brush["Success"]
                         RISO-SetUIBusy $false
+                        RISO-UnregisterActiveDownload
                         RISO-CleanupBackground
                     }
                     "CANCELLED" {
@@ -418,6 +443,7 @@ Register-PowerToolsModule `
                         $Global:RISO_statusLabel.Text = "Cancelled."
                         $Global:RISO_statusLabel.Foreground = $Global:PTS_Brush["Warning"]
                         RISO-SetUIBusy $false
+                        RISO-UnregisterActiveDownload
                         RISO-CleanupBackground
                     }
                     "ERROR" {
@@ -426,6 +452,7 @@ Register-PowerToolsModule `
                         $Global:RISO_statusLabel.Text = "Error."
                         $Global:RISO_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
                         RISO-SetUIBusy $false
+                        RISO-UnregisterActiveDownload
                         RISO-CleanupBackground
                     }
                 }
@@ -943,6 +970,12 @@ Register-PowerToolsModule `
     }
 
     function Global:RISO-StartDownload {
+        if ($null -ne $Global:RISO_bgHandle -and -not $Global:RISO_bgHandle.IsCompleted) {
+            RISO-AddLog "A download operation is already running." "WARN"
+            return
+        }
+        RISO-CleanupBackground
+
         $dest = $Global:RISO_destBox.Text.Trim()
         if ([string]::IsNullOrWhiteSpace($dest)) {
             RISO-AddLog "Destination folder is empty." "FAIL"
@@ -987,15 +1020,25 @@ Register-PowerToolsModule `
 
         if ($Global:RISO_cancelFlag) { try { $Global:RISO_cancelFlag.Dispose() } catch {} }
         $Global:RISO_cancelFlag = [System.Threading.CancellationTokenSource]::new()
+        RISO-RegisterActiveDownload
         RISO-StartTimer
 
         $runDownloadsScript = ${function:RISO-RunDownloads}
-        $Global:RISO_bgPS = [System.Management.Automation.PowerShell]::Create()
-        $null = $Global:RISO_bgPS.AddScript({
-            param($Jobs, $Token, $Queue, $MaxPar, $WorkerScript, $RunDownloadsScript)
-            & $RunDownloadsScript -Jobs $Jobs -CancelToken $Token -Queue $Queue -MaxPar $MaxPar -WorkerScript $WorkerScript
-        }).AddArgument($jobs).AddArgument($Global:RISO_cancelFlag.Token).AddArgument($Global:RISO_msgQueue).AddArgument($maxPar).AddArgument($Global:RISO_WorkerScript).AddArgument($runDownloadsScript)
-        $Global:RISO_bgHandle = $Global:RISO_bgPS.BeginInvoke()
+        try {
+            $Global:RISO_bgPS = [System.Management.Automation.PowerShell]::Create()
+            $null = $Global:RISO_bgPS.AddScript({
+                param($Jobs, $Token, $Queue, $MaxPar, $WorkerScript, $RunDownloadsScript)
+                & $RunDownloadsScript -Jobs $Jobs -CancelToken $Token -Queue $Queue -MaxPar $MaxPar -WorkerScript $WorkerScript
+            }).AddArgument($jobs).AddArgument($Global:RISO_cancelFlag.Token).AddArgument($Global:RISO_msgQueue).AddArgument($maxPar).AddArgument($Global:RISO_WorkerScript).AddArgument($runDownloadsScript)
+            $Global:RISO_bgHandle = $Global:RISO_bgPS.BeginInvoke()
+        } catch {
+            RISO-AddLog "Failed to start download operation: $($_.Exception.Message)" "FAIL"
+            $Global:RISO_statusLabel.Text = "Error during startup."
+            $Global:RISO_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
+            RISO-SetUIBusy $false
+            RISO-UnregisterActiveDownload
+            RISO-CleanupBackground
+        }
     }
 
     $Global:RISO_browseBtn.Add_Click({
@@ -1010,10 +1053,7 @@ Register-PowerToolsModule `
     $Global:RISO_startBtn.Add_Click({ RISO-StartDownload })
 
     $Global:RISO_cancelBtn.Add_Click({
-        if ($Global:RISO_cancelFlag) {
-            $Global:RISO_cancelFlag.Cancel()
-            RISO-AddLog "Cancellation requested..." "WARN"
-        }
+        RISO-RequestCancel
     })
 
     $Global:RISO_clearLog.Add_Click({

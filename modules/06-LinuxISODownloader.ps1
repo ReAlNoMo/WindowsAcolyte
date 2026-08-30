@@ -383,6 +383,30 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:ISO-RequestCancel {
+        if ($null -ne $Global:ISO_cancelFlag -and -not $Global:ISO_cancelFlag.IsCancellationRequested) {
+            $Global:ISO_cancelFlag.Cancel()
+            ISO-AddLog "Cancel requested..." "WARN"
+            if ($null -ne $Global:ISO_cancelBtn) { $Global:ISO_cancelBtn.IsEnabled = $false }
+        }
+    }
+
+    function Global:ISO-RegisterActiveDownload {
+        if (Get-Command -Name Register-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Register-PTSActiveOperation `
+                -ModuleId "linux-iso-downloader" `
+                -ModuleName "Linux ISO Downloader" `
+                -Description "Downloading Linux ISO files" `
+                -Cancel { ISO-RequestCancel }
+        }
+    }
+
+    function Global:ISO-UnregisterActiveDownload {
+        if (Get-Command -Name Unregister-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Unregister-PTSActiveOperation -ModuleId "linux-iso-downloader"
+        }
+    }
+
     function Global:ISO-QueueMsg {
         param([hashtable]$Msg)
         $Global:ISO_msgQueue.Enqueue($Msg)
@@ -558,6 +582,7 @@ Register-PowerToolsModule `
                         $Global:ISO_statusLabel.Text      = "All downloads complete."
                         $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["Success"]
                         ISO-SetUI-Busy $false
+                        ISO-UnregisterActiveDownload
                         ISO-CleanupBackground
                     }
                     "CANCELLED" {
@@ -566,6 +591,7 @@ Register-PowerToolsModule `
                         $Global:ISO_statusLabel.Text      = "Cancelled."
                         $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["Warning"]
                         ISO-SetUI-Busy $false
+                        ISO-UnregisterActiveDownload
                         ISO-CleanupBackground
                     }
                     "ERROR" {
@@ -574,6 +600,7 @@ Register-PowerToolsModule `
                         $Global:ISO_statusLabel.Text      = "Error."
                         $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
                         ISO-SetUI-Busy $false
+                        ISO-UnregisterActiveDownload
                         ISO-CleanupBackground
                     }
                 }
@@ -1287,9 +1314,7 @@ Register-PowerToolsModule `
     })
 
     $Global:ISO_cancelBtn.Add_Click({
-        $Global:ISO_cancelFlag.Cancel()
-        ISO-AddLog "Cancel requested..." "WARN"
-        $Global:ISO_cancelBtn.IsEnabled = $false
+        ISO-RequestCancel
     })
 
     $Global:ISO_startBtn.Add_Click({
@@ -1366,6 +1391,7 @@ Register-PowerToolsModule `
             $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["TextMuted"]
             $Global:ISO_statusLabel.Text       = "Downloading $($jobs.Count) ISO(s)..."
             ISO-SetUI-Busy $true
+            ISO-RegisterActiveDownload
             ISO-StartTimer
 
             $maxPar = 3
@@ -1388,6 +1414,7 @@ Register-PowerToolsModule `
             $Global:ISO_statusLabel.Text       = "Error during startup."
             $Global:ISO_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
             ISO-SetUI-Busy $false
+            ISO-UnregisterActiveDownload
             ISO-CleanupBackground
         }
     })

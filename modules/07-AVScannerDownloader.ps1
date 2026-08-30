@@ -257,6 +257,30 @@ Register-PowerToolsModule `
         }
     }
 
+    function Global:AV-RequestCancel {
+        if ($null -ne $Global:AV_cancelFlag -and -not $Global:AV_cancelFlag.IsCancellationRequested) {
+            $Global:AV_cancelFlag.Cancel()
+            AV-AddLog "Cancel requested..." "WARN"
+            if ($null -ne $Global:AV_cancelBtn) { $Global:AV_cancelBtn.IsEnabled = $false }
+        }
+    }
+
+    function Global:AV-RegisterActiveDownload {
+        if (Get-Command -Name Register-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Register-PTSActiveOperation `
+                -ModuleId "av-scanner-downloader" `
+                -ModuleName "AV Scanner Downloader" `
+                -Description "Downloading AV scanner tools" `
+                -Cancel { AV-RequestCancel }
+        }
+    }
+
+    function Global:AV-UnregisterActiveDownload {
+        if (Get-Command -Name Unregister-PTSActiveOperation -ErrorAction SilentlyContinue) {
+            Unregister-PTSActiveOperation -ModuleId "av-scanner-downloader"
+        }
+    }
+
     function Global:AV-StartTimer {
         if ($null -ne $Global:AV_timer) {
             try { $Global:AV_timer.Stop() } catch {}
@@ -283,6 +307,7 @@ Register-PowerToolsModule `
                         $Global:AV_statusLabel.Text       = "All downloads complete."
                         $Global:AV_statusLabel.Foreground = $Global:PTS_Brush["Success"]
                         AV-SetUI-Busy $false
+                        AV-UnregisterActiveDownload
                         AV-CleanupBackground
                     }
                     "CANCELLED" {
@@ -290,6 +315,7 @@ Register-PowerToolsModule `
                         $Global:AV_statusLabel.Text       = "Cancelled."
                         $Global:AV_statusLabel.Foreground = $Global:PTS_Brush["Warning"]
                         AV-SetUI-Busy $false
+                        AV-UnregisterActiveDownload
                         AV-CleanupBackground
                     }
                     "ERROR" {
@@ -297,6 +323,7 @@ Register-PowerToolsModule `
                         $Global:AV_statusLabel.Text       = if ($item.Status) { $item.Status } else { "Error during download." }
                         $Global:AV_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
                         AV-SetUI-Busy $false
+                        AV-UnregisterActiveDownload
                         AV-CleanupBackground
                     }
                 }
@@ -801,6 +828,7 @@ Register-PowerToolsModule `
             $Global:AV_statusLabel.Foreground = $Global:PTS_Brush["TextMuted"]
             $Global:AV_statusLabel.Text       = "Starting..."
             AV-SetUI-Busy $true
+            AV-RegisterActiveDownload
             AV-StartTimer
 
             $capturedScanners = @($scanners)
@@ -821,6 +849,7 @@ Register-PowerToolsModule `
             $Global:AV_statusLabel.Text       = "Error during startup."
             $Global:AV_statusLabel.Foreground = $Global:PTS_Brush["Danger"]
             AV-SetUI-Busy $false
+            AV-UnregisterActiveDownload
             AV-CleanupBackground
         }
     })
@@ -829,10 +858,7 @@ Register-PowerToolsModule `
     # CANCEL HANDLER
     # ===========================================================================
     $Global:AV_cancelBtn.Add_Click({
-        if ($null -ne $Global:AV_cancelFlag -and -not $Global:AV_cancelFlag.IsCancellationRequested) {
-            $Global:AV_cancelFlag.Cancel()
-            AV-AddLog "Cancel requested..." "WARN"
-        }
+        AV-RequestCancel
     })
 
     # ===========================================================================
