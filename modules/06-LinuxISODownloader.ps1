@@ -63,36 +63,51 @@ Register-PowerToolsModule `
                     Style="{DynamicResource SecondaryButton}" Height="36" FontSize="11"
                     Padding="12,4" VerticalContentAlignment="Center"/>
         </Grid>
-        <WrapPanel ItemWidth="210">
-            <StackPanel Margin="0,0,16,10">
-                <CheckBox x:Name="CbUbuntu" Content="Ubuntu" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
-                <CheckBox x:Name="CbUbuntuDesktop" Content="Desktop (Consumer)" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
-                <CheckBox x:Name="CbUbuntuServer" Content="Server" IsChecked="True" Margin="18,4,0,0" FontSize="12"/>
+        <!-- Distribution-family selectors keep parent/child selection available. -->
+        <Border Background="{DynamicResource DynTileBg}"
+                BorderBrush="{DynamicResource DynTileBorder}"
+                BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+            <WrapPanel ItemWidth="95">
+                <CheckBox x:Name="CbUbuntu" Content="Ubuntu" IsThreeState="True" IsChecked="True" FontSize="12" FontWeight="SemiBold" Margin="0,2"/>
+                <CheckBox x:Name="CbDebian" Content="Debian" IsThreeState="True" IsChecked="True" FontSize="12" FontWeight="SemiBold" Margin="0,2"/>
+                <CheckBox x:Name="CbFedora" Content="Fedora" IsThreeState="True" IsChecked="True" FontSize="12" FontWeight="SemiBold" Margin="0,2"/>
+                <CheckBox x:Name="CbArch" Content="Arch Linux" IsThreeState="True" IsChecked="True" FontSize="12" FontWeight="SemiBold" Margin="0,2"/>
+                <CheckBox x:Name="CbCachyOS" Content="CachyOS" IsThreeState="True" IsChecked="False" FontSize="12" FontWeight="SemiBold" Margin="0,2"/>
+                <CheckBox x:Name="CbPopOS" Content="Pop!_OS" IsThreeState="True" IsChecked="False" FontSize="12" FontWeight="SemiBold" Margin="0,2"/>
+            </WrapPanel>
+        </Border>
+
+        <Border Background="{DynamicResource DynTileBg}"
+                BorderBrush="{DynamicResource DynTileBorder}"
+                BorderThickness="1.5" CornerRadius="8" Padding="12,10" Margin="0,0,0,8">
+            <StackPanel>
+                <TextBlock Text="DESKTOP EDITIONS" Foreground="{DynamicResource DynAccent}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <WrapPanel ItemWidth="190">
+                    <CheckBox x:Name="CbUbuntuDesktop" Content="Ubuntu (Desktop)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbDebianLive" Content="Debian Live (Desktop)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbFedoraWorkstation" Content="Fedora Workstation (Desktop)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbArchInstaller" Content="Arch Linux Installer (Desktop)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbCachyOSDesktop" Content="CachyOS (Desktop)" IsChecked="False" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbPopOSNvidia" Content="Pop!_OS NVIDIA (Desktop)" IsChecked="False" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbPopOSIntel" Content="Pop!_OS Intel/AMD (Desktop)" IsChecked="False" Margin="0,4" FontSize="12"/>
+                </WrapPanel>
             </StackPanel>
-            <StackPanel Margin="0,0,16,10">
-                <CheckBox x:Name="CbDebian" Content="Debian" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
-                <CheckBox x:Name="CbDebianNetinst" Content="Netinst (Server)" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
-                <CheckBox x:Name="CbDebianLive" Content="Live Desktop" IsChecked="True" Margin="18,4,0,0" FontSize="12"/>
+        </Border>
+
+        <Border Background="{DynamicResource DynTileBg}"
+                BorderBrush="{DynamicResource DynTileBorder}"
+                BorderThickness="1.5" CornerRadius="8" Padding="12,10">
+            <StackPanel>
+                <TextBlock Text="SERVER EDITIONS" Foreground="{DynamicResource DynAccent}"
+                           FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                <WrapPanel ItemWidth="190">
+                    <CheckBox x:Name="CbUbuntuServer" Content="Ubuntu (Server)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbDebianNetinst" Content="Debian Netinst (Server)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                    <CheckBox x:Name="CbFedoraServer" Content="Fedora (Server)" IsChecked="True" Margin="0,4" FontSize="12"/>
+                </WrapPanel>
             </StackPanel>
-            <StackPanel Margin="0,0,16,10">
-                <CheckBox x:Name="CbFedora" Content="Fedora" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
-                <CheckBox x:Name="CbFedoraWorkstation" Content="Workstation (Consumer)" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
-                <CheckBox x:Name="CbFedoraServer" Content="Server" IsChecked="True" Margin="18,4,0,0" FontSize="12"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,16,10">
-                <CheckBox x:Name="CbArch" Content="Arch Linux" IsThreeState="True" IsChecked="True" FontSize="13" FontWeight="SemiBold"/>
-                <CheckBox x:Name="CbArchInstaller" Content="Installer ISO" IsChecked="True" Margin="18,6,0,0" FontSize="12"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,16,10">
-                <CheckBox x:Name="CbCachyOS" Content="CachyOS" IsThreeState="True" IsChecked="False" FontSize="13" FontWeight="SemiBold"/>
-                <CheckBox x:Name="CbCachyOSDesktop" Content="Desktop" IsChecked="False" Margin="18,6,0,0" FontSize="12"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,16,10">
-                <CheckBox x:Name="CbPopOS" Content="Pop!_OS" IsThreeState="True" IsChecked="False" FontSize="13" FontWeight="SemiBold"/>
-                <CheckBox x:Name="CbPopOSNvidia" Content="Desktop NVIDIA" IsChecked="False" Margin="18,6,0,0" FontSize="12"/>
-                <CheckBox x:Name="CbPopOSIntel" Content="Desktop Intel/AMD" IsChecked="False" Margin="18,4,0,0" FontSize="12"/>
-            </StackPanel>
-        </WrapPanel>
+        </Border>
     </StackPanel>
 
     <Grid Grid.Row="2" Margin="0,0,0,14">
