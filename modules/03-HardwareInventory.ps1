@@ -341,7 +341,9 @@ Register-PowerToolsModule `
             $diskD = $Disks | ForEach-Object {
                 [PSCustomObject]@{
                     "Model"="$($_.Model)"; "Interface"="$($_.InterfaceType)";
-                    "Size"=(ConvertSize $_.Size); "Serial Number"="$($_.SerialNumber.Trim())";
+                    # Some disks (for example USB, virtual, or controller-backed drives)
+                    # do not expose a serial number. Cast first so Trim() never targets $null.
+                    "Size"=(ConvertSize $_.Size); "Serial Number"=([string]$_.SerialNumber).Trim();
                     "Partitions"="$($_.Partitions)"; "Status"="$($_.Status)"
                 }
             }
