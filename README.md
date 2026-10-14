@@ -462,7 +462,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 - Uses English shortcut names:
   - `WindowsAcolyte - Start (Local).lnk`
   - `WindowsAcolyte - Installer (Online).lnk`
-- Uses PowerShell 7 (`pwsh.exe`) with `-NoProfile`, `-ExecutionPolicy Bypass`, and `-STA` for the WPF launcher
+- Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - Uses the dedicated white-background shortcut icon from `logo/Windows_Acolyte_Shortcut_Icon.ico`
 - Logs created shortcut paths and missing local install warnings
 
@@ -607,7 +607,7 @@ Register-PowerToolsModule `
 - ✅ Linux ISO Downloader: distro variant selection, All/Only Server/Only Desktop presets, and one progress row per ISO
 - ✅ Active operation guard: downloads/hash/report jobs survive theme changes and warn before module switches or app close
 - ✅ Desktop Shortcut Creator: local start and online installer links from Windows Tools
-- ✅ Installer and shortcuts resolve a real PowerShell 7 executable, ignore the WindowsApps alias, and launch WPF with `-STA`
+- ✅ Desktop shortcuts use a stable Windows PowerShell host and resolve PowerShell 7 dynamically at launch, avoiding versioned Microsoft Store executable paths
 - ✅ Shortcut launch paths cleaned up without `-NoExit`
 - ✅ Gaming Optimizer: 29 tweaks + profiles
 - ✅ AV Scanner: RunspacePool orchestration

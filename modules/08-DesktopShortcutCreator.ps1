@@ -126,46 +126,71 @@ Register-PowerToolsModule `
         return $desktop
     }
 
-    function Global:DSC-GetPowerShellPath {
-        $windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
-        $candidates = @()
+    function Global:DSC-GetShortcutHostPath {
+        $hostPath = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+        if (-not (Test-Path -LiteralPath $hostPath)) {
+            throw "Stable Windows PowerShell host was not found: $hostPath"
+        }
+        return $hostPath
+    }
 
+    function Global:DSC-EnsurePowerShell7Bootstrap {
+        param([Parameter(Mandatory)][string]$InstallPath)
+
+        if (-not (Test-Path -LiteralPath $InstallPath)) {
+            New-Item -ItemType Directory -Path $InstallPath -Force | Out-Null
+        }
+
+        $bootstrapPath = Join-Path $InstallPath "Start-WindowsAcolyte.ps1"
+        $bootstrap = @'
+param([switch]$OnlineInstaller)
+
+$ErrorActionPreference = "Stop"
+$windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
+$candidates = @(
+    (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe"),
+    (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe"),
+    $windowsAppsAlias
+)
+Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue | ForEach-Object {
+    if ($_.Source) { $candidates += $_.Source }
+}
+
+$pwshPath = $null
+foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
+    if ((Test-Path -LiteralPath $candidate) -and
+        ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
+        ($candidate -notlike "*\.cache\codex-runtimes\*")) {
         try {
-            $currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
-            if ($currentPath) { $candidates += $currentPath }
-        } catch {}
-
-        if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
-            $candidates += (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe")
-            $candidates += (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe")
-        }
-
-        $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
-        if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
-            $candidates += (Join-Path $programFilesX86 "PowerShell\7\pwsh.exe")
-        }
-
-        $cmds = Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue
-        foreach ($cmd in $cmds) {
-            if ($cmd.Source) { $candidates += $cmd.Source }
-        }
-
-        foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
-            if ((Test-Path -LiteralPath $candidate) -and
-                ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
-                ($candidate -ine $windowsAppsAlias) -and
-                ($candidate -notlike "*\Microsoft\WindowsApps\pwsh.exe")) {
-                try {
-                    $majorText = & $candidate -NoProfile -Command '$PSVersionTable.PSVersion.Major' 2>$null
-                    $major = 0
-                    if ([int]::TryParse([string]($majorText | Select-Object -First 1), [ref]$major) -and $major -ge 7) {
-                        return $candidate
-                    }
-                } catch {}
+            $majorText = & $candidate -NoProfile -Command '$PSVersionTable.PSVersion.Major' 2>$null
+            $major = 0
+            if ([int]::TryParse([string]($majorText | Select-Object -First 1), [ref]$major) -and $major -ge 7) {
+                $pwshPath = $candidate
+                break
             }
-        }
+        } catch {}
+    }
+}
 
-        throw "A real PowerShell 7 executable was not found. The WindowsApps pwsh.exe alias is ignored because it can cause access errors in shortcuts."
+if ([string]::IsNullOrWhiteSpace($pwshPath)) {
+    throw "PowerShell 7 (pwsh.exe) was not found."
+}
+
+if ($OnlineInstaller) {
+    & $pwshPath -NoProfile -ExecutionPolicy Bypass -STA -Command 'irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" | iex'
+    exit $LASTEXITCODE
+}
+
+$appPath = Join-Path $PSScriptRoot "WindowsAcolyte.ps1"
+if (-not (Test-Path -LiteralPath $appPath)) {
+    throw "WindowsAcolyte launcher was not found: $appPath"
+}
+
+& $pwshPath -NoProfile -ExecutionPolicy Bypass -STA -File $appPath
+exit $LASTEXITCODE
+'@
+        Set-Content -LiteralPath $bootstrapPath -Value $bootstrap -Encoding UTF8
+        return $bootstrapPath
     }
 
     function Global:DSC-GetIconLocation {
@@ -230,14 +255,16 @@ Register-PowerToolsModule `
                 return
             }
 
-            $pwshPath = DSC-GetPowerShellPath
             $desktop = DSC-GetDesktopPath
             $installPath = Join-Path $env:LOCALAPPDATA "WindowsAcolyte"
             $launcherPath = Join-Path $installPath "WindowsAcolyte.ps1"
+            $shortcutHostPath = DSC-GetShortcutHostPath
+            $bootstrapPath = DSC-EnsurePowerShell7Bootstrap -InstallPath $installPath
             $iconLocation = DSC-GetIconLocation
 
             DSC-AddLog "Desktop target: $desktop"
-            DSC-AddLog "PowerShell target: $pwshPath"
+            DSC-AddLog "Stable shortcut host: $shortcutHostPath"
+            DSC-AddLog "PowerShell 7 bootstrap: $bootstrapPath"
             DSC-AddLog "Icon resource: $iconLocation"
 
             if ($createLocal) {
@@ -247,10 +274,10 @@ Register-PowerToolsModule `
 
                 $path = DSC-NewShortcut `
                     -Name "WindowsAcolyte - Start (Local)" `
-                    -TargetPath $pwshPath `
-                    -Arguments ('-NoProfile -ExecutionPolicy Bypass -STA -File "{0}"' -f $launcherPath) `
+                    -TargetPath $shortcutHostPath `
+                    -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}"' -f $bootstrapPath) `
                     -WorkingDirectory $installPath `
-                    -Description "Start WindowsAcolyte from the local installation." `
+                    -Description "Start WindowsAcolyte from the local installation via a version-safe PowerShell 7 bootstrap." `
                     -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" "OK"
             }
@@ -258,10 +285,10 @@ Register-PowerToolsModule `
             if ($createInstaller) {
                 $path = DSC-NewShortcut `
                     -Name "WindowsAcolyte - Installer (Online)" `
-                    -TargetPath $pwshPath `
-                    -Arguments '-NoProfile -ExecutionPolicy Bypass -STA -Command "irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1 | iex"' `
-                    -WorkingDirectory $desktop `
-                    -Description "Install or update WindowsAcolyte from GitHub." `
+                    -TargetPath $shortcutHostPath `
+                    -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}" -OnlineInstaller' -f $bootstrapPath) `
+                    -WorkingDirectory $installPath `
+                    -Description "Install or update WindowsAcolyte from GitHub via a version-safe PowerShell 7 bootstrap." `
                     -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" "OK"
             }
