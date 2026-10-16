@@ -222,9 +222,26 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-GetReg  { param($p,$n) try { (Get-ItemProperty -Path $p -Name $n -EA Stop).$n } catch { $null } }
-    function Global:GO-SetDW   { param($p,$n,$v) if(-not(Test-Path $p)){New-Item -Path $p -Force|Out-Null}; Set-ItemProperty -Path $p -Name $n -Value $v -Type DWord -Force }
-    function Global:GO-SetStr  { param($p,$n,$v) if(-not(Test-Path $p)){New-Item -Path $p -Force|Out-Null}; Set-ItemProperty -Path $p -Name $n -Value $v -Type String -Force }
+    function Global:GO-SetDW   { param($p,$n,$v) if(-not(Test-Path $p)){New-Item -Path $p -Force -EA Stop|Out-Null}; Set-ItemProperty -Path $p -Name $n -Value $v -Type DWord -Force -EA Stop }
+    function Global:GO-SetStr  { param($p,$n,$v) if(-not(Test-Path $p)){New-Item -Path $p -Force -EA Stop|Out-Null}; Set-ItemProperty -Path $p -Name $n -Value $v -Type String -Force -EA Stop }
     function Global:GO-DelReg  { param($p,$n) try { Remove-ItemProperty -Path $p -Name $n -Force -EA Stop } catch {} }
+
+    function Global:GO-TestDWord {
+        param($p, $n, [uint32]$Expected)
+        $value = GO-GetReg $p $n
+        if ($null -eq $value) { return $false }
+        # Registry providers may expose DWORDs as signed or unsigned integers.
+        return (([long]$value -band 0xFFFFFFFFL) -eq [long]$Expected)
+    }
+
+    function Global:GO-ApplyVerifiedTweak {
+        param($Tweak)
+        $ErrorActionPreference = 'Stop'
+        & $Tweak.Apply | Out-Null
+        if (-not (& $Tweak.Check)) {
+            throw "Setting verification failed after applying: $($Tweak.Label)"
+        }
+    }
 
     function Global:GO-DetectHardware {
         $cpu = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name
@@ -249,7 +266,15 @@ Register-PowerToolsModule `
 
     function Global:GO-IsRecommended {
         param($TweakId)
-        $alwaysRecommended = @(1,2,3,4,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,25,26,27,28)
+        $tweak = $script:GO_tweaks | Where-Object { $_.Id -eq $TweakId } | Select-Object -First 1
+        if ($tweak.Mutex) {
+            foreach ($other in $script:GO_tweaks) {
+                if ($other.Id -ne $TweakId -and $other.Mutex -eq $tweak.Mutex -and (& $other.Check)) {
+                    return $false
+                }
+            }
+        }
+        $alwaysRecommended = @(1,2,3,4,8,9,11,12,13,14,15,16,17,18,19,20,21,22,25,26,27,28)
         if ($alwaysRecommended -contains $TweakId) { return $true }
         if ($script:GO_hw.IsX3D -and $TweakId -eq 5) { return $false }
         if ($TweakId -eq 24 -and $script:GO_hw.Build -lt 26100) { return $false }
@@ -327,8 +352,8 @@ Register-PowerToolsModule `
            ShortDesc="Removes network throughput limit. Better network latency and throughput.";
            LongDesc="Windows limits network throughput to save CPU. Disabling improves network latency and throughput.";
            FPSGain="Latency";
-           Check={ (GO-GetReg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex") -eq 0xFFFFFFFF };
-           Apply={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 0xFFFFFFFF };
+           Check={ GO-TestDWord "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" ([uint32]::MaxValue) };
+           Apply={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" ([uint32]::MaxValue) };
            Revert={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 10 } }
         @{ Id=9; Group="Power / CPU"; Risk=0; NeedsReboot=$false; Mutex="PrioritySep";
            Label="Win32PrioritySeparation = 36 (Competitive)";
@@ -653,11 +678,20 @@ Register-PowerToolsModule `
                 $lastGroup = $t.Group
             }
             $isOk = & $t.Check
+            $isAlternative = $false
+            if (-not $isOk -and $t.Mutex) {
+                foreach ($other in $script:GO_tweaks) {
+                    if ($other.Id -ne $t.Id -and $other.Mutex -eq $t.Mutex -and (& $other.Check)) {
+                        $isAlternative = $true
+                        break
+                    }
+                }
+            }
             $row = New-Object System.Windows.Controls.Grid
             $row.Margin = "8,2,8,2"
             $row.MinHeight = 28
             $row.HorizontalAlignment = "Stretch"
-            foreach ($w in @("*","60","72","60","52")) {
+            foreach ($w in @("*","85","72","60","52")) {
                 $col = New-Object System.Windows.Controls.ColumnDefinition; $col.Width = $w
                 $row.ColumnDefinitions.Add($col) | Out-Null
             }
@@ -680,7 +714,8 @@ Register-PowerToolsModule `
             }
             [System.Windows.Controls.Grid]::SetColumn($cb, 0); $row.Children.Add($cb) | Out-Null
             $lbl = New-Object System.Windows.Controls.TextBlock
-            $lbl.Text = if ($isOk){"APPLIED"}else{"MISSING"}
+            $lbl.Text = if ($isOk){"APPLIED"}elseif ($isAlternative){"ALTERNATIVE"}else{"MISSING"}
+            if ($t.Mutex) { $lbl.ToolTip = "Only one setting in this group can be active. Selecting the alternative replaces the current value." }
             $lbl.Foreground = if ($isOk){Get-PowerToolsBrush "Success"}else{Get-PowerToolsBrush "Warning"}
             $lbl.FontSize = 9; $lbl.FontWeight = "Bold"; $lbl.VerticalAlignment = "Center"; $lbl.Margin = "8,0,4,0"
             [System.Windows.Controls.Grid]::SetColumn($lbl, 1); $row.Children.Add($lbl) | Out-Null
@@ -871,6 +906,11 @@ Register-PowerToolsModule `
     $script:GO_applyBtn.Add_Click({
         $selected = $script:GO_tweaks | Where-Object { $cb=$script:GO_checkboxes[$_.Id]; $cb -and $cb.IsChecked -eq $true -and $cb.IsEnabled }
         if (-not $selected) { GO-AddLog "Nothing selected." "WARN"; return }
+        $conflicts = @($selected | Where-Object { $_.Mutex } | Group-Object Mutex | Where-Object { $_.Count -gt 1 })
+        if ($conflicts.Count -gt 0) {
+            GO-AddLog "Select only one Win32PrioritySeparation preset before applying." "FAIL"
+            return
+        }
         $highRisk = $selected | Where-Object { $_.Risk -eq 2 }
         if ($highRisk) {
             $names = ($highRisk | ForEach-Object { $_.Label }) -join "`n- "
@@ -883,7 +923,7 @@ Register-PowerToolsModule `
         GO-AddLog "Applying $($selected.Count) tweak(s)..." "INFO"
         $ok=0; $fail=0; $needsReboot=$false
         foreach ($t in $selected) {
-            try { & $t.Apply; GO-AddLog "[$($t.Id.ToString().PadLeft(2))] $($t.Label)" "OK"; $ok++; if ($t.NeedsReboot) { $needsReboot=$true } }
+            try { GO-ApplyVerifiedTweak -Tweak $t; GO-AddLog "[$($t.Id.ToString().PadLeft(2))] $($t.Label) - verified" "OK"; $ok++; if ($t.NeedsReboot) { $needsReboot=$true } }
             catch { GO-AddLog "[$($t.Id.ToString().PadLeft(2))] $($t.Label) - $_" "FAIL"; $fail++ }
         }
         GO-AddLog "Applied: $ok  Failed: $fail" "INFO"

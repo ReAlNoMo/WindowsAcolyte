@@ -272,7 +272,9 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 - ✅ Checkbox selection with risk indicators (🟢 SAFE / 🟡 MODERATE / 🔴 HIGH)
 - 🔍 Hardware detection (Intel 12+ / AMD Ryzen 5000+ / AMD X3D / NVIDIA)
 - ⚠️ X3D CPU auto-detection (Game Mode forced ON)
-- 🔍 Status detection (APPLIED ✅ / MISSING ⚠️)
+- 🔍 Status detection (APPLIED ✅ / MISSING ⚠️ / ALTERNATIVE for mutually exclusive priority presets)
+- Network throttling status handles both signed and unsigned DWORD representations of `0xFFFFFFFF`
+- Apply success is logged only after the setting's status check passes; registry write errors are reported as failures
 - 🔄 Re-scan button
 - 🪵 Activity log with timestamps & status codes
 - 💾 Profile Save/Load (JSON format)
@@ -299,7 +301,7 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 > 🧠 **AMD X3D CPUs** → Game Mode MUST stay enabled (auto-detected, forced ON)
 > 🔒 **High-Risk tweaks** → User confirmation popup required
 > 💾 **Registry backup** → Automatic before changes
-> ⚡ **Competitive vs AAA** → Win32Priority can be set to either mode
+> ⚡ **Competitive vs AAA** → Only one Win32Priority mode can be active: Competitive = 36 (`0x24`), AAA = 24 (`0x18`). The other mode is an alternative, not a missing setting; automatic pre-selection preserves the active mode.
 > 📊 **Estimates** → FPS gains are approximate; actual results vary per system
 
 ---
