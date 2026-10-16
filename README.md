@@ -225,56 +225,52 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ### ⚙️ Complete Tweaks List (29 Total)
 
-#### 🧠 CPU & Scheduling (7)
-1. Memory Integrity / HVCI (OFF)
-2. VBS / Virtual Machine Platform (OFF)
-3. Ultimate Performance Power Plan
-4. Power Throttling (OFF)
-5. System Responsiveness = 10
-6. Network Throttling (OFF)
-7. Win32PrioritySeparation (Competitive/AAA modes)
-
-#### 🎨 Graphics & Gaming (8)
-8. GameDVR / Xbox Recording (OFF)
-9. Hardware-Accelerated GPU Scheduling (ON)
-10. Windows Game Mode (ON) – **CRITICAL for AMD X3D**
-11. Windowed Game Optimizations (Flip Model)
-12. Games Task Scheduling = High
-13. Transparency Effects (OFF)
-14. Window Animations (OFF)
-15. Menu Show Delay = 0
-
-#### 🌐 Network & Latency (3)
-16. Disable Nagle Algorithm
-17. Advanced TCP Optimizations
-18. Taskbar Animations (OFF)
-
-#### 💾 Storage & Filesystem (3)
-19. NTFS Disable Last Access Time
-20. NTFS Disable 8.3 Filenames
-21. Disable Paging Executive
-
-#### 🔒 Security & Privacy (5)
-22. Spectre/Meltdown Mitigations (OFF) – **HIGH RISK**
-23. Native NVMe Stack (Win11 24H2+) – **EXPERIMENTAL**
-24. Disable Telemetry
-25. Search History (OFF)
-26. Share Across Devices (OFF)
-
-#### 🔌 Peripherals (2)
-27. Dynamic Lighting (OFF)
-28. Additional Registry Tuning
-29. Advanced Gaming Settings
+| ID | Option | Configuration checked |
+|----|--------|-----------------------|
+| 1 | HVCI OFF | HVCI + VBS registry flags |
+| 2 | VBS configuration OFF | VBS registry flag; does not remove Virtual Machine Platform |
+| 3 | GameDVR recording OFF | User flag + machine policy |
+| 4 | Spectre/Meltdown configuration OFF | Override + mask; high risk |
+| 5 | Ultimate Performance | Active plan identity |
+| 6 | Power throttling OFF | PowerThrottlingOff |
+| 7 | System responsiveness 10 | SystemResponsiveness |
+| 8 | Network throttling OFF | NetworkThrottlingIndex = 0xFFFFFFFF |
+| 9 | Competitive priority | Win32PrioritySeparation = 36 (0x24) |
+| 10 | AAA priority | Win32PrioritySeparation = 24 (0x18); alternative to #9 |
+| 11 | Startup delay OFF | StartupDelayInMSec |
+| 12 | GPU scheduling ON | HwSchMode; runtime support not verified |
+| 13 | Game Mode ON | AutoGameModeEnabled |
+| 14 | Legacy fullscreen flags | Both GameDVR compatibility flags; not the windowed-games switch |
+| 15 | Games scheduling High | Scheduling Category |
+| 16 | Nagle/ACK configuration | Three values per active physical Ethernet/Wi-Fi adapter |
+| 17 | Advanced TCP configuration | Autotuning, RSS, RSC, ECN, timestamps |
+| 18 | Transparency OFF | EnableTransparency |
+| 19 | Window animations OFF | MinAnimate |
+| 20 | Menu delay 0 | MenuShowDelay |
+| 21 | Taskbar animations OFF | TaskbarAnimations |
+| 22 | NTFS last-access updates OFF | Numeric NTFS flags, including system-managed states |
+| 23 | NTFS 8.3 creation OFF | Global numeric policy = 1 |
+| 24 | Experimental NVMe override | Registry override only; build 26100+, driver activation not verified |
+| 25 | Paging executive OFF | DisablePagingExecutive |
+| 26 | Telemetry policy request | AllowTelemetry + DiagTrack startup/status |
+| 27 | Search history OFF | IsDeviceSearchHistoryEnabled |
+| 28 | Share across devices OFF | CdpSessionUserAuthzPolicy |
+| 29 | Dynamic lighting OFF | Both managed lighting flags |
 
 ---
 
 ### 🧠 UI Features
 - ✅ Checkbox selection with risk indicators (🟢 SAFE / 🟡 MODERATE / 🔴 HIGH)
 - 🔍 Hardware detection (Intel 12+ / AMD Ryzen 5000+ / AMD X3D / NVIDIA)
-- ⚠️ X3D CPU auto-detection (Game Mode forced ON)
-- 🔍 Status detection (APPLIED ✅ / MISSING ⚠️ / ALTERNATIVE for mutually exclusive priority presets)
+- ⚠️ X3D CPU auto-detection with Game Mode guidance (not forced)
+- 🔍 Status detection (APPLIED / MISSING / ALTERNATIVE / UNAVAILABLE / CHECK ERROR)
 - Network throttling status handles both signed and unsigned DWORD representations of `0xFFFFFFFF`
-- Apply success is logged only after the setting's status check passes; registry write errors are reported as failures
+- Numeric NTFS checks avoid language/output-format mismatches; 8.3 policy `1` is correctly recognized as globally disabled
+- Multi-value settings verify every managed field; TCP checks all five configured values, and telemetry checks the DiagTrack service too
+- Native command exit codes and registry/service errors are checked before reporting success
+- Conflicts and reset effects appear directly below options, in selection details and in reset confirmations
+- Apply/Reset compares before/after states and logs previously applied options that become inactive
+- Bulk selection preserves the active priority preset; unavailable options and failed checks cannot be selected
 - 🔄 Re-scan button
 - 🪵 Activity log with timestamps & status codes
 - 💾 Profile Save/Load (JSON format)
@@ -291,18 +287,36 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 - Hardware context stored (CPU, GPU, RAM, Build)
 - JSON format (human-readable)
 - Multiple profiles supported
-- Validation on load
+- JSON numeric IDs are normalized before matching UI controls
+- Conflicting priority IDs and malformed profiles are rejected before changing the selection
+- Save includes applied settings and pending selections; a pending priority alternative replaces the active one in the profile
 
 ---
 
 ### ⚠️ Important Notes
 
 > 🔴 **Reboot required** for many tweaks
-> 🧠 **AMD X3D CPUs** → Game Mode MUST stay enabled (auto-detected, forced ON)
+> 🧠 **AMD X3D CPUs** → Keep Game Mode enabled; its Reset action disables it
 > 🔒 **High-Risk tweaks** → User confirmation popup required
-> 💾 **Registry backup** → Automatic before changes
+> 💾 **Selected backups** → Created before Apply; failed selected backups stop Apply. Restore-point creation is verified (including Windows creation-frequency limits).
 > ⚡ **Competitive vs AAA** → Only one Win32Priority mode can be active: Competitive = 36 (`0x24`), AAA = 24 (`0x18`). The other mode is an alternative, not a missing setting; automatic pre-selection preserves the active mode.
 > 📊 **Estimates** → FPS gains are approximate; actual results vary per system
+
+`APPLIED` confirms stored configuration, not a measured FPS improvement or proof that a reboot-dependent feature is already effective. The NVMe option only checks an experimental feature override and is never automatically recommended.
+
+HVCI OFF also writes VBS OFF. Resetting either shared security setting can invalidate the other; the UI explains this and logs status changes. Resetting the power-plan option switches to Balanced, including when the separate Ultimate Performance module's plan was active. **Reset Managed Settings** uses documented module presets, not a snapshot of your original Windows configuration. The 8.3 reset policy is per-volume (`2`).
+
+Validation (PowerShell 7 on Windows):
+
+```powershell
+pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizer.ps1
+pwsh -NoProfile -File .\tests\Test-GamingOptimizerAudit.ps1
+pwsh -NoProfile -File .\tests\Test-GamingOptimizerAudit.ps1 -ReadOnly
+```
+
+The tests cover all 29 Apply/Check/Reset lifecycles and all 812 ordered option pairs for both Apply and Reset in an isolated model. The WPF tests use a temporary HKCU key; real machine checks are read-only. These tests do not establish driver activation, OS-edition support, reboot behavior or performance gains.
+
+Command semantics: [Microsoft fsutil behavior](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-behavior), [8.3 policy values](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-8dot3name), [powercfg](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options).
 
 ---
 

@@ -108,8 +108,13 @@ Register-PowerToolsModule `
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" x:Name="EstimateText" FontSize="11"
-                       Text="No tweaks selected. All estimates without warranty."/>
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                <TextBlock x:Name="EstimateText" FontSize="11" TextWrapping="Wrap"
+                           Text="No tweaks selected. All estimates without warranty."/>
+                <TextBlock x:Name="ImpactText" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Foreground="{DynamicResource DynTextDark}"
+                           Text="APPLIED = configuration verified. Reboot-marked settings may not be effective until restart."/>
+            </StackPanel>
             <TextBlock Grid.Column="1" Text="Hover = short info  |  Click name = full details"
                        Foreground="{DynamicResource DynTextMuted}" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
         </Grid>
@@ -127,7 +132,7 @@ Register-PowerToolsModule `
                 Margin="0,0,6,0" IsEnabled="False"/>
         <Button Grid.Column="1" x:Name="RecheckBtn" Content="Recheck All"
                 Style="{DynamicResource SecondaryButton}" Height="40" FontSize="11" Margin="0,0,6,0"/>
-        <Button Grid.Column="2" x:Name="RevertBtn" Content="Revert to Windows Defaults"
+        <Button Grid.Column="2" x:Name="RevertBtn" Content="Reset Managed Settings"
                 Style="{DynamicResource SecondaryButton}" Height="40" FontSize="11"/>
     </Grid>
 
@@ -177,6 +182,7 @@ Register-PowerToolsModule `
     $script:GO_tweakListBorder = $view.FindName("TweakListBorder")
     $script:GO_estimateBar     = $view.FindName("EstimateBar")
     $script:GO_estimate        = $view.FindName("EstimateText")
+    $script:GO_impactText      = $view.FindName("ImpactText")
     $script:GO_logAreaBorder   = $view.FindName("LogAreaBorder")
     $script:GO_applyBtn        = $view.FindName("ApplyBtn")
     $script:GO_recheckBtn      = $view.FindName("RecheckBtn")
@@ -221,10 +227,92 @@ Register-PowerToolsModule `
         $script:GO_logScroller.Dispatcher.Invoke([action]{ $script:GO_logScroller.ScrollToEnd() })
     }
 
-    function Global:GO-GetReg  { param($p,$n) try { (Get-ItemProperty -Path $p -Name $n -EA Stop).$n } catch { $null } }
+    function Global:GO-GetReg {
+        param($p,$n)
+        try { return (Get-ItemProperty -LiteralPath $p -Name $n -EA Stop).$n }
+        catch {
+            if ($_.CategoryInfo.Category -in @('ObjectNotFound','InvalidArgument')) { return $null }
+            throw
+        }
+    }
     function Global:GO-SetDW   { param($p,$n,$v) if(-not(Test-Path $p)){New-Item -Path $p -Force -EA Stop|Out-Null}; Set-ItemProperty -Path $p -Name $n -Value $v -Type DWord -Force -EA Stop }
     function Global:GO-SetStr  { param($p,$n,$v) if(-not(Test-Path $p)){New-Item -Path $p -Force -EA Stop|Out-Null}; Set-ItemProperty -Path $p -Name $n -Value $v -Type String -Force -EA Stop }
-    function Global:GO-DelReg  { param($p,$n) try { Remove-ItemProperty -Path $p -Name $n -Force -EA Stop } catch {} }
+    function Global:GO-DelReg {
+        param($p,$n)
+        if (Test-Path -LiteralPath $p) {
+            $key = Get-Item -LiteralPath $p -EA Stop
+            if ($key.GetValueNames() -contains $n) { Remove-ItemProperty -LiteralPath $p -Name $n -Force -EA Stop }
+        }
+    }
+
+    function Global:GO-InvokeNative {
+        param([string]$FilePath, [string[]]$Arguments)
+        $ErrorActionPreference = 'Stop'
+        $output = & $FilePath @Arguments 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "$FilePath failed (exit $LASTEXITCODE): $($output -join ' ')"
+        }
+        return $output
+    }
+
+    function Global:GO-GetGamingAdapters {
+        # Active physical Ethernet and Wi-Fi, excluding virtual/VPN adapters.
+        return @(Get-NetAdapter -Physical -EA Stop | Where-Object { $_.Status -eq 'Up' -and $_.InterfaceType -in @(6,71) })
+    }
+
+    function Global:GO-TestTCPSettings {
+        $tcp = Get-NetTCPSetting -SettingName Internet -EA Stop
+        $offload = Get-NetOffloadGlobalSetting -EA Stop
+        return ($tcp.AutoTuningLevelLocal -eq 'Normal' -and $tcp.EcnCapability -eq 'Disabled' -and
+                $tcp.Timestamps -eq 'Disabled' -and $offload.ReceiveSideScaling -eq 'Enabled' -and
+                $offload.ReceiveSegmentCoalescing -eq 'Disabled')
+    }
+
+    function Global:GO-GetPowerSchemes {
+        foreach ($line in (GO-InvokeNative 'powercfg.exe' @('/list'))) {
+            if ($line -match '([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\s*\((.*?)\)') {
+                [pscustomobject]@{ Guid=$matches[1]; Name=$matches[2] }
+            }
+        }
+    }
+
+    function Global:GO-TestUltimatePlan {
+        $activeText = (GO-InvokeNative 'powercfg.exe' @('/getactivescheme')) -join ' '
+        $activeGuid = [regex]::Match($activeText, '[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}').Value
+        if (-not $activeGuid) { throw 'Could not read the active power plan GUID.' }
+        if ($activeGuid -in @('e9a42b02-d5df-448d-aa00-03f14749eb61','7e195a58-faf5-4a60-9f6b-72328419de91')) { return $true }
+        $active = GO-GetPowerSchemes | Where-Object { $_.Guid -eq $activeGuid } | Select-Object -First 1
+        return ($null -ne $active -and $active.Name -in @('Ultimate Performance','WindowsAcolyte Ultimate Performance','WindowsAcolyte Gaming Ultimate Performance'))
+    }
+
+    function Global:GO-EnableUltimatePlan {
+        if (GO-TestUltimatePlan) { return }
+        $plan = GO-GetPowerSchemes | Where-Object {
+            $_.Guid -eq '7e195a58-faf5-4a60-9f6b-72328419de91' -or
+            $_.Name -in @('Ultimate Performance','WindowsAcolyte Ultimate Performance','WindowsAcolyte Gaming Ultimate Performance')
+        } | Select-Object -First 1
+        if ($plan) { $guid = $plan.Guid }
+        else {
+            $guid = '7e195a58-faf5-4a60-9f6b-72328419de91'
+            GO-InvokeNative 'powercfg.exe' @('/duplicatescheme','e9a42b02-d5df-448d-aa00-03f14749eb61',$guid) | Out-Null
+            GO-InvokeNative 'powercfg.exe' @('/changename',$guid,'WindowsAcolyte Gaming Ultimate Performance') | Out-Null
+        }
+        GO-InvokeNative 'powercfg.exe' @('/setactive',$guid) | Out-Null
+    }
+
+    function Global:GO-GetTweakState {
+        param($Tweak)
+        try {
+            if ($Tweak.Available -and -not (& $Tweak.Available)) {
+                return @{Applied=$false; Status='UNAVAILABLE'; Message=$Tweak.UnavailableReason}
+            }
+            $result = @(& $Tweak.Check)
+            if ($result.Count -ne 1 -or $result[0] -isnot [bool]) { throw 'Status check must return exactly one Boolean.' }
+            return @{Applied=$result[0]; Status=$(if ($result[0]) {'APPLIED'} else {'MISSING'}); Message='Configuration check; reboot may still be required.'}
+        } catch {
+            return @{Applied=$false; Status='CHECK ERROR'; Message=$_.Exception.Message}
+        }
+    }
 
     function Global:GO-TestDWord {
         param($p, $n, [uint32]$Expected)
@@ -237,10 +325,33 @@ Register-PowerToolsModule `
     function Global:GO-ApplyVerifiedTweak {
         param($Tweak)
         $ErrorActionPreference = 'Stop'
+        if ($Tweak.Available -and -not (& $Tweak.Available)) { throw $Tweak.UnavailableReason }
         & $Tweak.Apply | Out-Null
-        if (-not (& $Tweak.Check)) {
-            throw "Setting verification failed after applying: $($Tweak.Label)"
+        $state = GO-GetTweakState $Tweak
+        if (-not $state.Applied) {
+            throw "Setting verification failed after applying: $($Tweak.Label). $($state.Message)"
         }
+    }
+
+    function Global:GO-GetStateSnapshot {
+        $states = @{}
+        foreach ($tweak in $script:GO_tweaks) { $states[$tweak.Id] = GO-GetTweakState $tweak }
+        return $states
+    }
+
+    function Global:GO-LogStateChanges {
+        param($Before, $After, [string]$Action)
+        foreach ($tweak in $script:GO_tweaks) {
+            if ($Before[$tweak.Id].Applied -and -not $After[$tweak.Id].Applied) {
+                GO-AddLog "$Action changed previously applied setting: $($tweak.Label) -> $($After[$tweak.Id].Status)" 'WARN'
+            }
+        }
+    }
+
+    function Global:GO-ResetTweak {
+        param($Tweak)
+        $ErrorActionPreference = 'Stop'
+        & $Tweak.Revert | Out-Null
     }
 
     function Global:GO-DetectHardware {
@@ -275,10 +386,10 @@ Register-PowerToolsModule `
             }
         }
         $alwaysRecommended = @(1,2,3,4,8,9,11,12,13,14,15,16,17,18,19,20,21,22,25,26,27,28)
+        if ($TweakId -eq 24) { return $false }
+        if ($tweak.Available -and -not (& $tweak.Available)) { return $false }
         if ($alwaysRecommended -contains $TweakId) { return $true }
         if ($script:GO_hw.IsX3D -and $TweakId -eq 5) { return $false }
-        if ($TweakId -eq 24 -and $script:GO_hw.Build -lt 26100) { return $false }
-        if ($TweakId -eq 24 -and $script:GO_hw.Build -ge 26100) { return $true }
         return $false
     }
 
@@ -288,15 +399,16 @@ Register-PowerToolsModule `
            ShortDesc="Disables Hypervisor-Protected Code Integrity. Biggest FPS gainer.";
            LongDesc="Hypervisor-Protected Code Integrity (HVCI) validates every kernel driver access via hypervisor. Disabling yields 3-25% FPS gain, more stable 1% lows, significantly less microstutter in CPU-limited games. Risk: Kernel exploits through manipulated drivers become possible. Acceptable for dedicated gaming PC without sensitive data.";
            FPSGain="3-25% FPS";
-           Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled") -eq 0 };
+           Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled") -eq 0 -and
+                   (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity") -eq 0 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled" 0
                    GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 0 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled" 1
                     GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 1 } }
         @{ Id=2; Group="Security - High Impact"; Risk=1; NeedsReboot=$true;
-           Label="Disable VBS / Virtual Machine Platform";
-           ShortDesc="Disables Virtualization-Based Security. Prerequisite for HVCI disable. Big FPS unlock.";
-           LongDesc="Virtualization-Based Security creates an isolated hypervisor environment. Prerequisite for HVCI. Disabling yields additional 2-8% FPS. Risk: Same as HVCI - reduced kernel protection. Acceptable for gaming-only machines.";
+           Label="VBS Registry Configuration (OFF)";
+           ShortDesc="Sets the VBS registry configuration to OFF; runtime state can differ until reboot or due to policy.";
+           LongDesc="Sets EnableVirtualizationBasedSecurity to 0. This does not remove the Virtual Machine Platform Windows feature or override policy/UEFI locks. APPLIED verifies the stored value, not the hypervisor runtime state. Reset enables VBS and invalidates the combined HVCI-off configuration.";
            FPSGain="2-8% FPS";
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity") -eq 0 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 0 };
@@ -306,7 +418,8 @@ Register-PowerToolsModule `
            ShortDesc="Disables Xbox Game Bar DVR recording. Frees GPU/CPU resources during gameplay.";
            LongDesc="Xbox Game Bar DVR captures gameplay in background consuming GPU and CPU resources. Disabling yields 2-5% FPS in GPU-limited scenarios. No risk - only removes screen recording. Manual screenshots still work.";
            FPSGain="2-5% FPS";
-           Check={ (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_Enabled") -eq 0 };
+           Check={ (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_Enabled") -eq 0 -and
+                   (GO-GetReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR") -eq 0 };
            Apply={ GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 0
                    GO-SetDW "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" 0 };
            Revert={ GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 1
@@ -316,21 +429,20 @@ Register-PowerToolsModule `
            ShortDesc="Disables CPU vulnerability mitigations. +5-15% FPS on older CPUs. SECURITY RISK.";
            LongDesc="Spectre and Meltdown mitigations protect against CPU-level attacks. Disabling yields 5-15% FPS on older CPUs (Intel 6-9th gen). HIGH RISK: Only on isolated gaming PCs without browser or sensitive data access. Not recommended.";
            FPSGain="5-15% FPS";
-           Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride") -eq 3 };
+           Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride") -eq 3 -and
+                   (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverrideMask") -eq 3 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride" 3
                    GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverrideMask" 3 };
            Revert={ GO-DelReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride"
                     GO-DelReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverrideMask" } }
         @{ Id=5; Group="Power / CPU"; Risk=0; NeedsReboot=$false;
            Label="Ultimate Performance Power Plan";
-           ShortDesc="Activates hidden Ultimate Performance plan. Disables core parking. Sets min CPU clock to 100%.";
-           LongDesc="Hidden power plan that disables core parking and sets minimum CPU clock to 100%. Eliminates CPU wake latencies, instant response to load spikes. Yields 5-15% FPS. Risk: Higher idle power consumption and heat.";
+           ShortDesc="Activates an Ultimate Performance power plan. Replaces the current active power plan.";
+           LongDesc="Activates or creates an Ultimate Performance plan. For explicitly managed CPU/core-parking/display settings, use the separate Ultimate Performance Power Plan module. Reset switches to Balanced, including when the dedicated WindowsAcolyte plan is currently active.";
            FPSGain="5-15% FPS";
-           Check={ (powercfg -list | Select-String "Ultimate Performance") -ne $null -and (powercfg -getactivescheme | Select-String "Ultimate") -ne $null };
-           Apply={ powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 | Out-Null
-                   $g = (powercfg -list | Select-String "Ultimate Performance" | ForEach-Object { ($_ -split "\s+")[3] } | Select-Object -First 1)
-                   if ($g) { powercfg -setactive $g | Out-Null } };
-           Revert={ powercfg -setactive SCHEME_BALANCED | Out-Null } }
+           Check={ GO-TestUltimatePlan };
+           Apply={ GO-EnableUltimatePlan };
+           Revert={ GO-InvokeNative 'powercfg.exe' @('/setactive','SCHEME_BALANCED') | Out-Null } }
         @{ Id=6; Group="Power / CPU"; Risk=1; NeedsReboot=$true;
            Label="Disable Power Throttling";
            ShortDesc="Prevents Windows from throttling CPU for background processes.";
@@ -396,11 +508,12 @@ Register-PowerToolsModule `
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\GameBar" "AutoGameModeEnabled" 1 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\GameBar" "AutoGameModeEnabled" 0 } }
         @{ Id=14; Group="Graphics / Gaming"; Risk=0; NeedsReboot=$false;
-           Label="Windowed Game Optimizations (Flip Model)";
-           ShortDesc="Modern flip presentation for DirectX 10/11 windowed games. Fullscreen latency in windowed mode.";
-           LongDesc="Modern flip presentation system for all DirectX 10/11 windowed games. Latency at fullscreen level, enables VRR/Auto-HDR in windowed mode.";
+           Label="Legacy Fullscreen Compatibility Flags";
+           ShortDesc="Configures legacy GameDVR fullscreen compatibility flags.";
+           LongDesc="Sets GameDVR_FSEBehaviorMode=2 and GameDVR_HonorUserFSEBehaviorMode=1. These legacy flags are not the Windows 11 Optimizations for windowed games switch and do not verify flip-model, VRR, or Auto-HDR support.";
            FPSGain="Latency";
-           Check={ (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode") -eq 2 };
+           Check={ (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode") -eq 2 -and
+                   (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_HonorUserFSEBehaviorMode") -eq 1 };
            Apply={ GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 2
                    GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_HonorUserFSEBehaviorMode" 1 };
            Revert={ GO-DelReg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode"
@@ -415,26 +528,31 @@ Register-PowerToolsModule `
            Revert={ GO-SetStr "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" "Medium" } }
         @{ Id=16; Group="Network"; Risk=1; NeedsReboot=$false;
            Label="Disable Nagle Algorithm";
-           ShortDesc="Bundles small TCP packets - artificially raises ping. Disabling reduces ping 10-30ms.";
-           LongDesc="Nagle algorithm bundles small TCP packets, artificially raising ping in real-time games. Disabling yields immediate packet sending - 10-30ms ping reduction.";
+           ShortDesc="Configures TCP ACK/Nagle values on active physical Ethernet and Wi-Fi adapters.";
+           LongDesc="Writes TcpAckFrequency=1, TCPNoDelay=1 and TcpDelAckTicks=0 for active physical Ethernet/Wi-Fi adapters. Does not configure disconnected adapters or VPN tunnels. Games using UDP may not benefit; latency gains are not guaranteed.";
+           Available={ @(GO-GetGamingAdapters).Count -gt 0 };
+           UnavailableReason="No active physical Ethernet/Wi-Fi adapter. Connect an adapter and recheck.";
            FPSGain="-10-30ms ping";
            Check={
-               $nics = Get-NetAdapter | Where-Object {$_.Status -eq "Up" -and $_.InterfaceType -eq 6}
+               $nics = @(GO-GetGamingAdapters)
+               if ($nics.Count -eq 0) { return $false }
                foreach ($n in $nics) {
                    $p = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\$($n.InterfaceGuid)"
-                   if ((GO-GetReg $p "TcpAckFrequency") -ne 1 -or (GO-GetReg $p "TCPNoDelay") -ne 1) { return $false }
+                   if ((GO-GetReg $p "TcpAckFrequency") -ne 1 -or (GO-GetReg $p "TCPNoDelay") -ne 1 -or
+                       (GO-GetReg $p "TcpDelAckTicks") -ne 0) { return $false }
                }
                return $true
            };
            Apply={
-               $nics = Get-NetAdapter | Where-Object {$_.Status -eq "Up" -and $_.InterfaceType -eq 6}
+               $nics = @(GO-GetGamingAdapters)
+               if ($nics.Count -eq 0) { throw 'No active physical Ethernet/Wi-Fi adapter.' }
                foreach ($n in $nics) {
                    $p = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\$($n.InterfaceGuid)"
                    GO-SetDW $p "TcpAckFrequency" 1; GO-SetDW $p "TCPNoDelay" 1; GO-SetDW $p "TcpDelAckTicks" 0
                }
            };
            Revert={
-               $nics = Get-NetAdapter | Where-Object {$_.Status -eq "Up" -and $_.InterfaceType -eq 6}
+               $nics = GO-GetGamingAdapters
                foreach ($n in $nics) {
                    $p = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\$($n.InterfaceGuid)"
                    GO-DelReg $p "TcpAckFrequency"; GO-DelReg $p "TCPNoDelay"; GO-DelReg $p "TcpDelAckTicks"
@@ -445,13 +563,13 @@ Register-PowerToolsModule `
            ShortDesc="Enables RSS, disables RSC/ECN/timestamps. Better network throughput and latency.";
            LongDesc="Multiple netsh optimizations: autotuning=normal, RSS=enabled, RSC=disabled, ECN=disabled, timestamps=disabled.";
            FPSGain="Latency";
-           Check={ (netsh int tcp show global | Select-String "Receive Segment Coalescing.*disabled") -ne $null };
-           Apply={ netsh int tcp set global autotuninglevel=normal|Out-Null; netsh int tcp set global rss=enabled|Out-Null
-                   netsh int tcp set global rsc=disabled|Out-Null; netsh int tcp set global ecncapability=disabled|Out-Null
-                   netsh int tcp set global timestamps=disabled|Out-Null };
-           Revert={ netsh int tcp set global autotuninglevel=normal|Out-Null; netsh int tcp set global rss=default|Out-Null
-                    netsh int tcp set global rsc=default|Out-Null; netsh int tcp set global ecncapability=default|Out-Null
-                    netsh int tcp set global timestamps=default|Out-Null } }
+           Check={ GO-TestTCPSettings };
+           Apply={ foreach ($setting in @('autotuninglevel=normal','rss=enabled','rsc=disabled','ecncapability=disabled','timestamps=disabled')) {
+                       GO-InvokeNative 'netsh.exe' @('int','tcp','set','global',$setting) | Out-Null
+                   } };
+           Revert={ foreach ($setting in @('autotuninglevel=normal','rss=default','rsc=default','ecncapability=default','timestamps=default')) {
+                        GO-InvokeNative 'netsh.exe' @('int','tcp','set','global',$setting) | Out-Null
+                    } } }
         @{ Id=18; Group="UI / Visual"; Risk=0; NeedsReboot=$false;
            Label="Transparency Effects (OFF)";
            ShortDesc="Disables Windows transparency effects. Less GPU overhead for UI.";
@@ -484,26 +602,29 @@ Register-PowerToolsModule `
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" "TaskbarAnimations") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" "TaskbarAnimations" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" "TaskbarAnimations" 1 } }
-        @{ Id=22; Group="Filesystem / Storage"; Risk=0; NeedsReboot=$false;
+        @{ Id=22; Group="Filesystem / Storage"; Risk=0; NeedsReboot=$true;
            Label="NTFS Disable Last Access Time";
-           ShortDesc="Windows writes timestamp on every read. Reduces SSD writes. Extends SSD lifespan.";
-           LongDesc="Disabling reduces I/O operations and extends SSD lifespan. No negative side effects.";
+           ShortDesc="Configures NTFS last-access timestamp updates as disabled.";
+           LongDesc="Disables last-access timestamp updates. Backup/archiving tools using these timestamps may be affected. Check reads the numeric NTFS configuration, including system-managed disabled state.";
            FPSGain="SSD life";
-           Check={ (fsutil behavior query disablelastaccess) -match "= 1" };
-           Apply={ fsutil behavior set disablelastaccess 1 | Out-Null };
-           Revert={ fsutil behavior set disablelastaccess 0 | Out-Null } }
+           Check={ $v = GO-GetReg 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' 'NtfsDisableLastAccessUpdate'
+                   $null -ne $v -and ([long]$v -band 3) -in @(1,3) };
+           Apply={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disablelastaccess','1') | Out-Null };
+           Revert={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disablelastaccess','0') | Out-Null } }
         @{ Id=23; Group="Filesystem / Storage"; Risk=0; NeedsReboot=$false;
            Label="NTFS Disable 8.3 Filenames";
-           ShortDesc="Disables DOS-compatible short names. Faster directory listing of large game folders.";
-           LongDesc="Disabling gives faster listing of large game folders.";
+           ShortDesc="Disables creation of new DOS-compatible 8.3 names on all volumes.";
+           LongDesc="Sets global NTFS 8.3-name creation policy to 1 (disabled on all volumes). Existing names are not removed. Legacy programs/installers needing short paths may be affected. Reset selects per-volume policy (2); individual volume flags remain unchanged.";
            FPSGain="Dir listing";
-           Check={ (fsutil behavior query disable8dot3) -match "= 1" };
-           Apply={ fsutil behavior set disable8dot3 1 | Out-Null };
-           Revert={ fsutil behavior set disable8dot3 0 | Out-Null } }
+           Check={ GO-TestDWord 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' 'NtfsDisable8dot3NameCreation' 1 };
+           Apply={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disable8dot3','1') | Out-Null };
+           Revert={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disable8dot3','2') | Out-Null } }
         @{ Id=24; Group="Filesystem / Storage"; Risk=1; NeedsReboot=$true;
-           Label="Native NVMe Stack (Win11 24H2+)";
-           ShortDesc="Bypasses SCSI translation. Up to 45% less CPU per I/O. EXPERIMENTAL. Only Win11 24H2+.";
-           LongDesc="Bypasses SCSI translation layer for direct native NVMe driver. EXPERIMENTAL. Only on Build 26100+.";
+           Label="Experimental NVMe Feature Override (26100+)";
+           ShortDesc="Writes an experimental feature override; does not verify native NVMe driver activation.";
+           LongDesc="Writes feature override 1176759950=1 on build 26100+. APPLIED only verifies the registry override. Actual driver support and performance effects depend on Windows build, storage hardware and driver. Experimental; never automatically preselected.";
+           Available={ $script:GO_hw.Build -ge 26100 };
+           UnavailableReason="Experimental override requires Windows build 26100 or later.";
            FPSGain="SSD speed";
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" "1176759950") -eq 1 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" "1176759950" 1 };
@@ -518,15 +639,17 @@ Register-PowerToolsModule `
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 0 } }
         @{ Id=26; Group="Privacy / Telemetry"; Risk=1; NeedsReboot=$false;
            Label="Disable Telemetry";
-           ShortDesc="Disables Windows telemetry. Stops data collection to Microsoft.";
-           LongDesc="Disables Windows telemetry and DiagTrack service. Risk: Not officially supported.";
+           ShortDesc="Requests telemetry policy level 0 and disables/stops DiagTrack.";
+           LongDesc="Sets AllowTelemetry=0 and disables/stops DiagTrack. Supported policy levels depend on the Windows edition; this is not proof that all Windows data collection has stopped. Reset removes the policy and restores automatic service startup.";
            FPSGain="Privacy";
-           Check={ (GO-GetReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" "AllowTelemetry") -eq 0 };
+           Check={ $service = Get-Service -Name 'DiagTrack' -EA Stop
+                   (GO-GetReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" "AllowTelemetry") -eq 0 -and
+                   $service.StartType -eq 'Disabled' -and $service.Status -eq 'Stopped' };
            Apply={ GO-SetDW "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" "AllowTelemetry" 0
-                   try { Set-Service -Name "DiagTrack" -StartupType Disabled -EA SilentlyContinue
-                         Stop-Service -Name "DiagTrack" -Force -EA SilentlyContinue } catch {} };
+                   Set-Service -Name "DiagTrack" -StartupType Disabled -EA Stop
+                   Stop-Service -Name "DiagTrack" -Force -EA Stop };
            Revert={ GO-DelReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" "AllowTelemetry"
-                    try { Set-Service -Name "DiagTrack" -StartupType Automatic -EA SilentlyContinue } catch {} } }
+                    Set-Service -Name "DiagTrack" -StartupType Automatic -EA Stop } }
         @{ Id=27; Group="Privacy / Telemetry"; Risk=0; NeedsReboot=$false;
            Label="Search History (OFF)";
            ShortDesc="Disables device search history tracking. Privacy improvement.";
@@ -548,12 +671,34 @@ Register-PowerToolsModule `
            ShortDesc="Disables Windows 11 Dynamic Lighting for RGB peripherals. Use vendor software instead.";
            LongDesc="Disables Windows 11 Dynamic Lighting for RGB peripherals. Allows vendor software to control RGB without conflicts.";
            FPSGain="Compatibility";
-           Check={ (GO-GetReg "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled") -eq 0 };
+           Check={ (GO-GetReg "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled") -eq 0 -and
+                   (GO-GetReg "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled" 0
                    GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled" 1
                     GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 1 } }
     )
+
+    # Notes stay visible next to controls, including consequences of Reset.
+    $notes = @{
+        1 = 'Also sets VBS OFF (#2). Reset enables HVCI + VBS and undoes #2.'
+        2 = 'Shared with HVCI (#1). Reset enables VBS and invalidates the combined HVCI-OFF setting.'
+        5 = 'Replaces the active power plan. Reset selects Balanced, including after the separate Ultimate Performance module.'
+        9 = 'Replaces AAA mode (#10). Only one priority preset can be active. Reset selects 38 (0x26).'
+        10 = 'Replaces Competitive mode (#9). Only one priority preset can be active. Reset selects 38 (0x26).'
+        13 = 'Reset disables Game Mode. Keep Game Mode enabled on AMD X3D systems.'
+        14 = 'Legacy flags only; not the Windows 11 windowed-games optimization switch.'
+        16 = 'Active physical Ethernet/Wi-Fi only. Changing adapters can change this status; VPNs are excluded.'
+        17 = 'Changes global TCP/offload settings. VPN, NIC and tuning software may also manage these values.'
+        22 = 'May affect timestamp-based backup/archive tools.'
+        23 = 'Global policy for all volumes. Legacy installers may need 8.3 names. Reset uses per-volume policy (2).'
+        24 = 'Experimental registry override only; native-driver activation is not verified.'
+        26 = 'Policy request + DiagTrack service configuration; effective telemetry limits depend on Windows edition.'
+    }
+    foreach ($tweak in $script:GO_tweaks) {
+        if ($notes.ContainsKey($tweak.Id)) { $tweak.Note = $notes[$tweak.Id] }
+        if ($tweak.NeedsReboot) { $tweak.Note = ("$($tweak.Note) Restart required; APPLIED verifies stored configuration.").Trim() }
+    }
 
     function Global:GO-GetRiskColor {
         param($Risk)
@@ -563,8 +708,9 @@ Register-PowerToolsModule `
 
     function Global:GO-UpdateApplyState {
         $any = $false; $totalGain = 0.0; $latencyGain = $false
+        $impact = @()
         foreach ($id in $script:GO_checkboxes.Keys) {
-            if ($script:GO_checkboxes[$id].IsChecked -eq $true) {
+            if ($script:GO_checkboxes[$id].IsChecked -eq $true -and $script:GO_checkboxes[$id].IsEnabled) {
                 $any = $true
                 $tweak = $script:GO_tweaks | Where-Object { $_.Id -eq $id } | Select-Object -First 1
                 if ($tweak -and $tweak.FPSGain -match "(\d+)(?:-(\d+))?% FPS") {
@@ -572,6 +718,7 @@ Register-PowerToolsModule `
                     $totalGain += ($low + $high) / 2.0
                 }
                 if ($tweak -and $tweak.FPSGain -match "Latency|ping") { $latencyGain = $true }
+                if ($tweak.Note) { $impact += "#$($tweak.Id): $($tweak.Note)" }
             }
         }
         $script:GO_applyBtn.IsEnabled = $any
@@ -580,6 +727,33 @@ Register-PowerToolsModule `
             if ($latencyGain) { $text += " | Plus latency/ping improvements" }
             $script:GO_estimate.Text = "$text | All estimates without warranty"
         } else { $script:GO_estimate.Text = "No tweaks selected. All estimates without warranty." }
+        if ($script:GO_impactText) {
+            $script:GO_impactText.Text = if ($impact.Count) { $impact -join "`n" } else {
+                'APPLIED = configuration verified. Reboot-marked settings may not be effective until restart.'
+            }
+        }
+    }
+
+    function Global:GO-SelectTweaks {
+        param([ValidateSet('All','Missing','Safe','None','Recommended')][string]$Mode)
+        # Deterministic order; bulk selections preserve already active mutex presets.
+        foreach ($cb in $script:GO_checkboxes.Values) { if ($cb.IsEnabled) { $cb.IsChecked = $false } }
+        $chosenGroups = @{}
+        foreach ($t in $script:GO_tweaks) {
+            $cb = $script:GO_checkboxes[$t.Id]
+            if (-not $cb -or -not $cb.IsEnabled -or $Mode -eq 'None') { continue }
+            if ($Mode -eq 'Safe' -and $t.Risk -ne 0) { continue }
+            if ($Mode -eq 'Recommended' -and -not (GO-IsRecommended $t.Id)) { continue }
+            if ($t.Mutex) {
+                $activeSibling = $script:GO_tweaks | Where-Object {
+                    $_.Id -ne $t.Id -and $_.Mutex -eq $t.Mutex -and $script:GO_states[$_.Id].Applied
+                }
+                if ($activeSibling -or $chosenGroups.ContainsKey($t.Mutex)) { continue }
+                $chosenGroups[$t.Mutex] = $t.Id
+            }
+            $cb.IsChecked = $true
+        }
+        GO-UpdateApplyState
     }
 
     function Global:GO-HandleMutex {
@@ -592,6 +766,7 @@ Register-PowerToolsModule `
                 $script:GO_checkboxes[$t.Id].IsChecked = $false
             }
         }
+        GO-UpdateApplyState
     }
 
     function Global:GO-ShowDetailWindow {
@@ -655,7 +830,7 @@ Register-PowerToolsModule `
         $dw.FindName("DR").Foreground = GO-GetRiskColor $Tweak.Risk
         $dw.FindName("DG").Text  = $Tweak.FPSGain
         $dw.FindName("DRB").Text = if ($Tweak.NeedsReboot) { "Yes" } else { "No" }
-        $dw.FindName("DLD").Text = $Tweak.LongDesc
+        $dw.FindName("DLD").Text = ("$($Tweak.LongDesc)`n`n$($Tweak.Note)").Trim()
         $dcb = $dw.FindName("DCB")
         if ($dcb) { $dcb.Style = $dw.FindResource("SecondaryButton"); $capturedDw = $dw; $dcb.Add_Click({ $capturedDw.Close() }.GetNewClosure()) }
         $script:GO_detailWindows[$Tweak.Id] = $dw
@@ -663,6 +838,8 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-RenderList {
+        param($States)
+        $script:GO_states = if ($States) { $States } else { GO-GetStateSnapshot }
         $script:GO_tweakList.Items.Clear(); $script:GO_checkboxes.Clear(); $lastGroup = ""
         foreach ($t in $script:GO_tweaks) {
             if ($t.Group -ne $lastGroup) {
@@ -677,11 +854,12 @@ Register-PowerToolsModule `
                 $script:GO_tweakList.Items.Add($hdr) | Out-Null
                 $lastGroup = $t.Group
             }
-            $isOk = & $t.Check
+            $state = $script:GO_states[$t.Id]
+            $isOk = $state.Applied
             $isAlternative = $false
             if (-not $isOk -and $t.Mutex) {
                 foreach ($other in $script:GO_tweaks) {
-                    if ($other.Id -ne $t.Id -and $other.Mutex -eq $t.Mutex -and (& $other.Check)) {
+                    if ($other.Id -ne $t.Id -and $other.Mutex -eq $t.Mutex -and $script:GO_states[$other.Id].Applied) {
                         $isAlternative = $true
                         break
                     }
@@ -691,7 +869,7 @@ Register-PowerToolsModule `
             $row.Margin = "8,2,8,2"
             $row.MinHeight = 28
             $row.HorizontalAlignment = "Stretch"
-            foreach ($w in @("*","85","72","60","52")) {
+            foreach ($w in @("*","100","72","60","52")) {
                 $col = New-Object System.Windows.Controls.ColumnDefinition; $col.Width = $w
                 $row.ColumnDefinitions.Add($col) | Out-Null
             }
@@ -705,8 +883,17 @@ Register-PowerToolsModule `
             $cbText.TextDecorations = [System.Windows.TextDecorations]::Underline
             $capturedTweak = $t
             $cbText.Add_MouseLeftButtonUp({ param($s,$e) GO-ShowDetailWindow -Tweak $capturedTweak; $e.Handled=$true }.GetNewClosure())
-            $cb.Content = $cbText
-            if ($isOk) { $cb.IsEnabled = $false }
+            $cbContent = [System.Windows.Controls.StackPanel]::new()
+            $cbContent.Children.Add($cbText) | Out-Null
+            $noteText = if ($state.Status -in @('UNAVAILABLE','CHECK ERROR')) { $state.Message } else { $t.Note }
+            if ($noteText) {
+                $note = [System.Windows.Controls.TextBlock]::new()
+                $note.Text = $noteText; $note.FontSize = 10; $note.TextWrapping = 'Wrap'
+                $note.Foreground = Get-PowerToolsBrush 'TextMuted'; $note.Margin = '0,3,8,3'
+                $cbContent.Children.Add($note) | Out-Null
+            }
+            $cb.Content = $cbContent
+            if ($isOk -or $state.Status -in @('UNAVAILABLE','CHECK ERROR')) { $cb.IsEnabled = $false }
             else {
                 $capturedId = $t.Id
                 $cb.Add_Checked({ param($s,$e) GO-HandleMutex -ChangedId $capturedId -IsChecked $true; GO-UpdateApplyState }.GetNewClosure())
@@ -714,8 +901,8 @@ Register-PowerToolsModule `
             }
             [System.Windows.Controls.Grid]::SetColumn($cb, 0); $row.Children.Add($cb) | Out-Null
             $lbl = New-Object System.Windows.Controls.TextBlock
-            $lbl.Text = if ($isOk){"APPLIED"}elseif ($isAlternative){"ALTERNATIVE"}else{"MISSING"}
-            if ($t.Mutex) { $lbl.ToolTip = "Only one setting in this group can be active. Selecting the alternative replaces the current value." }
+            $lbl.Text = if ($isAlternative){"ALTERNATIVE"}else{$state.Status}
+            $lbl.ToolTip = if ($t.Mutex) { 'Only one priority preset can be active. Selecting the alternative replaces the current value.' } else { $state.Message }
             $lbl.Foreground = if ($isOk){Get-PowerToolsBrush "Success"}else{Get-PowerToolsBrush "Warning"}
             $lbl.FontSize = 9; $lbl.FontWeight = "Bold"; $lbl.VerticalAlignment = "Center"; $lbl.Margin = "8,0,4,0"
             [System.Windows.Controls.Grid]::SetColumn($lbl, 1); $row.Children.Add($lbl) | Out-Null
@@ -737,11 +924,14 @@ Register-PowerToolsModule `
                 $resetBtn.VerticalAlignment = "Center"; $resetBtn.HorizontalAlignment = "Center"
                 $capturedTweak3 = $t
                 $resetBtn.Add_Click({
-                    $r = [System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)' to Windows default?`nThis reverts only this single tweak.","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+                    $r = [System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)' to its managed reset value?`n`n$($capturedTweak3.Note)`n`nReset may also affect settings sharing the same values. Original pre-app values are not restored.","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
                     if ($r -eq [System.Windows.MessageBoxResult]::Yes) {
-                        try { & $capturedTweak3.Revert; GO-AddLog "Reset to default: $($capturedTweak3.Label)" "OK" }
+                        $before = GO-GetStateSnapshot
+                        try { GO-ResetTweak $capturedTweak3; GO-AddLog "Reset: $($capturedTweak3.Label)" "OK" }
                         catch { GO-AddLog "Reset failed: $($capturedTweak3.Label) - $_" "FAIL" }
-                        GO-RenderList
+                        $after = GO-GetStateSnapshot
+                        GO-LogStateChanges $before $after "Reset '$($capturedTweak3.Label)'"
+                        GO-RenderList -States $after
                     }
                 }.GetNewClosure())
                 [System.Windows.Controls.Grid]::SetColumn($resetBtn, 4); $row.Children.Add($resetBtn) | Out-Null
@@ -753,30 +943,78 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-ApplyRecommendedPreselection {
-        foreach ($t in $script:GO_tweaks) {
-            if ($script:GO_checkboxes.ContainsKey($t.Id) -and $script:GO_checkboxes[$t.Id].IsEnabled) {
-                if (GO-IsRecommended -TweakId $t.Id) { $script:GO_checkboxes[$t.Id].IsChecked = $true }
-            }
-        }
-        GO-UpdateApplyState
+        GO-SelectTweaks -Mode Recommended
     }
 
     function Global:GO-CreateBackup {
         param([string]$BackupDir)
-        if (-not (Test-Path $BackupDir)) { New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null }
+        $success = $true
+        try {
+            if (-not (Test-Path -LiteralPath $BackupDir)) { New-Item -ItemType Directory -Path $BackupDir -Force -EA Stop | Out-Null }
+        } catch { GO-AddLog "Backup directory failed: $_" 'FAIL'; return $false }
         $ts = Get-Date -Format "yyyyMMdd_HHmmss"
         if ($script:GO_cbRestore.IsChecked) {
             try { GO-AddLog "Creating System Restore Point..." "INFO"
-                  Enable-ComputerRestore -Drive "C:\" -EA SilentlyContinue
-                  Checkpoint-Computer -Description "WindowsAcolyte_GameOptimizer_$ts" -RestorePointType "MODIFY_SETTINGS" -EA Stop
-                  GO-AddLog "Restore point created." "OK" } catch { GO-AddLog "Restore point failed: $_" "WARN" }
+                  Enable-ComputerRestore -Drive "$env:SystemDrive\" -EA Stop
+                  $description = "WindowsAcolyte_GameOptimizer_$ts"
+                  Checkpoint-Computer -Description $description -RestorePointType "MODIFY_SETTINGS" -EA Stop
+                  $created = Get-ComputerRestorePoint -EA Stop | Where-Object { $_.Description -eq $description }
+                  if (-not $created) { throw 'Restore point was not created; Windows may enforce a creation-frequency limit.' }
+                  GO-AddLog "Restore point created and verified." "OK" } catch { $success=$false; GO-AddLog "Restore point failed: $_" "FAIL" }
         }
         if ($script:GO_cbRegBkp.IsChecked) {
             try { GO-AddLog "Exporting Registry backup..." "INFO"
-                  reg export HKLM (Join-Path $BackupDir "HKLM_$ts.reg") /y | Out-Null
-                  reg export HKCU (Join-Path $BackupDir "HKCU_$ts.reg") /y | Out-Null
-                  GO-AddLog "Registry exported to: $BackupDir" "OK" } catch { GO-AddLog "Registry backup failed: $_" "WARN" }
+                  GO-InvokeNative 'reg.exe' @('export','HKLM',(Join-Path $BackupDir "HKLM_$ts.reg"),'/y') | Out-Null
+                  GO-InvokeNative 'reg.exe' @('export','HKCU',(Join-Path $BackupDir "HKCU_$ts.reg"),'/y') | Out-Null
+                  GO-AddLog "Registry exported to: $BackupDir" "OK" } catch { $success=$false; GO-AddLog "Registry backup failed: $_" "FAIL" }
         }
+        return $success
+    }
+
+    function Global:GO-GetProfileSelection {
+        $states = GO-GetStateSnapshot
+        $pending = @($script:GO_tweaks | Where-Object {
+            $cb = $script:GO_checkboxes[$_.Id]
+            $cb -and $cb.IsEnabled -and $cb.IsChecked
+        })
+        foreach ($t in $script:GO_tweaks) {
+            if ($pending.Id -contains $t.Id) { $t.Id; continue }
+            if (-not $states[$t.Id].Applied) { continue }
+            if ($t.Mutex -and ($pending | Where-Object { $_.Mutex -eq $t.Mutex })) { continue }
+            $t.Id
+        }
+    }
+
+    function Global:GO-ApplyProfileSelection {
+        param($Data)
+        if ($Data.PSObject.Properties.Name -notcontains 'SelectedTweakIds') { throw 'Profile has no SelectedTweakIds array.' }
+        $ids = @()
+        foreach ($rawId in $Data.SelectedTweakIds) {
+            $id = 0
+            if (-not [int]::TryParse([string]$rawId, [ref]$id) -or $id -notin $script:GO_tweaks.Id) {
+                throw "Profile contains an unknown tweak ID: $rawId"
+            }
+            if ($id -notin $ids) { $ids += $id }
+        }
+        $conflicts = @($script:GO_tweaks | Where-Object { $_.Id -in $ids -and $_.Mutex } | Group-Object Mutex | Where-Object Count -gt 1)
+        if ($conflicts.Count) { throw 'Profile contains mutually exclusive priority presets. Select only one mode.' }
+        $settings = @{}
+        foreach ($mapping in @(@('CreateRestorePoint','GO_cbRestore'),@('ExportRegistry','GO_cbRegBkp'),@('PromptReboot','GO_cbAutoReb'))) {
+            if ($Data.Settings -and $Data.Settings.PSObject.Properties.Name -contains $mapping[0]) {
+                if ($Data.Settings.($mapping[0]) -isnot [bool]) { throw "Profile setting must be Boolean: $($mapping[0])" }
+                $settings[$mapping[1]] = $Data.Settings.($mapping[0])
+            }
+        }
+        foreach ($cb in $script:GO_checkboxes.Values) { if ($cb.IsEnabled) { $cb.IsChecked = $false } }
+        $loaded = 0; $skipped = 0
+        foreach ($id in $ids) {
+            if ($script:GO_checkboxes.ContainsKey($id) -and $script:GO_checkboxes[$id].IsEnabled) {
+                $script:GO_checkboxes[$id].IsChecked = $true; $loaded++
+            } else { $skipped++ }
+        }
+        foreach ($setting in $settings.Keys) { (Get-Variable -Scope Script -Name $setting -ValueOnly).IsChecked = $settings[$setting] }
+        GO-UpdateApplyState
+        return @{Loaded=$loaded; Skipped=$skipped}
     }
 
     function Global:GO-SaveProfile {
@@ -784,8 +1022,7 @@ Register-PowerToolsModule `
         $sfd.Title = "Save Gaming Optimizer Profile"; $sfd.Filter = "JSON Profile (*.json)|*.json"
         $sfd.FileName = "GamingProfile_$(Get-Date -Format 'yyyyMMdd').json"; $sfd.InitialDirectory = $script:GO_profilePath
         if ($sfd.ShowDialog() -ne $true) { return }
-        $selected = @()
-        foreach ($id in $script:GO_checkboxes.Keys) { if ($script:GO_checkboxes[$id].IsChecked -eq $true) { $selected += $id } }
+        $selected = @(GO-GetProfileSelection)
         try {
             @{ Version="2.0"; Created=(Get-Date).ToString("o")
                Hardware=@{CPU=$script:GO_hw.CPU;GPU=$script:GO_hw.GPU;RAMGB=$script:GO_hw.RAMGB;Build=$script:GO_hw.Build}
@@ -802,13 +1039,8 @@ Register-PowerToolsModule `
         if ($ofd.ShowDialog() -ne $true) { return }
         try {
             $pd = Get-Content -Path $ofd.FileName -Raw | ConvertFrom-Json
-            foreach ($id in $script:GO_checkboxes.Keys) { $script:GO_checkboxes[$id].IsChecked = $false }
-            $loaded = 0; $skipped = 0
-            foreach ($id in $pd.SelectedTweakIds) {
-                if ($script:GO_checkboxes.ContainsKey($id) -and $script:GO_checkboxes[$id].IsEnabled) { $script:GO_checkboxes[$id].IsChecked = $true; $loaded++ } else { $skipped++ }
-            }
-            if ($pd.Settings) { $script:GO_cbRestore.IsChecked=$pd.Settings.CreateRestorePoint; $script:GO_cbRegBkp.IsChecked=$pd.Settings.ExportRegistry; $script:GO_cbAutoReb.IsChecked=$pd.Settings.PromptReboot }
-            GO-UpdateApplyState; GO-AddLog "Profile loaded. Applied: $loaded  Skipped: $skipped" "OK"
+            $result = GO-ApplyProfileSelection $pd
+            GO-AddLog "Profile loaded. Selected: $($result.Loaded)  Already applied/unavailable: $($result.Skipped)" "OK"
             if ($pd.Hardware) { GO-AddLog "Profile from: $($pd.Hardware.CPU) / $($pd.Hardware.GPU)" "INFO" }
         } catch { GO-AddLog "Load failed: $_" "FAIL" }
     }
@@ -867,36 +1099,33 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-RevertAll {
-        $res = [System.Windows.MessageBox]::Show("Revert all tweaks to Windows default values?`n`nThis will reset ALL managed settings to Windows defaults.`n`nContinue?","Confirm Revert",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+        $res = [System.Windows.MessageBox]::Show("Reset all managed settings to the module's reset presets?`n`nThis enables HVCI/VBS, switches to Balanced, resets priority to 38 (0x26) and removes custom network settings. Shared settings and the separate Ultimate Performance module's active plan are affected. Original pre-app values are not restored.`n`nContinue?","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
         if ($res -ne [System.Windows.MessageBoxResult]::Yes) { return }
-        GO-AddLog "Reverting all tweaks to Windows defaults..." "INFO"
+        $before = GO-GetStateSnapshot
+        GO-AddLog "Resetting all managed settings..." "INFO"
         $ok=0; $fail=0; $reboot=$false
         foreach ($t in $script:GO_tweaks) {
-            try { & $t.Revert; GO-AddLog "Reverted: $($t.Label)" "OK"; $ok++; if ($t.NeedsReboot) { $reboot=$true } }
+            try { GO-ResetTweak $t; GO-AddLog "Reset: $($t.Label)" "OK"; $ok++; if ($t.NeedsReboot) { $reboot=$true } }
             catch { GO-AddLog "Revert failed: $($t.Label) - $_" "FAIL"; $fail++ }
         }
-        GO-AddLog "Revert complete. Success: $ok  Failed: $fail" "INFO"
+        GO-AddLog "Reset complete. Success: $ok  Failed: $fail" "INFO"
+        $after = GO-GetStateSnapshot
+        GO-LogStateChanges $before $after 'Reset all'
         if ($reboot -and $script:GO_cbAutoReb.IsChecked) {
             $r=[System.Windows.MessageBox]::Show("Some reverted settings require a reboot. Restart now?","Reboot Required",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
             if ($r -eq [System.Windows.MessageBoxResult]::Yes) { Start-Sleep -Seconds 3; Restart-Computer -Force }
         }
-        GO-RenderList
+        GO-RenderList -States $after
     }
 
     GO-RenderList
     GO-ApplyRecommendedPreselection
     GO-AddLog "Status check complete. Pre-selection applied based on detected hardware - please verify before applying." "INFO"
 
-    $script:GO_selAll.Add_Click({ foreach ($id in $script:GO_checkboxes.Keys) { if ($script:GO_checkboxes[$id].IsEnabled) { $script:GO_checkboxes[$id].IsChecked=$true } }; GO-UpdateApplyState })
-    $script:GO_selMissing.Add_Click({ foreach ($id in $script:GO_checkboxes.Keys) { if ($script:GO_checkboxes[$id].IsEnabled) { $script:GO_checkboxes[$id].IsChecked=$true } }; GO-UpdateApplyState })
-    $script:GO_selSafe.Add_Click({
-        foreach ($id in $script:GO_checkboxes.Keys) {
-            $tw = $script:GO_tweaks | Where-Object { $_.Id -eq $id } | Select-Object -First 1
-            $script:GO_checkboxes[$id].IsChecked = ($script:GO_checkboxes[$id].IsEnabled -and $tw.Risk -eq 0)
-        }
-        GO-UpdateApplyState
-    })
-    $script:GO_selNone.Add_Click({ foreach ($id in $script:GO_checkboxes.Keys) { $script:GO_checkboxes[$id].IsChecked=$false }; GO-UpdateApplyState })
+    $script:GO_selAll.Add_Click({ GO-SelectTweaks All })
+    $script:GO_selMissing.Add_Click({ GO-SelectTweaks Missing })
+    $script:GO_selSafe.Add_Click({ GO-SelectTweaks Safe })
+    $script:GO_selNone.Add_Click({ GO-SelectTweaks None })
     $script:GO_recheckBtn.Add_Click({ GO-RenderList; GO-AddLog "Rechecked all tweaks." "INFO" })
     $script:GO_loadProfBtn.Add_Click({ GO-LoadProfile })
     $script:GO_saveProfBtn.Add_Click({ GO-SaveProfile })
@@ -918,8 +1147,12 @@ Register-PowerToolsModule `
             if ($r -ne [System.Windows.MessageBoxResult]::Yes) { GO-AddLog "Cancelled by user." "WARN"; return }
         }
         if ($script:GO_cbRestore.IsChecked -or $script:GO_cbRegBkp.IsChecked) {
-            GO-CreateBackup -BackupDir (Join-Path $env:USERPROFILE "Desktop\WindowsAcolyte_Backup")
+            if (-not (GO-CreateBackup -BackupDir (Join-Path ([Environment]::GetFolderPath('Desktop')) 'WindowsAcolyte_Backup'))) {
+                GO-AddLog 'Apply cancelled because a selected backup failed. Review backup options before retrying.' 'FAIL'
+                return
+            }
         }
+        $before = GO-GetStateSnapshot
         GO-AddLog "Applying $($selected.Count) tweak(s)..." "INFO"
         $ok=0; $fail=0; $needsReboot=$false
         foreach ($t in $selected) {
@@ -927,12 +1160,14 @@ Register-PowerToolsModule `
             catch { GO-AddLog "[$($t.Id.ToString().PadLeft(2))] $($t.Label) - $_" "FAIL"; $fail++ }
         }
         GO-AddLog "Applied: $ok  Failed: $fail" "INFO"
+        $after = GO-GetStateSnapshot
+        GO-LogStateChanges $before $after 'Apply selection'
         if ($needsReboot -and $script:GO_cbAutoReb.IsChecked) {
             GO-AddLog "Reboot required for some tweaks." "WARN"
             $res=[System.Windows.MessageBox]::Show("Some settings require a reboot.`n`nRestart now?","Reboot Required",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
             if ($res -eq [System.Windows.MessageBoxResult]::Yes) { GO-AddLog "Restarting in 5 seconds..." "WARN"; Start-Sleep -Seconds 5; Restart-Computer -Force }
         }
-        GO-RenderList
+        GO-RenderList -States $after
     })
 
     $script:GO_clearLog.Add_Click({ $script:GO_logBox.Text=""; GO-AddLog "Log cleared." "INFO" })

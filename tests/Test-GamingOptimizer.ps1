@@ -8,7 +8,8 @@ if ($parseErrors.Count) { throw ($parseErrors.Message -join '; ') }
 
 foreach ($name in @('GO-GetReg', 'GO-SetDW', 'GO-TestDWord', 'GO-ApplyVerifiedTweak', 'GO-IsRecommended',
     'GO-RenderList', 'GO-ApplyRecommendedPreselection', 'GO-HandleMutex', 'GO-UpdateApplyState',
-    'GO-GetRiskColor', 'GO-GetRiskLabel')) {
+    'GO-GetRiskColor', 'GO-GetRiskLabel', 'GO-GetTweakState', 'GO-GetStateSnapshot', 'GO-SelectTweaks',
+    'GO-GetProfileSelection', 'GO-ApplyProfileSelection')) {
     $definition = $ast.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq "Global:$name"
     }, $true)
@@ -90,6 +91,7 @@ try {
     $script:GO_checkboxes = @{}
     $script:GO_applyBtn = [System.Windows.Controls.Button]::new()
     $script:GO_estimate = [System.Windows.Controls.TextBlock]::new()
+    $script:GO_impactText = [System.Windows.Controls.TextBlock]::new()
     GO-ApplyVerifiedTweak $aaa
     GO-RenderList
     GO-ApplyRecommendedPreselection
@@ -106,6 +108,39 @@ try {
     GO-ApplyRecommendedPreselection
     Assert-Result (-not $script:GO_checkboxes[9].IsEnabled) 'WPF reload recognizes explicitly applied Competitive preset'
     Assert-Result (-not $script:GO_checkboxes[10].IsChecked) 'WPF reload does not select opposing AAA preset'
+    foreach ($mode in @('All','Missing','Safe','Recommended')) {
+        GO-SelectTweaks $mode
+        Assert-Result (-not $script:GO_checkboxes[10].IsChecked) "WPF bulk selection $mode preserves active Competitive preset"
+    }
+    $competitive.Note = 'Replaces AAA mode (#10). Reset selects 38 (0x26).'
+    $aaa.Note = 'Replaces Competitive mode (#9). Reset selects 38 (0x26).'
+    GO-RenderList
+    $script:GO_checkboxes[10].IsChecked = $true
+    GO-UpdateApplyState
+    Assert-Result ($script:GO_impactText.Text -like '*Replaces Competitive*') 'Selection impact is visible before applying'
+    Assert-Result ($script:GO_checkboxes[10].Content.Children.Count -eq 2) 'Conflict note appears directly below the priority option'
+    $profileIds = @(GO-GetProfileSelection)
+    Assert-Result (8 -in $profileIds -and 10 -in $profileIds -and 9 -notin $profileIds) 'Profile save includes applied settings and pending priority replacement without conflict'
+    GO-SelectTweaks None
+    $script:GO_cbRestore = [System.Windows.Controls.CheckBox]::new()
+    $script:GO_cbRegBkp = [System.Windows.Controls.CheckBox]::new()
+    $script:GO_cbAutoReb = [System.Windows.Controls.CheckBox]::new()
+    $profile = '{"SelectedTweakIds":[8,10],"Settings":{"CreateRestorePoint":false,"ExportRegistry":true,"PromptReboot":false}}' | ConvertFrom-Json
+    Assert-Result ($profile.SelectedTweakIds[0] -is [long]) 'Profile fixture reproduces JSON Int64 IDs'
+    $loaded = GO-ApplyProfileSelection $profile
+    Assert-Result ($loaded.Loaded -eq 1 -and $loaded.Skipped -eq 1 -and $script:GO_checkboxes[10].IsChecked) 'Profile load normalizes Int64 IDs and selects the desired alternative'
+    Assert-Result ($script:GO_cbRegBkp.IsChecked -and -not $script:GO_cbAutoReb.IsChecked) 'Profile restores Boolean backup/reboot preferences'
+    foreach ($invalid in @('{"SelectedTweakIds":[9,10]}','{"SelectedTweakIds":[999]}','{"SelectedTweakIds":[10],"Settings":{"PromptReboot":"false"}}')) {
+        $rejected = $false
+        try { GO-ApplyProfileSelection ($invalid | ConvertFrom-Json) | Out-Null } catch { $rejected = $true }
+        Assert-Result ($rejected -and $script:GO_checkboxes[10].IsChecked) 'Invalid/conflicting profile rejected before altering UI selection'
+    }
+    $unavailable = @{Id=30;Group='Test';Label='Unavailable';Risk=0;Available={$false};UnavailableReason='No compatible adapter';Check={throw 'Must not run'}}
+    $badCheck = @{Id=31;Group='Test';Label='Bad check';Risk=0;Check={throw 'Access denied'}}
+    $script:GO_tweaks = @($unavailable,$badCheck)
+    GO-RenderList
+    Assert-Result (-not $script:GO_checkboxes[30].IsEnabled -and $script:GO_states[30].Status -eq 'UNAVAILABLE') 'Unavailable option is disabled and labeled'
+    Assert-Result (-not $script:GO_checkboxes[31].IsEnabled -and $script:GO_states[31].Status -eq 'CHECK ERROR') 'Failed check is disabled and labeled instead of MISSING'
 } finally {
     if (Test-Path -LiteralPath $script:testRegistryPath) {
         Remove-Item -LiteralPath $script:testRegistryPath -Recurse -Force
