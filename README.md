@@ -30,7 +30,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1"
 
 ---
 
-# 🧰 Modules (10 Total)
+# 🧰 Modules (11 Total)
 
 ---
 
@@ -525,6 +525,34 @@ C:\Users\[CurrentUser]\Downloads\RescueISOs
 
 ---
 
+## 🔗 11. Shortcut Arrow Visibility
+> **Category:** Windows Tools
+> **Admin:** Required
+
+Hides the small shortcut-arrow overlay while retaining each shortcut's icon, target and `.lnk` behavior.
+
+- Checks the native registry view at `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Icons` and value `29` before making changes.
+- **Hide Arrows** creates the key if needed and sets `29` as `REG_SZ`, pointing to `%ProgramData%\WindowsAcolyte\ShortcutArrowOverlay\transparent-arrow.ico,0`.
+- Generates a genuine transparent ICO with 16, 24, 32, 48, 64, 128 and 256 px frames; validates it and repairs missing/corrupt managed assets. It does not use an undocumented blank DLL resource index or remove `IsShortcut`.
+- Stores the original value, existence and data type in an administrator-protected `original-29.json`. Repeated Apply never replaces that baseline.
+- **Restore Previous Setting** reinstates the original value/type. If `29` was originally absent, only that value is removed; the key and unrelated entries are preserved. Restore refuses to overwrite a later external customization.
+- Both actions confirm before modifying settings and restarting the current user's desktop Explorer process. Finish file copy/move operations first; Explorer windows may close. Other users' sessions are not restarted.
+- **Recheck** reports the stored configuration and asset integrity. **Restart Explorer** allows an explicit refresh/retry without a registry change.
+
+The registry setting is system-wide; other signed-in users need their own Explorer restart or sign-out/in. A configured value is not proof of the visual result: Windows builds, policies and icon caching can affect the overlay. If necessary, sign out/in. No icon-cache databases are deleted. If restart verification fails after Apply, the saved setting remains and the log explains the next step.
+
+Assets and backup live outside the installation directory so app updates cannot remove the referenced icon. After Restore, the previous backup is archived as `restored-29-*.json`; a future Apply captures a fresh baseline. Do not delete the managed ICO while value `29` references it.
+
+Validation:
+
+```powershell
+pwsh -NoProfile -STA -File .\tests\Test-ShortcutArrowVisibility.ps1
+```
+
+Tests use a temporary HKCU key and temporary files, verify typed backup/restore and all ICO frames, load the actual WPF view, and simulate restart orchestration. They do not change the real HKLM value or restart your desktop. APIs: [explicit registry views](https://learn.microsoft.com/en-us/dotnet/api/microsoft.win32.registrykey.openbasekey), [desktop shell identification](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getshellwindow).
+
+---
+
 # 🛠️ Installation (Manual)
 
 ```powershell
@@ -540,6 +568,8 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ---
 
 # 🧹 Uninstall
+
+If Shortcut Arrow Visibility was applied, use **Restore Previous Setting** before uninstalling to restore the original overlay. Removing the app alone intentionally leaves the ProgramData icon/backup intact so a still-configured `29` does not reference a deleted file.
 
 ```powershell
 Remove-Item "$env:LOCALAPPDATA\WindowsAcolyte" -Recurse -Force
@@ -611,7 +641,8 @@ Register-PowerToolsModule `
 # 📋 Version History
 
 ## v1.6 (Current)
-- ✅ All 10 modules fully functional
+- ✅ 11 modules available
+- ✅ Shortcut Arrow Visibility: precheck, transparent multi-size ICO, typed original-value backup/restore and current-session Explorer restart
 - ✅ Ultimate Performance Power Plan: creates a dedicated WindowsAcolyte power plan, activates it, disables monitor standby/sleep/disk idle, and enforces maximum CPU/PCIe/USB/WLAN performance settings
 - ✅ Rescue ISO Downloader: latest rescue/partition/cloning/malware/memory/wipe/boot images with replacement cleanup
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
