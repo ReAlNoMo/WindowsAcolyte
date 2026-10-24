@@ -269,22 +269,23 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-GetUsbBackupPath {
-        param([ValidateSet(30,31)][int]$Id)
-        return (Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) "WindowsAcolyte\GamingOptimizer\usb-original-$Id.json")
+        param([ValidateRange(30,36)][int]$Id)
+        $file = if ($Id -in @(32,33,35,36)) { "input-original-$Id-$(GO-GetInputUserSid).json" } else { "usb-original-$Id.json" }
+        return (Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) "WindowsAcolyte\GamingOptimizer\$file")
     }
 
     function Global:GO-ReadUsbBackup {
-        param([ValidateSet(30,31)][int]$Id)
+        param([ValidateRange(30,36)][int]$Id)
         $path = GO-GetUsbBackupPath $Id
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
         $backup = Get-Content -LiteralPath $path -Raw -EA Stop | ConvertFrom-Json -EA Stop
-        if ($backup.Version -ne 1 -or $backup.Id -ne $Id) { throw "Invalid USB backup: $path" }
+        if ($backup.Version -ne 1 -or $backup.Id -ne $Id) { throw "Invalid optional-setting backup: $path" }
         if ($Id -eq 30) {
             if ($backup.State.Exists -isnot [bool] -or ($backup.State.Exists -and
                 $backup.State.Kind -notin @('String','ExpandString','MultiString','DWord','QWord','Binary','None'))) {
                 throw 'Invalid original USB registry state.'
             }
-        } else {
+        } elseif ($Id -eq 31) {
             $names = @{}
             foreach ($entry in $backup.Entries) {
                 if ($entry.Enabled -isnot [bool] -or $entry.DeviceId -notmatch '^USB\\ROOT_HUB[^\\]*\\' -or
@@ -294,12 +295,26 @@ Register-PowerToolsModule `
                 $names[$entry.InstanceName] = $true
             }
             if ($names.Count -eq 0) { throw 'USB hub backup is empty.' }
+        } elseif ($Id -eq 34) {
+            $plans = @{}
+            foreach ($plan in $backup.Plans) {
+                if ($plan.Guid -notmatch '^[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$' -or
+                    $plans.ContainsKey($plan.Guid) -or ($plan.AC -isnot [long] -and $plan.AC -isnot [int]) -or
+                    ($plan.DC -isnot [long] -and $plan.DC -isnot [int]) -or $plan.AC -notin @(0,1) -or $plan.DC -notin @(0,1)) {
+                    throw 'Invalid USB power-plan baseline.'
+                }
+                $plans[$plan.Guid] = $true
+            }
+            if ($plans.Count -eq 0) { throw 'USB power-plan backup is empty.' }
+        } else {
+            if ($backup.UserSid -ne (GO-GetInputUserSid)) { throw 'Input baseline belongs to another Windows user.' }
+            GO-ValidateInputState $Id $backup.State
         }
         return $backup
     }
 
     function Global:GO-WriteUsbBackup {
-        param([ValidateSet(30,31)][int]$Id, $Backup)
+        param([ValidateRange(30,36)][int]$Id, $Backup)
         $path = GO-GetUsbBackupPath $Id
         $directory = Split-Path -Parent $path
         foreach ($asset in @((Split-Path -Parent $directory),$directory,$path)) {
@@ -431,6 +446,223 @@ Register-PowerToolsModule `
         GO-ArchiveUsbBackup 31
     }
 
+    function Global:GO-GetInputUserSid {
+        return [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    }
+
+    function Global:GO-EnsureInputInterop {
+        if ('WindowsAcolyteInputV1.Native' -as [type]) { return }
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+namespace WindowsAcolyteInputV1 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FilterKeys { public uint Size, Flags, Wait, Delay, Repeat, Bounce; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StickyKeys { public uint Size, Flags; }
+    public static class Native {
+        [DllImport("user32.dll", EntryPoint="SystemParametersInfoW", SetLastError=true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool Filter(uint action, uint size, ref FilterKeys data, uint flags);
+        [DllImport("user32.dll", EntryPoint="SystemParametersInfoW", SetLastError=true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool Sticky(uint action, uint size, ref StickyKeys data, uint flags);
+        [DllImport("user32.dll", EntryPoint="SystemParametersInfoW", SetLastError=true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool Mouse(uint action, uint size, [In, Out] int[] data, uint flags);
+        [DllImport("user32.dll", EntryPoint="SystemParametersInfoW", SetLastError=true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool Speed(uint action, uint size, IntPtr data, uint flags);
+        static void Check(bool ok) { if (!ok) throw new Win32Exception(Marshal.GetLastWin32Error()); }
+        public static FilterKeys ReadFilter() {
+            var data = new FilterKeys { Size = (uint)Marshal.SizeOf(typeof(FilterKeys)) };
+            Check(Filter(0x32, data.Size, ref data, 0)); return data;
+        }
+        public static void WriteFilter(FilterKeys data) {
+            data.Size = (uint)Marshal.SizeOf(typeof(FilterKeys)); Check(Filter(0x33, data.Size, ref data, 3));
+        }
+        public static StickyKeys ReadSticky() {
+            var data = new StickyKeys { Size = (uint)Marshal.SizeOf(typeof(StickyKeys)) };
+            Check(Sticky(0x3A, data.Size, ref data, 0)); return data;
+        }
+        public static void WriteSticky(StickyKeys data) {
+            data.Size = (uint)Marshal.SizeOf(typeof(StickyKeys)); Check(Sticky(0x3B, data.Size, ref data, 3));
+        }
+        public static int[] ReadMouse() { var data = new int[3]; Check(Mouse(3, 0, data, 0)); return data; }
+        public static void WriteMouse(int[] data) { Check(Mouse(4, 0, data, 3)); }
+        public static int ReadSpeed() { var data = new int[1]; Check(Mouse(0x70, 0, data, 0)); return data[0]; }
+        public static void WriteSpeed(int speed) {
+            if (speed < 1 || speed > 20) throw new ArgumentOutOfRangeException("speed");
+            Check(Speed(0x71, 0, new IntPtr(speed), 3));
+        }
+    }
+}
+'@ -EA Stop
+    }
+
+    function Global:GO-ValidateInputState {
+        param([ValidateSet(32,33,35,36)][int]$Id, $State)
+        $fields = switch ($Id) { 32 {@('Flags','Wait','Delay','Repeat','Bounce')} 33 {@('Flags')} 35 {@('Values')} 36 {@('Speed')} }
+        foreach ($field in $fields) {
+            if ($null -eq $State.$field) { throw "Incomplete input baseline: $field" }
+            if ($field -ne 'Values' -and $State.$field -is [array]) { throw "Input baseline field must be scalar: $field" }
+            foreach ($value in @($State.$field)) {
+                if ($value -isnot [int] -and $value -isnot [long] -and $value -isnot [uint32]) { throw "Non-numeric input baseline: $field" }
+                $maximum = if ($field -eq 'Flags') { 511 } elseif ($field -in @('Wait','Delay','Repeat','Bounce')) { 20000 } else { [int]::MaxValue }
+                if ($value -lt 0 -or $value -gt $maximum) { throw "Out-of-range input baseline: $field" }
+            }
+        }
+        if ($Id -eq 35 -and (@($State.Values).Count -ne 3 -or $State.Values[2] -notin @(0,1,2))) { throw 'Invalid mouse acceleration baseline.' }
+        if ($Id -eq 36 -and $State.Speed -notin 1..20) { throw 'Invalid pointer-speed baseline.' }
+    }
+
+    function Global:GO-ReadInputState {
+        param([ValidateSet(32,33,35,36)][int]$Id)
+        GO-EnsureInputInterop
+        switch ($Id) {
+            32 { $data = [WindowsAcolyteInputV1.Native]::ReadFilter(); return @{Flags=[int]$data.Flags;Wait=[int]$data.Wait;Delay=[int]$data.Delay;Repeat=[int]$data.Repeat;Bounce=[int]$data.Bounce} }
+            # Transient latched/locked modifier state is not a persistent preference.
+            33 { return @{Flags=[int]([WindowsAcolyteInputV1.Native]::ReadSticky().Flags -band 511)} }
+            35 { return @{Values=@([WindowsAcolyteInputV1.Native]::ReadMouse())} }
+            36 { return @{Speed=[WindowsAcolyteInputV1.Native]::ReadSpeed()} }
+        }
+    }
+
+    function Global:GO-WriteInputState {
+        param([ValidateSet(32,33,35,36)][int]$Id, $State)
+        GO-ValidateInputState $Id $State
+        GO-EnsureInputInterop
+        switch ($Id) {
+            32 {
+                $data = [WindowsAcolyteInputV1.FilterKeys]::new()
+                foreach ($field in @('Flags','Wait','Delay','Repeat','Bounce')) { $data.$field = [uint32]$State.$field }
+                [WindowsAcolyteInputV1.Native]::WriteFilter($data)
+            }
+            33 { $data = [WindowsAcolyteInputV1.StickyKeys]::new(); $data.Flags = [uint32]$State.Flags; [WindowsAcolyteInputV1.Native]::WriteSticky($data) }
+            35 { [WindowsAcolyteInputV1.Native]::WriteMouse([int[]]$State.Values) }
+            36 { [WindowsAcolyteInputV1.Native]::WriteSpeed([int]$State.Speed) }
+        }
+    }
+
+    function Global:GO-InputStatesEqual {
+        param([int]$Id, $Expected, $Actual)
+        $fields = switch ($Id) { 32 {@('Flags','Wait','Delay','Repeat','Bounce')} 33 {@('Flags')} 35 {@('Values')} 36 {@('Speed')} }
+        foreach ($field in $fields) {
+            if ((ConvertTo-Json -InputObject $Expected.$field -Compress) -ne (ConvertTo-Json -InputObject $Actual.$field -Compress)) { return $false }
+        }
+        return $true
+    }
+
+    function Global:GO-ApplyInputOption {
+        param([ValidateSet(32,33,35,36)][int]$Id, [int]$TargetSpeed)
+        if ($Id -eq 36 -and $TargetSpeed -notin 1..20) { throw 'Choose a pointer speed from 1 to 20.' }
+        $state = GO-ReadInputState $Id
+        if (-not (GO-ReadUsbBackup $Id)) {
+            GO-WriteUsbBackup $Id @{Version=1;Id=$Id;UserSid=(GO-GetInputUserSid);State=$state}
+        }
+        $desired = @{}
+        foreach ($key in $state.Keys) { $desired[$key] = $state[$key] }
+        switch ($Id) {
+            32 { $desired.Flags = [int]$state.Flags -band (-bnot 5) }
+            33 { $desired.Flags = [int]$state.Flags -band (-bnot 5) }
+            35 { $desired.Values = @($state.Values); $desired.Values[2] = 0 }
+            36 { $desired.Speed = $TargetSpeed }
+        }
+        GO-WriteInputState $Id $desired
+        if (-not (GO-InputStatesEqual $Id $desired (GO-ReadInputState $Id))) { throw 'Input setting readback did not match; original baseline retained.' }
+    }
+
+    function Global:GO-ResetInputOption {
+        param([ValidateSet(32,33,35,36)][int]$Id)
+        $backup = GO-ReadUsbBackup $Id
+        if (-not $backup) { throw 'No original input state saved for this Windows user; nothing changed.' }
+        GO-WriteInputState $Id $backup.State
+        if (-not (GO-InputStatesEqual $Id $backup.State (GO-ReadInputState $Id))) { throw 'Original input state could not be verified; baseline retained.' }
+        GO-ArchiveUsbBackup $Id
+    }
+
+    function Global:GO-GetUsbPlanState {
+        param([string]$Guid)
+        if (-not $Guid) {
+            $active = (GO-InvokeNative 'powercfg.exe' @('/getactivescheme')) -join ' '
+            $match = [regex]::Match($active,'[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}')
+            if (-not $match.Success) { throw 'Active power-plan GUID could not be read.' }
+            $Guid = $match.Value
+        }
+        if ($Guid -notmatch '^[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$') { throw 'Invalid power-plan GUID.' }
+        $output = (GO-InvokeNative 'powercfg.exe' @('/query',$Guid,'2a737441-1930-4402-8d77-b2bebba308a3','48e6b7a6-50f5-4782-a5d4-53bb8f07e226')) -join "`n"
+        # powercfg labels are localized; the final two hex indexes are AC and DC.
+        $indexes = [regex]::Matches($output,'(?im)^.*:\s*0x([0-9a-f]+)\s*$')
+        if ($indexes.Count -ne 2) { throw 'USB selective-suspend AC/DC indexes are unavailable or ambiguous.' }
+        $ac = [Convert]::ToInt32($indexes[0].Groups[1].Value,16); $dc = [Convert]::ToInt32($indexes[1].Groups[1].Value,16)
+        if ($ac -notin @(0,1) -or $dc -notin @(0,1)) { throw 'Unexpected USB selective-suspend indexes.' }
+        return @{Guid=$Guid.ToLowerInvariant();AC=$ac;DC=$dc}
+    }
+
+    function Global:GO-WriteUsbPlanState {
+        param($State)
+        GO-InvokeNative 'powercfg.exe' @('/setacvalueindex',$State.Guid,'2a737441-1930-4402-8d77-b2bebba308a3','48e6b7a6-50f5-4782-a5d4-53bb8f07e226',[string]$State.AC) | Out-Null
+        GO-InvokeNative 'powercfg.exe' @('/setdcvalueindex',$State.Guid,'2a737441-1930-4402-8d77-b2bebba308a3','48e6b7a6-50f5-4782-a5d4-53bb8f07e226',[string]$State.DC) | Out-Null
+        # Apply only if this plan is still active; never deliberately activate
+        # an inactive saved plan while restoring its settings.
+        $active = (GO-InvokeNative 'powercfg.exe' @('/getactivescheme')) -join ' '
+        if ($active -match [regex]::Escape($State.Guid)) {
+            GO-InvokeNative 'powercfg.exe' @('/setactive',$State.Guid) | Out-Null
+        }
+    }
+
+    function Global:GO-DisableUsbPlanSuspend {
+        $state = GO-GetUsbPlanState
+        $backup = GO-ReadUsbBackup 34
+        $plans = @(if ($backup) { $backup.Plans })
+        if ($state.Guid -notin @($plans.Guid)) { $plans += $state }
+        GO-WriteUsbBackup 34 @{Version=1;Id=34;Plans=$plans}
+        GO-WriteUsbPlanState @{Guid=$state.Guid;AC=0;DC=0}
+        $verified = GO-GetUsbPlanState $state.Guid
+        if ($verified.AC -ne 0 -or $verified.DC -ne 0) { throw 'USB plan write verification failed; baseline retained.' }
+    }
+
+    function Global:GO-ResetUsbPlanSuspend {
+        $backup = GO-ReadUsbBackup 34
+        if (-not $backup) { throw 'No saved USB plan baseline; existing policies remain unchanged.' }
+        $failed = @()
+        foreach ($plan in $backup.Plans) {
+            try {
+                GO-WriteUsbPlanState $plan
+                $actual = GO-GetUsbPlanState $plan.Guid
+                if ($actual.AC -ne $plan.AC -or $actual.DC -ne $plan.DC) { throw 'Readback mismatch' }
+            } catch { $failed += "$($plan.Guid): $_" }
+        }
+        if ($failed.Count) { throw "USB plan baseline retained. Restore incomplete: $($failed -join '; ')" }
+        GO-ArchiveUsbBackup 34
+    }
+
+    function Global:GO-GetLocalUpdateStatus {
+        $session=$null; $searcher=$null; $history=$null; $system=$null
+        try {
+            $session = New-Object -ComObject Microsoft.Update.Session -EA Stop
+            $searcher = $session.CreateUpdateSearcher()
+            $count = [math]::Min(100,$searcher.GetTotalHistoryCount())
+            $latest = $null
+            if ($count -gt 0) {
+                $history = $searcher.QueryHistory(0,$count)
+                $latest = $history | Where-Object { $_.Operation -eq 1 -and $_.ResultCode -eq 2 } | Select-Object -First 1
+            }
+            $system = New-Object -ComObject Microsoft.Update.SystemInfo -EA Stop
+            $last = if ($latest) { "$($latest.Date.ToString('yyyy-MM-dd HH:mm')) - $($latest.Title)" } else { 'No successful install found in the last 100 local events.' }
+            return "Read: $(Get-Date -Format 'yyyy-MM-dd HH:mm') | Windows $([Environment]::OSVersion.Version)`nLast recorded successful update: $last`nWindows Update reboot pending: $($system.RebootRequired). Local history only - update availability/completeness is UNKNOWN. No online scan, install or restart."
+        } finally {
+            foreach ($com in @($history,$searcher,$session,$system)) {
+                if ($null -ne $com -and [Runtime.InteropServices.Marshal]::IsComObject($com)) { [Runtime.InteropServices.Marshal]::ReleaseComObject($com) | Out-Null }
+            }
+        }
+    }
+
+    function Global:GO-OpenWindowsUpdate {
+        Start-Process -FilePath 'ms-settings:windowsupdate' -EA Stop | Out-Null
+    }
+
     function Global:GO-GetPowerSchemes {
         foreach ($line in (GO-InvokeNative 'powercfg.exe' @('/list'))) {
             if ($line -match '([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\s*\((.*?)\)') {
@@ -469,6 +701,12 @@ Register-PowerToolsModule `
             if ($Tweak.Optional) { GO-ReadUsbBackup $Tweak.Id | Out-Null }
             if ($Tweak.Available -and -not (& $Tweak.Available)) {
                 return @{Applied=$false; Status='UNAVAILABLE'; Message=$Tweak.UnavailableReason}
+            }
+            if ($Tweak.Id -eq 34 -and $Tweak.Optional) {
+                $plan=GO-GetUsbPlanState
+                $applied=$plan.AC -eq 0 -and $plan.DC -eq 0
+                return @{Applied=$applied;Status=$(if ($applied) {'APPLIED'} else {'MISSING'});
+                    Message="Active plan $($plan.Guid): AC=$($plan.AC), DC=$($plan.DC) (0=Disabled, 1=Enabled). $($Tweak.Note)"}
             }
             $result = @(& $Tweak.Check)
             if ($result.Count -ne 1 -or $result[0] -isnot [bool]) { throw 'Status check must return exactly one Boolean.' }
@@ -842,8 +1080,8 @@ Register-PowerToolsModule `
                    GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled" 1
                     GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 1 } }
-        @{ Id=30; Group="USB Stability - Optional"; Risk=1; NeedsReboot=$true; Optional=$true;
-           Label="USBHUB3 Selective-Suspend Override (Optional)";
+        @{ Id=30; Group="Input & USB Stability"; Risk=1; NeedsReboot=$true; Optional=$true;
+           Label="USBHUB3 Selective-Suspend Override (Experimental / Optional)";
            ShortDesc="Optional stability experiment: sets USBHUB3 DisableSelectiveSuspend as DWORD 1.";
            LongDesc="Sets HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\DisableSelectiveSuspend to REG_DWORD 1. Saves the original value/type or absence before writing. This exact service-level override is not reliably documented for all Windows USBHUB3 versions: APPLIED proves the stored DWORD only, not driver behavior. No FPS benefit is claimed. Reset restores the saved original value, never an assumed default.";
            FPSGain="Stability only";
@@ -852,7 +1090,7 @@ Register-PowerToolsModule `
            Check={ $state = GO-ReadUsbRegistry; $state.Exists -and $state.Kind -eq 'DWord' -and [long]$state.Data -eq 1 };
            Apply={ GO-EnableUsbRegistryOverride };
            Revert={ GO-ResetUsbRegistryOverride } }
-        @{ Id=31; Group="USB Stability - Optional"; Risk=1; NeedsReboot=$true; Optional=$true;
+        @{ Id=31; Group="Input & USB Stability"; Risk=1; NeedsReboot=$true; Optional=$true;
            Label="USB Root Hubs: Prevent Power-Off (Allow... unchecked)";
            ShortDesc="Optional stability setting: removes permission to power off present USB root hubs.";
            LongDesc="Sets the supported per-device WMI energy-management Enable flag to False for every currently present USB root hub. This corresponds to leaving Allow the computer to turn off this device to save power unchecked. Saves each hub's original Boolean by exact device/provider identity; Reset restores those states. No USB device is disabled, restarted or re-enumerated. Unsupported hubs block Apply; disconnected backup entries are retained until they can be restored. This is distinct from the active power plan's selective-suspend policy. No FPS improvement or guaranteed cure for disconnects is claimed.";
@@ -862,6 +1100,34 @@ Register-PowerToolsModule `
            Check={ GO-TestUsbHubPowerOff };
            Apply={ GO-DisableUsbHubPowerOff };
            Revert={ GO-ResetUsbHubPowerOff } }
+        @{ Id=32; Group="Input & USB Stability"; Risk=1; NeedsReboot=$false; Optional=$true;
+           Label="Filter Keys + activation shortcut (OFF / Optional)";
+           ShortDesc="Disables Filter Keys and its Right Shift activation shortcut for the current Windows user.";
+           LongDesc="Turns off Filter Keys and its activation shortcut using the documented Windows API, not guessed registry flags. Existing acceptance/repeat/bounce timings and unrelated flags are preserved. This is an accessibility preference, not a proven raw-input latency boost. Do not apply if you need this assistive feature. Original settings are saved per Windows user and restored by Reset.";
+           FPSGain="No FPS gain claimed";
+           Check={ ((GO-ReadInputState 32).Flags -band 5) -eq 0 };
+           Apply={ GO-ApplyInputOption 32 }; Revert={ GO-ResetInputOption 32 } }
+        @{ Id=33; Group="Input & USB Stability"; Risk=1; NeedsReboot=$false; Optional=$true;
+           Label="Sticky Keys + activation shortcut (OFF / Optional)";
+           ShortDesc="Disables Sticky Keys and its five-times-Shift activation shortcut for the current Windows user.";
+           LongDesc="Turns off Sticky Keys and its activation shortcut, preserving other persistent preferences. Helps prevent accidental activation, not USB latency. Only apply if you do not need this accessibility feature. Reset restores the saved per-user configuration, not transient held/latched modifier keys.";
+           FPSGain="No FPS gain claimed";
+           Check={ ((GO-ReadInputState 33).Flags -band 5) -eq 0 };
+           Apply={ GO-ApplyInputOption 33 }; Revert={ GO-ResetInputOption 33 } }
+        @{ Id=34; Group="Input & USB Stability"; Risk=1; NeedsReboot=$false; Optional=$true;
+           Label="USB Selective Suspend: active power plan AC + DC (OFF / Optional)";
+           ShortDesc="Sets USB selective suspend to Disabled for AC and DC in the currently active power plan.";
+           LongDesc="Targets idle/suspend-resume troubleshooting, not a guaranteed improvement during active gaming. Saves each edited power plan's original AC/DC indexes before writing. Repeated Apply after a plan switch captures that plan separately. Reset restores all saved plans and retains the baseline on failures or missing plans. An inactive saved plan is not deliberately activated. The Ultimate Performance module also writes this setting: applying it again can overwrite a restored value. Microsoft recommends leaving selective suspend enabled unless addressing a specific issue.";
+           FPSGain="Stability troubleshooting only";
+           Check={ $plan=GO-GetUsbPlanState; $plan.AC -eq 0 -and $plan.DC -eq 0 };
+           Apply={ GO-DisableUsbPlanSuspend }; Revert={ GO-ResetUsbPlanSuspend } }
+        @{ Id=35; Group="Input & USB Stability"; Risk=0; NeedsReboot=$false; Optional=$true;
+           Label="Enhance Pointer Precision (OFF / Desktop comfort / Optional)";
+           ShortDesc="Disables Windows pointer acceleration for desktop/non-Raw input; does not improve actual Raw Mouse Input.";
+           LongDesc="Sets Windows mouse acceleration to off through SystemParametersInfo while preserving both threshold values and pointer speed. This changes desktop/non-Raw pointer behavior only. Genuine Raw Mouse Input bypasses Windows pointer ballistics; no latency, connection or FPS benefit is claimed. Reset restores the original per-user acceleration/threshold values. Use the separate speed control below for an explicit pointer-speed change.";
+           FPSGain="Desktop comfort only";
+           Check={ (GO-ReadInputState 35).Values[2] -eq 0 };
+           Apply={ GO-ApplyInputOption 35 }; Revert={ GO-ResetInputOption 35 } }
     )
 
     # Notes stay visible next to controls, including consequences of Reset.
@@ -881,6 +1147,10 @@ Register-PowerToolsModule `
         26 = 'Policy request + DiagTrack service configuration; effective telemetry limits depend on Windows edition.'
         30 = 'Manual opt-in; excluded from bulk selection. DWORD presence does not prove USBHUB3 driver effect. Reset restores your saved value.'
         31 = 'Manual opt-in; excluded from bulk selection. Allow the computer to turn off this device to save power = UNCHECKED on all present root hubs. Reset restores each saved hub. New hubs need Recheck/Apply.'
+        32 = 'Optional accessibility change, never bulk-selected. Do not disable a feature you need. Current Windows user only; Reset restores original preferences.'
+        33 = 'Optional accessibility change, never bulk-selected. Prevents accidental activation; no latency claim. Current Windows user only.'
+        34 = 'Current plan AC/DC only. Switching plans changes status. Ultimate Performance can overwrite this policy. Reset restores saved plans, not an assumed default.'
+        35 = 'Desktop/non-Raw input only. Does NOT improve genuine Raw Mouse Input. Manual opt-in; Reset restores original values.'
     }
     foreach ($tweak in $script:GO_tweaks) {
         if ($notes.ContainsKey($tweak.Id)) { $tweak.Note = $notes[$tweak.Id] }
@@ -911,7 +1181,7 @@ Register-PowerToolsModule `
         }
         $script:GO_applyBtn.IsEnabled = $any
         if ($any) {
-            $text = if ($stabilityOnly) { 'USB stability options selected; no FPS gain claimed' } else { "Estimated FPS gain: ~$([math]::Round($totalGain,1))%" }
+            $text = if ($stabilityOnly) { 'Input / USB stability or comfort options selected; no FPS gain claimed' } else { "Estimated FPS gain: ~$([math]::Round($totalGain,1))%" }
             if ($latencyGain) { $text += " | Plus latency/ping improvements" }
             $script:GO_estimate.Text = "$text | All estimates without warranty"
         } else { $script:GO_estimate.Text = "No tweaks selected. All estimates without warranty." }
@@ -1026,6 +1296,92 @@ Register-PowerToolsModule `
         $dw.Show()
     }
 
+    function Global:GO-RenderInputExtras {
+        $panel = [System.Windows.Controls.StackPanel]::new()
+        $panel.Margin = '8,8,8,8'
+        $title = [System.Windows.Controls.TextBlock]::new()
+        $title.Text = 'POINTER SPEED - OPTIONAL DESKTOP COMFORT'
+        $title.FontWeight = 'Bold'; $title.FontSize = 10; $title.Foreground = Get-PowerToolsBrush 'Primary'
+        $panel.Children.Add($title) | Out-Null
+        $description = [System.Windows.Controls.TextBlock]::new()
+        $description.Text = 'Current Windows user only. Desktop/non-Raw pointer speed, not mouse DPI or a Raw Input/FPS improvement. Moving the slider only selects a target; Apply Speed changes Windows. Reset restores your saved original. This custom speed target is not saved in gaming profiles.'
+        $description.TextWrapping = 'Wrap'; $description.FontSize = 11; $description.Margin = '0,4,0,4'
+        $description.Foreground = Get-PowerToolsBrush 'TextMuted'; $panel.Children.Add($description) | Out-Null
+        $controls = [System.Windows.Controls.WrapPanel]::new()
+        $script:GO_speedSlider = [System.Windows.Controls.Slider]::new()
+        $script:GO_speedSlider.Minimum=1; $script:GO_speedSlider.Maximum=20; $script:GO_speedSlider.TickFrequency=1
+        $script:GO_speedSlider.IsSnapToTickEnabled=$true; $script:GO_speedSlider.Width=220; $script:GO_speedSlider.Margin='0,4,12,4'
+        $script:GO_speedLabel = [System.Windows.Controls.TextBlock]::new()
+        $script:GO_speedLabel.VerticalAlignment='Center'; $script:GO_speedLabel.Margin='0,0,12,0'
+        $script:GO_speedLabel.Foreground=Get-PowerToolsBrush 'TextDark'
+        $script:GO_speedApply=[System.Windows.Controls.Button]::new(); $script:GO_speedApply.Content='Apply Speed'
+        $script:GO_speedReset=[System.Windows.Controls.Button]::new(); $script:GO_speedReset.Content='Reset Speed'
+        foreach ($button in @($script:GO_speedApply,$script:GO_speedReset)) {
+            $button.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton'); $button.Padding='12,5'; $button.Margin='0,0,6,4'
+        }
+        try {
+            $current=GO-ReadInputState 36
+            $script:GO_speedSlider.Value=$current.Speed
+            $script:GO_speedLabel.Text="Current: $($current.Speed)/20 | Target: $($current.Speed)/20"
+            $script:GO_speedApply.IsEnabled=$false
+            $script:GO_speedReset.IsEnabled=$null -ne (GO-ReadUsbBackup 36)
+            $script:GO_speedSlider.Tag=[int]$current.Speed
+        } catch {
+            $script:GO_speedSlider.IsEnabled=$false; $script:GO_speedApply.IsEnabled=$false; $script:GO_speedReset.IsEnabled=$false
+            $script:GO_speedLabel.Text="CHECK ERROR: $_"
+        }
+        $script:GO_speedSlider.Add_ValueChanged({
+            $target=[int]$script:GO_speedSlider.Value
+            $script:GO_speedLabel.Text="Current: $($script:GO_speedSlider.Tag)/20 | Target: $target/20"
+            $script:GO_speedApply.IsEnabled=$target -ne [int]$script:GO_speedSlider.Tag
+        })
+        $script:GO_speedApply.Add_Click({
+            try {
+                if (($script:GO_cbRestore -and $script:GO_cbRestore.IsChecked) -or ($script:GO_cbRegBkp -and $script:GO_cbRegBkp.IsChecked)) {
+                    if (-not (GO-CreateBackup -BackupDir (Join-Path ([Environment]::GetFolderPath('Desktop')) 'WindowsAcolyte_Backup'))) { throw 'A selected backup failed; pointer speed was not changed.' }
+                }
+                GO-ApplyInputOption 36 ([int]$script:GO_speedSlider.Value)
+                GO-AddLog 'Desktop pointer speed applied and verified. Raw Mouse Input is unaffected.' 'OK'
+            } catch { GO-AddLog "Pointer speed Apply failed: $_" 'FAIL' }
+            GO-RenderList
+        })
+        $script:GO_speedReset.Add_Click({
+            $confirmed=[System.Windows.MessageBox]::Show('Restore the original pointer speed saved for this Windows user?','Restore Pointer Speed',[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+            if ($confirmed -ne [System.Windows.MessageBoxResult]::Yes) { return }
+            try { GO-ResetInputOption 36; GO-AddLog 'Original desktop pointer speed restored and verified.' 'OK' }
+            catch { GO-AddLog "Pointer speed Reset failed: $_" 'FAIL' }
+            GO-RenderList
+        })
+        foreach ($control in @($script:GO_speedSlider,$script:GO_speedLabel,$script:GO_speedApply,$script:GO_speedReset)) { $controls.Children.Add($control) | Out-Null }
+        $panel.Children.Add($controls) | Out-Null
+        $updateTitle=[System.Windows.Controls.TextBlock]::new()
+        $updateTitle.Text='WINDOWS UPDATE - READ-ONLY'; $updateTitle.FontSize=10; $updateTitle.FontWeight='Bold'
+        $updateTitle.Foreground=Get-PowerToolsBrush 'Primary'; $updateTitle.Margin='0,12,0,0'
+        $panel.Children.Add($updateTitle) | Out-Null
+        $script:GO_updateText=[System.Windows.Controls.TextBlock]::new()
+        $script:GO_updateText.Text=if ($script:GO_updateStatus) {$script:GO_updateStatus} else {'WINDOWS UPDATE - local status not read yet. Availability is UNKNOWN; use Read Local Status or open Windows Update.'}
+        $script:GO_updateText.TextWrapping='Wrap'; $script:GO_updateText.FontSize=11; $script:GO_updateText.Margin='0,10,0,6'
+        $script:GO_updateText.Foreground=Get-PowerToolsBrush 'TextDark'; $panel.Children.Add($script:GO_updateText) | Out-Null
+        $buttons=[System.Windows.Controls.WrapPanel]::new()
+        $script:GO_updateRefresh=[System.Windows.Controls.Button]::new(); $script:GO_updateRefresh.Content='Read Local Update Status'
+        $script:GO_updateOpen=[System.Windows.Controls.Button]::new(); $script:GO_updateOpen.Content='Open Windows Update'
+        foreach ($button in @($script:GO_updateRefresh,$script:GO_updateOpen)) {
+            $button.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton'); $button.Padding='12,5'; $button.Margin='0,0,6,4'
+            $buttons.Children.Add($button) | Out-Null
+        }
+        $script:GO_updateRefresh.Add_Click({
+            try { $script:GO_updateStatus=GO-GetLocalUpdateStatus }
+            catch { $script:GO_updateStatus="Local update status unavailable: $_. Update availability remains UNKNOWN. No online scan was started." }
+            $script:GO_updateText.Text=$script:GO_updateStatus
+        })
+        $script:GO_updateOpen.Add_Click({
+            try { GO-OpenWindowsUpdate; GO-AddLog 'Opened Windows Update settings; no scan/install/restart requested by the tool.' 'INFO' }
+            catch { GO-AddLog "Could not open Windows Update: $_" 'FAIL' }
+        })
+        $panel.Children.Add($buttons) | Out-Null
+        $script:GO_tweakList.Items.Add($panel) | Out-Null
+    }
+
     function Global:GO-RenderList {
         param($States)
         $script:GO_states = if ($States) { $States } else { GO-GetStateSnapshot }
@@ -1074,7 +1430,7 @@ Register-PowerToolsModule `
             $cbText.Add_MouseLeftButtonUp({ param($s,$e) GO-ShowDetailWindow -Tweak $capturedTweak; $e.Handled=$true }.GetNewClosure())
             $cbContent = [System.Windows.Controls.StackPanel]::new()
             $cbContent.Children.Add($cbText) | Out-Null
-            $noteText = if ($state.Status -in @('UNAVAILABLE','CHECK ERROR')) { $state.Message } else { $t.Note }
+            $noteText = if ($state.Status -in @('UNAVAILABLE','CHECK ERROR') -or ($t.Id -eq 34 -and $t.Optional)) { $state.Message } else { $t.Note }
             if ($noteText) {
                 $note = [System.Windows.Controls.TextBlock]::new()
                 $note.Text = $noteText; $note.FontSize = 10; $note.TextWrapping = 'Wrap'
@@ -1119,7 +1475,7 @@ Register-PowerToolsModule `
                 }
                 $capturedTweak3 = $t
                 $resetBtn.Add_Click({
-                    $resetInfo = if ($capturedTweak3.Optional) { 'Restore the saved original USB state. Disconnected hubs keep their backup for a later retry.' } else { 'Reset may also affect settings sharing the same values. Original pre-app values are not restored.' }
+                    $resetInfo = if ($capturedTweak3.Optional) { 'Restore the saved original input/USB configuration. Disconnected hubs or missing plans keep their baseline for a later retry. Accessibility Reset may re-enable previously active assistive features.' } else { 'Reset may also affect settings sharing the same values. Original pre-app values are not restored.' }
                     $r = [System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)'?`n`n$($capturedTweak3.Note)`n`n$resetInfo","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
                     if ($r -eq [System.Windows.MessageBoxResult]::Yes) {
                         $before = GO-GetStateSnapshot
@@ -1135,6 +1491,7 @@ Register-PowerToolsModule `
             $script:GO_tweakList.Items.Add($row) | Out-Null
             $script:GO_checkboxes[$t.Id] = $cb
         }
+        if ($script:GO_tweaks.Id -contains 35) { GO-RenderInputExtras }
         GO-UpdateApplyState
     }
 
@@ -1295,12 +1652,13 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-RevertAll {
-        $res = [System.Windows.MessageBox]::Show("Reset all managed settings to the module's reset presets?`n`nThis enables HVCI/VBS, switches to Balanced, resets priority to 38 (0x26) and removes custom network settings. Shared settings and the separate Ultimate Performance module's active plan are affected. Original pre-app values are not restored, except for USB options with a saved baseline. USB options without a backup remain unchanged.`n`nContinue?","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+        $res = [System.Windows.MessageBox]::Show("Reset all managed settings to the module's reset presets?`n`nThis enables HVCI/VBS, switches to Balanced, resets priority to 38 (0x26) and removes custom network settings. Shared settings and the separate Ultimate Performance module's active plan are affected. Optional input/USB controls instead restore saved original states only; no backup means unchanged. This includes pointer speed and may re-enable previously active accessibility features. Missing hubs/plans retain their baseline.`n`nContinue?","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
         if ($res -ne [System.Windows.MessageBoxResult]::Yes) { return }
         $before = GO-GetStateSnapshot
         GO-AddLog "Resetting all managed settings..." "INFO"
         $ok=0; $fail=0; $reboot=$false
-        foreach ($t in $script:GO_tweaks) {
+        $resetTargets = @($script:GO_tweaks) + @(@{Id=36;Label='Desktop pointer speed';Optional=$true;Revert={GO-ResetInputOption 36}})
+        foreach ($t in $resetTargets) {
             try {
                 if ($t.Optional -and -not (GO-ReadUsbBackup $t.Id)) {
                     GO-AddLog "Reset skipped: $($t.Label) - no saved original state." 'INFO'
@@ -1341,6 +1699,12 @@ Register-PowerToolsModule `
         if ($conflicts.Count -gt 0) {
             GO-AddLog "Select only one Win32PrioritySeparation preset before applying." "FAIL"
             return
+        }
+        $accessibility = @($selected | Where-Object { $_.Id -in @(32,33) })
+        if ($accessibility.Count) {
+            $names = ($accessibility.Label) -join "`n- "
+            $answer=[System.Windows.MessageBox]::Show("Optional accessibility changes for the current Windows user:`n`n- $names`n`nThese features and their activation shortcuts will be turned OFF. Do not continue if you need them. This is not a proven Raw Input latency boost. Original preferences will be saved for Reset.`n`nContinue?",'Accessibility Warning',[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Warning)
+            if ($answer -ne [System.Windows.MessageBoxResult]::Yes) { GO-AddLog 'Accessibility changes cancelled; nothing applied.' 'INFO'; return }
         }
         $highRisk = $selected | Where-Object { $_.Risk -eq 2 }
         if ($highRisk) {

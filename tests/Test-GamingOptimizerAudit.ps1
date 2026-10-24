@@ -27,7 +27,7 @@ if ($ReadOnly) {
     exit
 }
 
-# USB 30/31 use separate typed-backup/device-provider tests; never execute their
+# Optional input/USB controls use separate baseline/provider tests; never execute their
 # machine-backed operations through the legacy registry/native-command model.
 $script:GO_tweaks = @($script:GO_tweaks | Where-Object { $_.Id -le 29 })
 
