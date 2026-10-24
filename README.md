@@ -204,7 +204,7 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 <img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/05-gaming-optimizer.png" alt="Windows 11 Gaming Optimizer module" width="720">
 
-> 🚀 Applies **29 performance tweaks** with risk levels (fully idempotent)
+> 🚀 **31 configurable options**: 29 existing tweaks + 2 optional USB stability settings, with risk levels and verified configuration readback.
 
 ---
 
@@ -223,7 +223,7 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ---
 
-### ⚙️ Complete Tweaks List (29 Total)
+### ⚙️ Complete Tweaks List (31 Total)
 
 | ID | Option | Configuration checked |
 |----|--------|-----------------------|
@@ -256,6 +256,20 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 | 27 | Search history OFF | IsDeviceSearchHistoryEnabled |
 | 28 | Share across devices OFF | CdpSessionUserAuthzPolicy |
 | 29 | Dynamic lighting OFF | Both managed lighting flags |
+| 30 | USBHUB3 selective-suspend override (optional) | `DisableSelectiveSuspend` exists as REG_DWORD `1`; driver effect not verified |
+| 31 | USB root hubs: prevent power-off (optional) | Every present, supported root hub has `MSPower_DeviceEnable.Enable=False`: **Allow the computer to turn off this device to save power is unchecked** |
+
+### USB Stability - Optional
+
+Both options target stability without interruptions, not higher FPS. They start unselected and are excluded from **All**, **Missing Only**, **Safe Only** and recommended pre-selection. Select them individually; explicitly saved profiles can also select them.
+
+- **USBHUB3 override:** sets `HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\DisableSelectiveSuspend` to DWORD `1`. This exact driver override is not reliably documented across Windows versions. `APPLIED` confirms the stored value/type, not that the driver honors it or disconnects are fixed.
+- **Root-hub power permission:** clears the device power-off permission on all currently present USB root hubs with an unambiguous supported WMI provider. Unsupported hubs block Apply before any device write. Other USB devices and wake permissions are untouched; devices are not disabled or reconnected.
+- Before changing either option, original registry existence/type/value or each hub's original Boolean is saved under `%ProgramData%\WindowsAcolyte\GamingOptimizer`. Repeated Apply preserves these baselines, including after partial failures. Reset restores originals, not guessed defaults. Without an app backup, Reset leaves existing USB settings unchanged.
+- Disconnected hubs retain their backup: reconnect and retry Reset. New hubs require **Recheck All** and explicit Apply. Backups survive app updates; successful full restoration archives the baseline.
+- A Windows restart is requested through the existing reboot prompt; no automatic USB restart occurs. Neither setting guarantees a cure for faulty cables, drivers or devices. The separate Ultimate Performance module's power-plan selective-suspend policy is distinct and is not changed by these two options.
+
+Device control reference: [Microsoft WMI and the Power Management tab](https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/wmi-and-the-power-management-tab).
 
 ---
 
@@ -304,17 +318,18 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 `APPLIED` confirms stored configuration, not a measured FPS improvement or proof that a reboot-dependent feature is already effective. The NVMe option only checks an experimental feature override and is never automatically recommended.
 
-HVCI OFF also writes VBS OFF. Resetting either shared security setting can invalidate the other; the UI explains this and logs status changes. Resetting the power-plan option switches to Balanced, including when the separate Ultimate Performance module's plan was active. **Reset Managed Settings** uses documented module presets, not a snapshot of your original Windows configuration. The 8.3 reset policy is per-volume (`2`).
+HVCI OFF also writes VBS OFF. Resetting either shared security setting can invalidate the other; the UI explains this and logs status changes. Resetting the power-plan option switches to Balanced, including when the separate Ultimate Performance module's plan was active. **Reset Managed Settings** uses documented module presets, not a snapshot of your original Windows configuration; the two USB options are exceptions and restore saved originals only. The 8.3 reset policy is per-volume (`2`).
 
 Validation (PowerShell 7 on Windows):
 
 ```powershell
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizer.ps1
+pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -File .\tests\Test-GamingOptimizerAudit.ps1
 pwsh -NoProfile -File .\tests\Test-GamingOptimizerAudit.ps1 -ReadOnly
 ```
 
-The tests cover all 29 Apply/Check/Reset lifecycles and all 812 ordered option pairs for both Apply and Reset in an isolated model. The WPF tests use a temporary HKCU key; real machine checks are read-only. These tests do not establish driver activation, OS-edition support, reboot behavior or performance gains.
+The legacy audit covers 29 Apply/Check/Reset lifecycles and all 812 ordered option pairs for both Apply and Reset in an isolated model. The USB suite separately checks opt-in behavior, exact typed registry restoration, per-hub original permissions, partial failures, disconnected/unsupported hubs and WPF status/selection. Registry writes use temporary HKCU keys and USB providers are simulated; real machine checks are read-only. These tests do not establish driver activation, OS-edition support, reboot behavior or performance gains.
 
 Command semantics: [Microsoft fsutil behavior](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-behavior), [8.3 policy values](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/fsutil-8dot3name), [powercfg](https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options).
 
@@ -571,6 +586,8 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 If Shortcut Arrow Visibility was applied, use **Restore Previous Setting** before uninstalling to restore the original overlay. Removing the app alone intentionally leaves the ProgramData icon/backup intact so a still-configured `29` does not reference a deleted file.
 
+If optional Gaming Optimizer USB settings were changed through the app, use their **Reset** buttons before uninstalling when you want the original USB policies back. Uninstalling does not restore system settings or remove the protected ProgramData baselines; reconnect missing hubs before completing Reset.
+
 ```powershell
 Remove-Item "$env:LOCALAPPDATA\WindowsAcolyte" -Recurse -Force
 ```
@@ -656,7 +673,7 @@ Register-PowerToolsModule `
 - ✅ Desktop Shortcut Creator: local start and online installer links from Windows Tools
 - ✅ Desktop shortcuts use a stable Windows PowerShell host and resolve PowerShell 7 dynamically at launch, avoiding versioned Microsoft Store executable paths
 - ✅ Shortcut launch paths cleaned up without `-NoExit`
-- ✅ Gaming Optimizer: 29 tweaks + profiles
+- ✅ Gaming Optimizer: 31 options + profiles, including 2 optional USB stability settings
 - ✅ AV Scanner: RunspacePool orchestration
 - ✅ All modules use PTS_Brush theming
 - ✅ Background processing via DispatcherTimer

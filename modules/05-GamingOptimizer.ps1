@@ -268,6 +268,169 @@ Register-PowerToolsModule `
                 $offload.ReceiveSegmentCoalescing -eq 'Disabled')
     }
 
+    function Global:GO-GetUsbBackupPath {
+        param([ValidateSet(30,31)][int]$Id)
+        return (Join-Path ([Environment]::GetFolderPath('CommonApplicationData')) "WindowsAcolyte\GamingOptimizer\usb-original-$Id.json")
+    }
+
+    function Global:GO-ReadUsbBackup {
+        param([ValidateSet(30,31)][int]$Id)
+        $path = GO-GetUsbBackupPath $Id
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
+        $backup = Get-Content -LiteralPath $path -Raw -EA Stop | ConvertFrom-Json -EA Stop
+        if ($backup.Version -ne 1 -or $backup.Id -ne $Id) { throw "Invalid USB backup: $path" }
+        if ($Id -eq 30) {
+            if ($backup.State.Exists -isnot [bool] -or ($backup.State.Exists -and
+                $backup.State.Kind -notin @('String','ExpandString','MultiString','DWord','QWord','Binary','None'))) {
+                throw 'Invalid original USB registry state.'
+            }
+        } else {
+            $names = @{}
+            foreach ($entry in $backup.Entries) {
+                if ($entry.Enabled -isnot [bool] -or $entry.DeviceId -notmatch '^USB\\ROOT_HUB[^\\]*\\' -or
+                    $entry.InstanceName -notmatch ('^' + [regex]::Escape($entry.DeviceId) + '_\d+$') -or $names.ContainsKey($entry.InstanceName)) {
+                    throw 'Invalid or ambiguous USB hub backup entry.'
+                }
+                $names[$entry.InstanceName] = $true
+            }
+            if ($names.Count -eq 0) { throw 'USB hub backup is empty.' }
+        }
+        return $backup
+    }
+
+    function Global:GO-WriteUsbBackup {
+        param([ValidateSet(30,31)][int]$Id, $Backup)
+        $path = GO-GetUsbBackupPath $Id
+        $directory = Split-Path -Parent $path
+        foreach ($asset in @((Split-Path -Parent $directory),$directory,$path)) {
+            if ((Test-Path -LiteralPath $asset) -and ((Get-Item -LiteralPath $asset -Force -EA Stop).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw "USB backup path must not be a link/junction: $asset"
+            }
+        }
+        if (-not (Test-Path -LiteralPath $directory)) { New-Item -ItemType Directory -Path $directory -Force -EA Stop | Out-Null }
+        $acl = [Security.AccessControl.DirectorySecurity]::new()
+        $acl.SetAccessRuleProtection($true,$false)
+        foreach ($rule in @(@('S-1-5-18','FullControl'),@('S-1-5-32-544','FullControl'),@('S-1-5-32-545','ReadAndExecute'))) {
+            $sid = [Security.Principal.SecurityIdentifier]::new($rule[0])
+            $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($sid,$rule[1],'ContainerInherit,ObjectInherit','None','Allow'))
+        }
+        Set-Acl -LiteralPath $directory -AclObject $acl -EA Stop
+        $temporary = "$path.$([guid]::NewGuid().ToString('N')).tmp"
+        try {
+            $Backup | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $temporary -Encoding UTF8 -EA Stop
+            Move-Item -LiteralPath $temporary -Destination $path -Force -EA Stop
+        } finally { if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -EA Stop } }
+        GO-ReadUsbBackup $Id | Out-Null
+    }
+
+    function Global:GO-ArchiveUsbBackup {
+        param([int]$Id)
+        $path = GO-GetUsbBackupPath $Id
+        $archive = "$path.restored-$([guid]::NewGuid().ToString('N'))"
+        Move-Item -LiteralPath $path -Destination $archive -EA Stop
+    }
+
+    function Global:GO-ReadUsbRegistry {
+        $path = 'HKLM:\SYSTEM\CurrentControlSet\Services\USBHUB3'
+        $key = Get-Item -LiteralPath $path -EA Stop
+        if ($key.GetValueNames() -notcontains 'DisableSelectiveSuspend') { return @{Exists=$false;Kind='None';Data=$null} }
+        return @{Exists=$true;Kind=$key.GetValueKind('DisableSelectiveSuspend').ToString();
+            Data=$key.GetValue('DisableSelectiveSuspend',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}
+    }
+
+    function Global:GO-RestoreUsbRegistryValue {
+        param($State)
+        $path = 'HKLM:\SYSTEM\CurrentControlSet\Services\USBHUB3'
+        if (-not $State.Exists) { GO-DelReg $path 'DisableSelectiveSuspend'; return }
+        $kind = [Microsoft.Win32.RegistryValueKind]$State.Kind
+        $data = switch ($kind) {
+            'DWord' {[int]$State.Data}; 'QWord' {[long]$State.Data}
+            'String' {[string]$State.Data}; 'ExpandString' {[string]$State.Data}
+            'MultiString' {,([string[]]$State.Data)}; 'Binary' {,([byte[]]$State.Data)}; 'None' {,([byte[]]$State.Data)}
+        }
+        Set-ItemProperty -LiteralPath $path -Name DisableSelectiveSuspend -Value $data -Type $kind -Force -EA Stop
+    }
+
+    function Global:GO-EnableUsbRegistryOverride {
+        if (-not (GO-ReadUsbBackup 30)) {
+            GO-WriteUsbBackup 30 @{Version=1;Id=30;State=(GO-ReadUsbRegistry)}
+        }
+        GO-SetDW 'HKLM:\SYSTEM\CurrentControlSet\Services\USBHUB3' 'DisableSelectiveSuspend' 1
+    }
+
+    function Global:GO-ResetUsbRegistryOverride {
+        $backup = GO-ReadUsbBackup 30
+        if (-not $backup) { throw 'No saved USBHUB3 baseline. Existing registry setting was left unchanged.' }
+        GO-RestoreUsbRegistryValue $backup.State
+        $actual = GO-ReadUsbRegistry
+        if ($actual.Exists -ne $backup.State.Exists -or $actual.Kind -ne $backup.State.Kind -or
+            (ConvertTo-Json -InputObject $actual.Data -Compress) -ne (ConvertTo-Json -InputObject $backup.State.Data -Compress)) {
+            throw 'Original USBHUB3 state could not be verified.'
+        }
+        GO-ArchiveUsbBackup 30
+    }
+
+    function Global:GO-GetUsbHubTargets {
+        $hubs = @(Get-PnpDevice -PresentOnly -EA Stop | Where-Object { $_.InstanceId -match '^USB\\ROOT_HUB[^\\]*\\' })
+        $power = @(Get-CimInstance -Namespace root\wmi -ClassName MSPower_DeviceEnable -EA Stop)
+        foreach ($hub in $hubs) {
+            $matched = @($power | Where-Object { $_.InstanceName -match ('^' + [regex]::Escape($hub.InstanceId) + '_\d+$') })
+            [pscustomobject]@{DeviceId=$hub.InstanceId;Name=$hub.FriendlyName;Supported=($matched.Count -eq 1 -and $matched[0].Enable -is [bool]);
+                Provider=$(if ($matched.Count -eq 1) {$matched[0]} else {$null})}
+        }
+    }
+
+    function Global:GO-UsbHubControlAvailable {
+        $targets = @(GO-GetUsbHubTargets)
+        return ($targets.Count -gt 0 -and @($targets | Where-Object { -not $_.Supported }).Count -eq 0)
+    }
+
+    function Global:GO-TestUsbHubPowerOff {
+        $targets = @(GO-GetUsbHubTargets)
+        return ($targets.Count -gt 0 -and @($targets | Where-Object { -not $_.Supported -or $_.Provider.Enable -ne $false }).Count -eq 0)
+    }
+
+    function Global:GO-SetUsbHubPower {
+        param($Provider,[bool]$Enabled)
+        Set-CimInstance -InputObject $Provider -Property @{Enable=$Enabled} -EA Stop | Out-Null
+    }
+
+    function Global:GO-DisableUsbHubPowerOff {
+        $targets = @(GO-GetUsbHubTargets)
+        if (-not $targets.Count -or @($targets | Where-Object { -not $_.Supported }).Count) {
+            throw 'Not all present USB root hubs expose unambiguous power-management control.'
+        }
+        $backup = GO-ReadUsbBackup 31
+        $entries = @(if ($backup) { $backup.Entries })
+        foreach ($target in $targets) {
+            if ($target.Provider.InstanceName -notin @($entries.InstanceName)) {
+                $entries += @{DeviceId=$target.DeviceId;Name=$target.Name;InstanceName=$target.Provider.InstanceName;Enabled=[bool]$target.Provider.Enable}
+            }
+        }
+        # Save every newly encountered hub BEFORE the first write, even on a retry.
+        GO-WriteUsbBackup 31 @{Version=1;Id=31;Entries=$entries}
+        foreach ($target in $targets) { GO-SetUsbHubPower $target.Provider $false }
+    }
+
+    function Global:GO-ResetUsbHubPowerOff {
+        $backup = GO-ReadUsbBackup 31
+        if (-not $backup) { throw 'No saved USB hub baseline. Hub settings were left unchanged.' }
+        $targets = @(GO-GetUsbHubTargets)
+        $pending = @()
+        foreach ($entry in $backup.Entries) {
+            $match = @($targets | Where-Object { $_.Supported -and $_.DeviceId -eq $entry.DeviceId -and $_.Provider.InstanceName -eq $entry.InstanceName })
+            if ($match.Count -ne 1) { $pending += $entry.Name; continue }
+            GO-SetUsbHubPower $match[0].Provider $entry.Enabled
+        }
+        $updated = @(GO-GetUsbHubTargets)
+        foreach ($entry in $backup.Entries) {
+            $match = @($updated | Where-Object { $_.Supported -and $_.Provider.InstanceName -eq $entry.InstanceName })
+            if ($match.Count -eq 1 -and $match[0].Provider.Enable -ne $entry.Enabled) { throw "USB hub restore verification failed: $($entry.Name)" }
+        }
+        if ($pending.Count) { throw "USB baseline retained for disconnected/unsupported hubs: $($pending -join ', '). Reconnect and retry Reset." }
+        GO-ArchiveUsbBackup 31
+    }
+
     function Global:GO-GetPowerSchemes {
         foreach ($line in (GO-InvokeNative 'powercfg.exe' @('/list'))) {
             if ($line -match '([0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})\s*\((.*?)\)') {
@@ -303,6 +466,7 @@ Register-PowerToolsModule `
     function Global:GO-GetTweakState {
         param($Tweak)
         try {
+            if ($Tweak.Optional) { GO-ReadUsbBackup $Tweak.Id | Out-Null }
             if ($Tweak.Available -and -not (& $Tweak.Available)) {
                 return @{Applied=$false; Status='UNAVAILABLE'; Message=$Tweak.UnavailableReason}
             }
@@ -378,6 +542,7 @@ Register-PowerToolsModule `
     function Global:GO-IsRecommended {
         param($TweakId)
         $tweak = $script:GO_tweaks | Where-Object { $_.Id -eq $TweakId } | Select-Object -First 1
+        if ($tweak.Optional) { return $false }
         if ($tweak.Mutex) {
             foreach ($other in $script:GO_tweaks) {
                 if ($other.Id -ne $TweakId -and $other.Mutex -eq $tweak.Mutex -and (& $other.Check)) {
@@ -677,6 +842,26 @@ Register-PowerToolsModule `
                    GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled" 1
                     GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 1 } }
+        @{ Id=30; Group="USB Stability - Optional"; Risk=1; NeedsReboot=$true; Optional=$true;
+           Label="USBHUB3 Selective-Suspend Override (Optional)";
+           ShortDesc="Optional stability experiment: sets USBHUB3 DisableSelectiveSuspend as DWORD 1.";
+           LongDesc="Sets HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\DisableSelectiveSuspend to REG_DWORD 1. Saves the original value/type or absence before writing. This exact service-level override is not reliably documented for all Windows USBHUB3 versions: APPLIED proves the stored DWORD only, not driver behavior. No FPS benefit is claimed. Reset restores the saved original value, never an assumed default.";
+           FPSGain="Stability only";
+           Available={ Test-Path -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\USBHUB3' };
+           UnavailableReason="USBHUB3 service key is absent; no unsupported driver key will be created.";
+           Check={ $state = GO-ReadUsbRegistry; $state.Exists -and $state.Kind -eq 'DWord' -and [long]$state.Data -eq 1 };
+           Apply={ GO-EnableUsbRegistryOverride };
+           Revert={ GO-ResetUsbRegistryOverride } }
+        @{ Id=31; Group="USB Stability - Optional"; Risk=1; NeedsReboot=$true; Optional=$true;
+           Label="USB Root Hubs: Prevent Power-Off (Allow... unchecked)";
+           ShortDesc="Optional stability setting: removes permission to power off present USB root hubs.";
+           LongDesc="Sets the supported per-device WMI energy-management Enable flag to False for every currently present USB root hub. This corresponds to leaving Allow the computer to turn off this device to save power unchecked. Saves each hub's original Boolean by exact device/provider identity; Reset restores those states. No USB device is disabled, restarted or re-enumerated. Unsupported hubs block Apply; disconnected backup entries are retained until they can be restored. This is distinct from the active power plan's selective-suspend policy. No FPS improvement or guaranteed cure for disconnects is claimed.";
+           FPSGain="Stability only";
+           Available={ GO-UsbHubControlAvailable };
+           UnavailableReason="One or more present USB root hubs lack unambiguous WMI power control, or no root hub is present.";
+           Check={ GO-TestUsbHubPowerOff };
+           Apply={ GO-DisableUsbHubPowerOff };
+           Revert={ GO-ResetUsbHubPowerOff } }
     )
 
     # Notes stay visible next to controls, including consequences of Reset.
@@ -694,6 +879,8 @@ Register-PowerToolsModule `
         23 = 'Global policy for all volumes. Legacy installers may need 8.3 names. Reset uses per-volume policy (2).'
         24 = 'Experimental registry override only; native-driver activation is not verified.'
         26 = 'Policy request + DiagTrack service configuration; effective telemetry limits depend on Windows edition.'
+        30 = 'Manual opt-in; excluded from bulk selection. DWORD presence does not prove USBHUB3 driver effect. Reset restores your saved value.'
+        31 = 'Manual opt-in; excluded from bulk selection. Allow the computer to turn off this device to save power = UNCHECKED on all present root hubs. Reset restores each saved hub. New hubs need Recheck/Apply.'
     }
     foreach ($tweak in $script:GO_tweaks) {
         if ($notes.ContainsKey($tweak.Id)) { $tweak.Note = $notes[$tweak.Id] }
@@ -707,12 +894,13 @@ Register-PowerToolsModule `
     function Global:GO-GetRiskLabel { param($Risk) switch ($Risk) { 0{"SAFE"} 1{"MODERATE"} 2{"HIGH RISK"} } }
 
     function Global:GO-UpdateApplyState {
-        $any = $false; $totalGain = 0.0; $latencyGain = $false
+        $any = $false; $totalGain = 0.0; $latencyGain = $false; $stabilityOnly = $true
         $impact = @()
         foreach ($id in $script:GO_checkboxes.Keys) {
             if ($script:GO_checkboxes[$id].IsChecked -eq $true -and $script:GO_checkboxes[$id].IsEnabled) {
                 $any = $true
                 $tweak = $script:GO_tweaks | Where-Object { $_.Id -eq $id } | Select-Object -First 1
+                if (-not $tweak.Optional) { $stabilityOnly = $false }
                 if ($tweak -and $tweak.FPSGain -match "(\d+)(?:-(\d+))?% FPS") {
                     $low = [double]$Matches[1]; $high = if ($Matches[2]) { [double]$Matches[2] } else { $low }
                     $totalGain += ($low + $high) / 2.0
@@ -723,7 +911,7 @@ Register-PowerToolsModule `
         }
         $script:GO_applyBtn.IsEnabled = $any
         if ($any) {
-            $text = "Estimated FPS gain: ~$([math]::Round($totalGain,1))%"
+            $text = if ($stabilityOnly) { 'USB stability options selected; no FPS gain claimed' } else { "Estimated FPS gain: ~$([math]::Round($totalGain,1))%" }
             if ($latencyGain) { $text += " | Plus latency/ping improvements" }
             $script:GO_estimate.Text = "$text | All estimates without warranty"
         } else { $script:GO_estimate.Text = "No tweaks selected. All estimates without warranty." }
@@ -742,6 +930,7 @@ Register-PowerToolsModule `
         foreach ($t in $script:GO_tweaks) {
             $cb = $script:GO_checkboxes[$t.Id]
             if (-not $cb -or -not $cb.IsEnabled -or $Mode -eq 'None') { continue }
+            if ($t.Optional) { continue }
             if ($Mode -eq 'Safe' -and $t.Risk -ne 0) { continue }
             if ($Mode -eq 'Recommended' -and -not (GO-IsRecommended $t.Id)) { continue }
             if ($t.Mutex) {
@@ -916,15 +1105,22 @@ Register-PowerToolsModule `
             $detailBtn.Width = 52; $detailBtn.HorizontalAlignment = "Center"
             $capturedTweak2 = $t; $detailBtn.Add_Click({ GO-ShowDetailWindow -Tweak $capturedTweak2 }.GetNewClosure())
             [System.Windows.Controls.Grid]::SetColumn($detailBtn, 3); $row.Children.Add($detailBtn) | Out-Null
-            if ($isOk) {
+            $usbBackup = $null
+            if ($t.Optional) { try { $usbBackup = GO-ReadUsbBackup $t.Id } catch { } }
+            if ($isOk -or $null -ne $usbBackup) {
                 $resetBtn = New-Object System.Windows.Controls.Button
                 $resetBtn.Content = "Reset"; $resetBtn.Style = (Get-PowerToolsWindow).FindResource("SecondaryButton")
                 $resetBtn.Padding = "4,2"; $resetBtn.FontSize = 9; $resetBtn.Width = 42; $resetBtn.Height = 20
                 $resetBtn.Foreground = Get-PowerToolsBrush "Warning"; $resetBtn.Margin = "0,0,4,0"
                 $resetBtn.VerticalAlignment = "Center"; $resetBtn.HorizontalAlignment = "Center"
+                if ($t.Optional -and -not $usbBackup) {
+                    $resetBtn.IsEnabled = $false
+                    $resetBtn.ToolTip = 'No original state saved by WindowsAcolyte; this pre-existing setting will not be reset.'
+                }
                 $capturedTweak3 = $t
                 $resetBtn.Add_Click({
-                    $r = [System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)' to its managed reset value?`n`n$($capturedTweak3.Note)`n`nReset may also affect settings sharing the same values. Original pre-app values are not restored.","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+                    $resetInfo = if ($capturedTweak3.Optional) { 'Restore the saved original USB state. Disconnected hubs keep their backup for a later retry.' } else { 'Reset may also affect settings sharing the same values. Original pre-app values are not restored.' }
+                    $r = [System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)'?`n`n$($capturedTweak3.Note)`n`n$resetInfo","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
                     if ($r -eq [System.Windows.MessageBoxResult]::Yes) {
                         $before = GO-GetStateSnapshot
                         try { GO-ResetTweak $capturedTweak3; GO-AddLog "Reset: $($capturedTweak3.Label)" "OK" }
@@ -1099,13 +1295,19 @@ Register-PowerToolsModule `
     }
 
     function Global:GO-RevertAll {
-        $res = [System.Windows.MessageBox]::Show("Reset all managed settings to the module's reset presets?`n`nThis enables HVCI/VBS, switches to Balanced, resets priority to 38 (0x26) and removes custom network settings. Shared settings and the separate Ultimate Performance module's active plan are affected. Original pre-app values are not restored.`n`nContinue?","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+        $res = [System.Windows.MessageBox]::Show("Reset all managed settings to the module's reset presets?`n`nThis enables HVCI/VBS, switches to Balanced, resets priority to 38 (0x26) and removes custom network settings. Shared settings and the separate Ultimate Performance module's active plan are affected. Original pre-app values are not restored, except for USB options with a saved baseline. USB options without a backup remain unchanged.`n`nContinue?","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
         if ($res -ne [System.Windows.MessageBoxResult]::Yes) { return }
         $before = GO-GetStateSnapshot
         GO-AddLog "Resetting all managed settings..." "INFO"
         $ok=0; $fail=0; $reboot=$false
         foreach ($t in $script:GO_tweaks) {
-            try { GO-ResetTweak $t; GO-AddLog "Reset: $($t.Label)" "OK"; $ok++; if ($t.NeedsReboot) { $reboot=$true } }
+            try {
+                if ($t.Optional -and -not (GO-ReadUsbBackup $t.Id)) {
+                    GO-AddLog "Reset skipped: $($t.Label) - no saved original state." 'INFO'
+                    continue
+                }
+                GO-ResetTweak $t; GO-AddLog "Reset: $($t.Label)" "OK"; $ok++; if ($t.NeedsReboot) { $reboot=$true }
+            }
             catch { GO-AddLog "Revert failed: $($t.Label) - $_" "FAIL"; $fail++ }
         }
         GO-AddLog "Reset complete. Success: $ok  Failed: $fail" "INFO"

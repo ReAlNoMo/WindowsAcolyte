@@ -27,6 +27,10 @@ if ($ReadOnly) {
     exit
 }
 
+# USB 30/31 use separate typed-backup/device-provider tests; never execute their
+# machine-backed operations through the legacy registry/native-command model.
+$script:GO_tweaks = @($script:GO_tweaks | Where-Object { $_.Id -le 29 })
+
 $script:assertions = 0
 function Assert-Audit($Condition, $Message) {
     $script:assertions++
