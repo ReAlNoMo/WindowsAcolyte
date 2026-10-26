@@ -4,7 +4,7 @@
 Register-PowerToolsModule `
     -Id          "desktop-shortcut-creator" `
     -Name        "Desktop Shortcut Creator" `
-    -Description "Create WindowsAcolyte desktop shortcuts for local launch or online installer." `
+    -Description "Create WindowsAcolyte shortcuts with a mandatory online update check." `
     -Category    "Windows Tweaks" `
     -Show        {
 
@@ -24,7 +24,7 @@ Register-PowerToolsModule `
             <TextBlock Text="DESKTOP SHORTCUTS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                       Text="Create WindowsAcolyte shortcuts on your Desktop. Local Start launches the installed app. Online Installer starts the GitHub installer command."/>
+                       Text="Create WindowsAcolyte shortcuts on your Desktop. Both shortcuts check GitHub and update the local app before starting. If the online check or update fails, startup is blocked."/>
         </StackPanel>
     </Border>
 
@@ -142,54 +142,13 @@ Register-PowerToolsModule `
         }
 
         $bootstrapPath = Join-Path $InstallPath "Start-WindowsAcolyte.ps1"
-        $bootstrap = @'
-param([switch]$OnlineInstaller)
-
-$ErrorActionPreference = "Stop"
-$windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
-$candidates = @(
-    (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe"),
-    (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe"),
-    $windowsAppsAlias
-)
-Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue | ForEach-Object {
-    if ($_.Source) { $candidates += $_.Source }
-}
-
-$pwshPath = $null
-foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
-    if ((Test-Path -LiteralPath $candidate) -and
-        ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
-        ($candidate -notlike "*\.cache\codex-runtimes\*")) {
-        try {
-            $majorText = & $candidate -NoProfile -Command '$PSVersionTable.PSVersion.Major' 2>$null
-            $major = 0
-            if ([int]::TryParse([string]($majorText | Select-Object -First 1), [ref]$major) -and $major -ge 7) {
-                $pwshPath = $candidate
-                break
-            }
-        } catch {}
-    }
-}
-
-if ([string]::IsNullOrWhiteSpace($pwshPath)) {
-    throw "PowerShell 7 (pwsh.exe) was not found."
-}
-
-if ($OnlineInstaller) {
-    & $pwshPath -NoProfile -ExecutionPolicy Bypass -STA -Command 'irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" | iex'
-    exit $LASTEXITCODE
-}
-
-$appPath = Join-Path $PSScriptRoot "WindowsAcolyte.ps1"
-if (-not (Test-Path -LiteralPath $appPath)) {
-    throw "WindowsAcolyte launcher was not found: $appPath"
-}
-
-& $pwshPath -NoProfile -ExecutionPolicy Bypass -STA -File $appPath
-exit $LASTEXITCODE
-'@
-        Set-Content -LiteralPath $bootstrapPath -Value $bootstrap -Encoding UTF8
+        $sourcePath = Join-Path $Global:PTS_RootPath 'Start-WindowsAcolyte.ps1'
+        if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+            throw "Update-aware starter is missing: $sourcePath. Update WindowsAcolyte first."
+        }
+        if ([IO.Path]::GetFullPath($sourcePath) -ine [IO.Path]::GetFullPath($bootstrapPath)) {
+            Copy-Item -LiteralPath $sourcePath -Destination $bootstrapPath -Force
+        }
         return $bootstrapPath
     }
 
@@ -277,7 +236,7 @@ exit $LASTEXITCODE
                     -TargetPath $shortcutHostPath `
                     -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}"' -f $bootstrapPath) `
                     -WorkingDirectory $installPath `
-                    -Description "Start WindowsAcolyte from the local installation via a version-safe PowerShell 7 bootstrap." `
+                    -Description "Check GitHub, update local files and start WindowsAcolyte. Startup is blocked if the check fails." `
                     -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" "OK"
             }

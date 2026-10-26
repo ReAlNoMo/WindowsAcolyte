@@ -13,7 +13,7 @@
 > ✅ Fast • Trusted • No setup
 
 ```powershell
-irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/install.ps1" | iex
+irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
 ---
@@ -521,6 +521,11 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
   - `WindowsAcolyte - Start (Local).lnk`
   - `WindowsAcolyte - Installer (Online).lnk`
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
+- **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
+- Downloads are staged and checked for integrity and PowerShell syntax before application. Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
+- Offline, API-rate-limit, integrity or update errors show a visible error and **block app startup**. There is no silent offline fallback. Internet access is required for shortcut launch.
+- Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
+- A per-installation file lock blocks overlapping updates. `Start-WindowsAcolyte.ps1 -UpdateOnly` performs the same online update without launching the app. Existing `-OnlineInstaller` links use this same update flow.
 - Uses the dedicated white-background shortcut icon from `logo/Windows_Acolyte_Shortcut_Icon.ico`
 - Logs created shortcut paths and missing local install warnings
 
@@ -599,7 +604,7 @@ Tests use a temporary HKCU key and temporary files, verify typed backup/restore 
 
 ```powershell
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\install.ps1
+.\Start-WindowsAcolyte.ps1
 ```
 
 📁 Install location:
