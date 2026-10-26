@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1371" height="648" viewBox="0 0 1371 648" role="img" aria-labelledby="title">
+  <title id="title">WindowsAcolyte</title>
+  <g transform="translate(-88 14) scale(5.4 4.8)">
+    <path fill="#00375F" d="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
+    <g fill="#A66E00">
+      <rect x="34" y="35" width="25" height="20" rx="2"/>
+      <rect x="69" y="35" width="25" height="20" rx="2"/>
+      <rect x="34" y="64" width="25" height="20" rx="2"/>
+      <rect x="69" y="64" width="25" height="20" rx="2"/>
+    </g>
+  </g>
+  <text x="565" y="250" fill="#00375F" font-family="Segoe UI, Arial, sans-serif" font-size="160" font-weight="700" textLength="740" lengthAdjust="spacingAndGlyphs">Windows</text>
+  <text x="565" y="430" fill="#A66E00" font-family="Segoe UI, Arial, sans-serif" font-size="180" font-weight="400" textLength="660" lengthAdjust="spacingAndGlyphs">Acolyte</text>
+</svg>

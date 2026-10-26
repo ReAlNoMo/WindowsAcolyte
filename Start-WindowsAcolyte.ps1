@@ -16,7 +16,7 @@ function Save-WAUDownload {
 function Test-WAUManagedPath {
     param([string]$Path)
     # Only application files, never profiles, logs, backups or arbitrary remote paths.
-    return $Path -cmatch '^(WindowsAcolyte\.ps1|Start-WindowsAcolyte\.ps1|README\.md|docs/README\.md|modules/[A-Za-z0-9_-]+\.ps1|logo/[A-Za-z0-9_-]+\.(png|ico))$'
+    return $Path -cmatch '^(WindowsAcolyte\.ps1|Start-WindowsAcolyte\.ps1|README\.md|docs/README\.md|modules/[A-Za-z0-9_-]+\.ps1|logo/[A-Za-z0-9_-]+\.(png|ico|svg))$'
 }
 
 function Get-WAUBlobHash {

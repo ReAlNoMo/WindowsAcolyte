@@ -111,7 +111,7 @@ Create desktop shortcuts in **Windows Tools > Desktop Shortcut Creator**. Both l
 | `%ProgramData%\WindowsAcolyte\ShortcutArrowOverlay` | Protected transparent ICO and original typed overlay value |
 | `%USERPROFILE%` and Desktop/Downloads folders | Default report and downloader destinations |
 
-There are no application API keys or secrets to configure. The updater uses public GitHub HTTPS endpoints (`api.github.com` and `raw.githubusercontent.com`). The managed-file allowlist covers the app, starter, both READMEs, module scripts and logo PNG/ICO assets. Profiles, logs, backups and untracked custom modules are retained. Previously tracked managed files removed from GitHub are removed locally. Other policy/developer documents remain available in the repository rather than being installed.
+There are no application API keys or secrets to configure. The updater uses public GitHub HTTPS endpoints (`api.github.com` and `raw.githubusercontent.com`). The managed-file allowlist covers the app, starter, both READMEs, module scripts and logo PNG/ICO/SVG assets. Profiles, logs, backups and untracked custom modules are retained. Previously tracked managed files removed from GitHub are removed locally. Other policy/developer documents remain available in the repository rather than being installed.
 
 ## Development and testing
 

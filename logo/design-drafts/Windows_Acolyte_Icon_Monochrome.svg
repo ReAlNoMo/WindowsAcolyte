@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">WindowsAcolyte – monochrome icon draft</title>
+  <defs>
+    <mask id="window-cutouts" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128">
+      <path fill="#fff" d="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
+      <g fill="#000">
+        <rect x="34" y="35" width="25" height="20" rx="2"/>
+        <rect x="69" y="35" width="25" height="20" rx="2"/>
+        <rect x="34" y="64" width="25" height="20" rx="2"/>
+        <rect x="69" y="64" width="25" height="20" rx="2"/>
+      </g>
+    </mask>
+  </defs>
+  <path fill="#171717" mask="url(#window-cutouts)" d="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
+</svg>

@@ -57,8 +57,12 @@ try {
     Write-Fixture 'docs/README.md' 'Overview v1'
     Write-Fixture 'modules/08-DesktopShortcutCreator.ps1' '# shortcuts v1'
     Write-Fixture 'modules/99-Old.ps1' '# retired module'
+    Write-Fixture 'logo/Windows_Acolyte_Icon.png' 'icon png'
+    Write-Fixture 'logo/Windows_Acolyte_Icon.svg' '<svg/>'
+    Write-Fixture 'logo/Windows_Acolyte_Logo.svg' '<svg/>'
+    Write-Fixture 'logo/Windows_Acolyte_Shortcut_Icon.svg' '<svg/>'
     $result = Sync-WAUInstallation $install
-    Assert-Update ($result.Updated -eq 6 -and (Test-Path -LiteralPath (Join-Path $install 'docs/README.md'))) 'Initial install includes all managed files and both READMEs'
+    Assert-Update ($result.Updated -eq 10 -and (Test-Path -LiteralPath (Join-Path $install 'docs/README.md')) -and (Test-Path -LiteralPath (Join-Path $install 'logo/Windows_Acolyte_Logo.svg'))) 'Initial install includes managed raster and vector logo assets'
     [void][IO.Directory]::CreateDirectory((Join-Path $install 'GamingOptimizer'))
     [IO.File]::WriteAllText((Join-Path $install 'GamingOptimizer/private.json'),'private profile')
     [IO.File]::WriteAllText((Join-Path $install 'modules/Custom.ps1'),'# user module')
@@ -106,7 +110,7 @@ try {
     Assert-Update ($result.Updated -eq 2) 'Retry succeeds after rollback and lock release'
     $state = [IO.File]::ReadAllText((Join-Path $install '.installed-release.json')) | ConvertFrom-Json
     Assert-Update ($state.Revision -eq $script:revision) 'Revision recorded only after successful apply'
-    Assert-Update (-not (Test-WAUManagedPath '../outside.ps1') -and -not (Test-WAUManagedPath 'modules/../../outside.ps1') -and -not (Test-WAUManagedPath 'GamingOptimizer/private.json')) 'Remote paths cannot target unrelated data'
+    Assert-Update (-not (Test-WAUManagedPath '../outside.ps1') -and -not (Test-WAUManagedPath 'modules/../../outside.ps1') -and -not (Test-WAUManagedPath 'GamingOptimizer/private.json') -and -not (Test-WAUManagedPath 'logo/design-drafts/Windows_Acolyte_Logo.svg')) 'Remote paths cannot target unrelated data'
     $modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'modules/08-DesktopShortcutCreator.ps1'
     $tokens=$null; $errors=$null
     $ast = [Management.Automation.Language.Parser]::ParseFile($modulePath,[ref]$tokens,[ref]$errors)

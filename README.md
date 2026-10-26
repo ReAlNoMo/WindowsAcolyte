@@ -694,6 +694,7 @@ Register-PowerToolsModule `
 
 ## v1.7.2 (Current) - 2026-10-26
 - Recommended Tools: translate the external-link disclaimer, accessibility label and report button into English; retain warning colors and statutory liability qualifications.
+- Replace the logo and app/shortcut icons with the compact blue-and-gold shield; include scalable SVG sources.
 
 ## v1.7.1 (Previous) - 2026-10-26
 - Recommended Tools: prominent German external-link disclaimer above the tool list, with a warning symbol, gold border, theme-aware colors and a link-report button.
