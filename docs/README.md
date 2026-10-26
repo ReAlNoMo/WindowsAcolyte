@@ -39,7 +39,7 @@ Shortcut startup sequence:
 
 1. Stable Windows PowerShell host runs the installed `Start-WindowsAcolyte.ps1`.
 2. Acquire the per-installation update lock; resolve the current GitHub `main` commit and its complete tree.
-3. Compare local managed-file Git blob hashes. Stage missing/changed files from that immutable commit and verify hashes and PowerShell syntax.
+3. Compare local managed-file Git blob hashes. Stage missing/changed files from that immutable commit and verify hashes and syntax with the PowerShell 7 app runtime; also validate the starter against its current host.
 4. Back up destinations, apply the update, verify copied files and write `.installed-release.json`. Failed application rolls back earlier writes; incomplete recovery retains backup files and blocks launch.
 5. Only after a successful online check, resolve PowerShell 7 and start the app. Offline/API/download/update failures block startup with a visible message.
 6. App checks PowerShell 7, elevates if needed, loads WPF assemblies/themes/modules, then renders category navigation.

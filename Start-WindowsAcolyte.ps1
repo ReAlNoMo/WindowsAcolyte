@@ -59,6 +59,44 @@ function Set-WAUStatus {
     }
 }
 
+function Test-WAUStagedScripts {
+    param([string]$Directory)
+    if (-not (Test-Path -LiteralPath $Directory)) { return }
+    $files = @(Get-ChildItem -LiteralPath $Directory -Recurse -File -Filter '*.ps1')
+    if (-not $files.Count) { return }
+    # The app uses PS7 syntax (including null-conditional access). Validate with
+    # its actual runtime, not the PS5.1 parser hosting the desktop bootstrap.
+    if ($PSVersionTable.PSVersion.Major -lt 7) {
+        $parserHost = Find-WAUPowerShell7
+        $safeDirectory = $Directory.Replace("'", "''")
+        $validation = @'
+$ErrorActionPreference = 'Stop'
+foreach ($file in Get-ChildItem -LiteralPath '__DIRECTORY__' -Recurse -File -Filter '*.ps1') {
+    $tokens=$null; $errors=$null
+    $null=[Management.Automation.Language.Parser]::ParseInput([IO.File]::ReadAllText($file.FullName),[ref]$tokens,[ref]$errors)
+    if ($errors.Count) { throw ('Invalid PowerShell syntax: ' + $file.Name) }
+}
+'@
+        $validation = $validation.Replace('__DIRECTORY__', $safeDirectory)
+        $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($validation))
+        $output = & $parserHost -NoProfile -NonInteractive -EncodedCommand $encoded 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Staged application scripts failed PowerShell 7 validation. $output" }
+    } else {
+        foreach ($file in $files) {
+            $tokens=$null; $errors=$null
+            $null=[Management.Automation.Language.Parser]::ParseInput([IO.File]::ReadAllText($file.FullName),[ref]$tokens,[ref]$errors)
+            if ($errors.Count) { throw "Downloaded PowerShell file has syntax errors: $($file.Name)" }
+        }
+    }
+    # The starter itself must also remain compatible with its PS5.1 host.
+    $starter = Join-Path $Directory 'Start-WindowsAcolyte.ps1'
+    if (Test-Path -LiteralPath $starter) {
+        $tokens=$null; $errors=$null
+        $null=[Management.Automation.Language.Parser]::ParseInput([IO.File]::ReadAllText($starter),[ref]$tokens,[ref]$errors)
+        if ($errors.Count) { throw 'Downloaded starter is incompatible with the current host.' }
+    }
+}
+
 function Sync-WAUInstallation {
     param([Parameter(Mandatory)][string]$InstallPath)
     $InstallPath = [IO.Path]::GetFullPath($InstallPath)
@@ -92,13 +130,9 @@ function Sync-WAUInstallation {
             # Every file comes from the same immutable commit, even if main changes mid-download.
             Save-WAUDownload "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/$($release.Revision)/$($file.path)" $staged
             if ((Get-WAUBlobHash $staged) -ne $file.sha) { throw "Downloaded file failed integrity check: $($file.path)" }
-            if ($file.path.EndsWith('.ps1')) {
-                $tokens = $null; $errors = $null
-                $null = [Management.Automation.Language.Parser]::ParseFile($staged, [ref]$tokens, [ref]$errors)
-                if ($errors.Count) { throw "Downloaded PowerShell file has syntax errors: $($file.path)" }
-            }
             $changed += $file.path
         }
+        Test-WAUStagedScripts (Join-Path $work 'new')
         $removed = @($previous | Where-Object { $_ -notin $paths })
         $operations = @($changed) + @($removed) + @('.installed-release.json')
         $newState = @{Revision=$release.Revision; CheckedUtc=[DateTime]::UtcNow.ToString('o'); Files=$paths} | ConvertTo-Json -Depth 4

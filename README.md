@@ -522,7 +522,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
   - `WindowsAcolyte - Installer (Online).lnk`
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
-- Downloads are staged and checked for integrity and PowerShell syntax before application. Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
+- Downloads are staged and checked for integrity and PowerShell 7 syntax before application (the starter also remains compatible with its Windows PowerShell host). Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
 - Offline, API-rate-limit, integrity or update errors show a visible error and **block app startup**. There is no silent offline fallback. Internet access is required for shortcut launch.
 - Both `README.md` and `docs/README.md` are managed application documentation. Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
 - A per-installation file lock blocks overlapping updates. `Start-WindowsAcolyte.ps1 -UpdateOnly` performs the same online update without launching the app. Existing `-OnlineInstaller` links use this same update flow.

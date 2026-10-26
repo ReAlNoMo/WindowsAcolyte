@@ -22,6 +22,7 @@ $script:corrupt = $false
 $script:missingDownload = $false
 $script:resolveCalls = 0
 $script:jsonCalls = 0
+$script:parserHost = (Get-Command pwsh.exe -ErrorAction Stop).Source
 function Write-Fixture($Path, $Content) {
     $target = Join-Path $fixtures $Path
     [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target))
@@ -46,9 +47,11 @@ function Save-WAUDownload {
     [IO.File]::Copy((Join-Path $fixtures $relative),$Path,$true)
     if ($script:corrupt) { [IO.File]::AppendAllText($Path,'CORRUPT') }
 }
-function Find-WAUPowerShell7 { $script:resolveCalls++; throw 'Tests must never reach the launch step' }
+function Find-WAUPowerShell7 { $script:resolveCalls++; return $script:parserHost }
 try {
-    Write-Fixture 'WindowsAcolyte.ps1' '# app v1'
+    # Includes syntax unsupported by PS5.1, as used by the real app.
+    $script:appV1 = '$value = $null; $null = $value?.Name # app v1'
+    Write-Fixture 'WindowsAcolyte.ps1' $script:appV1
     Write-Fixture 'Start-WindowsAcolyte.ps1' '# starter v1'
     Write-Fixture 'README.md' 'Readme v1'
     Write-Fixture 'docs/README.md' 'Overview v1'
@@ -74,8 +77,9 @@ try {
     Assert-Update ($result.Updated -eq 1 -and $result.Removed -eq 1 -and -not (Test-Path -LiteralPath (Join-Path $install 'modules/99-Old.ps1'))) 'New modules installed and retired managed modules removed'
     Assert-Update ((Test-Path -LiteralPath (Join-Path $install 'modules/Custom.ps1')) -and [IO.File]::ReadAllText((Join-Path $install 'GamingOptimizer/private.json')) -eq 'private profile') 'Custom files and private profiles retained'
     $script:offline = $true
+    $beforeResolve = $script:resolveCalls
     Assert-Failure { Invoke-WAULocalStart $install } 'Offline check blocks app launch'
-    Assert-Update ($script:resolveCalls -eq 0) 'Launch step is never reached after a failed check'
+    Assert-Update ($script:resolveCalls -eq $beforeResolve) 'Launch step is never reached after a failed check'
     $script:offline = $false
     Write-Fixture 'WindowsAcolyte.ps1' '# app v2'
     $script:missingDownload = $true
@@ -83,7 +87,7 @@ try {
     $script:missingDownload = $false
     $script:corrupt = $true
     Assert-Failure { Sync-WAUInstallation $install } 'Corrupt download rejected'
-    Assert-Update ([IO.File]::ReadAllText((Join-Path $install 'WindowsAcolyte.ps1')) -eq '# app v1') 'Failed staging leaves installed app unchanged'
+    Assert-Update ([IO.File]::ReadAllText((Join-Path $install 'WindowsAcolyte.ps1')) -eq $script:appV1) 'Failed staging leaves installed app unchanged'
     $script:corrupt = $false
     Write-Fixture 'WindowsAcolyte.ps1' 'function { invalid syntax'
     Assert-Failure { Sync-WAUInstallation $install } 'Invalid downloaded PowerShell rejected before activation'
@@ -94,7 +98,7 @@ try {
     $locked = [IO.File]::Open((Join-Path $install 'README.md'),'Open','Read','Read')
     try { Assert-Failure { Sync-WAUInstallation $install } 'File lock during apply triggers rollback' }
     finally { $locked.Dispose() }
-    Assert-Update ([IO.File]::ReadAllText((Join-Path $install 'WindowsAcolyte.ps1')) -eq '# app v1') 'Earlier writes restored after apply failure'
+    Assert-Update ([IO.File]::ReadAllText((Join-Path $install 'WindowsAcolyte.ps1')) -eq $script:appV1) 'Earlier writes restored after apply failure'
     $lock = [IO.File]::Open((Join-Path $install '.update.lock'),'Open','ReadWrite','None')
     try { Assert-Failure { Sync-WAUInstallation $install } 'Simultaneous updater is blocked' }
     finally { $lock.Dispose() }
