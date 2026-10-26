@@ -51,10 +51,11 @@ try {
     Write-Fixture 'WindowsAcolyte.ps1' '# app v1'
     Write-Fixture 'Start-WindowsAcolyte.ps1' '# starter v1'
     Write-Fixture 'README.md' 'Readme v1'
+    Write-Fixture 'docs/README.md' 'Overview v1'
     Write-Fixture 'modules/08-DesktopShortcutCreator.ps1' '# shortcuts v1'
     Write-Fixture 'modules/99-Old.ps1' '# retired module'
     $result = Sync-WAUInstallation $install
-    Assert-Update ($result.Updated -eq 5) 'Initial install includes all managed files'
+    Assert-Update ($result.Updated -eq 6 -and (Test-Path -LiteralPath (Join-Path $install 'docs/README.md'))) 'Initial install includes all managed files and both READMEs'
     [void][IO.Directory]::CreateDirectory((Join-Path $install 'GamingOptimizer'))
     [IO.File]::WriteAllText((Join-Path $install 'GamingOptimizer/private.json'),'private profile')
     [IO.File]::WriteAllText((Join-Path $install 'modules/Custom.ps1'),'# user module')

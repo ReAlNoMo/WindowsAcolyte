@@ -22,11 +22,11 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 
 | Requirement | Details |
 |------------|--------|
-| 🟦 PowerShell | 7.0+ (auto-download if missing) |
+| 🟦 PowerShell | 7.0+ for the app; install separately if missing. Starter also supports Windows PowerShell 5.1. |
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.6`
+**Current version:** `v1.7`
 
 ---
 
@@ -208,19 +208,19 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ---
 
-### 🔥 High Impact Tweaks
+### ⚙️ Configuration and Risk
 
-| Tweak | Effect | Reboot | Risk |
-|------|--------|--------|------|
-| HVCI Disable | 🚀 Up to +25% FPS | ✅ Yes | 🔴 High |
-| VBS Disable | 🚀 +2-8% FPS | ✅ Yes | 🔴 High |
-| GPU Scheduling | ⏱️ -2ms latency | ✅ Yes | 🟢 Low |
-| GameDVR Disable | 🚀 +2-5% FPS | ✅ Yes | 🟢 Low |
-| Spectre/Meltdown Disable | ⚡ +5-15% CPU | ✅ Yes | 🔴 High |
-| NVMe Stack Optimization | 💾 Up to 45% less CPU per I/O | ✅ Yes | 🟡 Medium |
-| Win32Priority | 🎯 Frame consistency | ❌ No | 🟢 Low |
-| Network Throttling Off | 🌐 +10-30ms ping reduction | ❌ No | 🟢 Low |
+| Configuration | Scope | Reboot | Risk |
+|---|---|---|---|
+| HVCI / VBS OFF | Security configuration; reduces protection | Yes | High |
+| GPU scheduling ON | Driver- and hardware-dependent scheduling request | Yes | Compatibility dependent |
+| GameDVR OFF | Disables recording configuration | Yes | Recording features affected |
+| Spectre/Meltdown overrides | Security mitigation configuration | Yes | High |
+| Experimental NVMe override | Stored override; driver activation unverified | Yes | Experimental |
+| Win32Priority preset | Competitive / AAA scheduling configuration | No | Workload dependent |
+| Network throttling OFF | Multimedia network throttling configuration | No | Workload dependent |
 
+The project does not supply benchmark evidence for universal FPS, latency or ping improvements. `APPLIED` confirms configuration readback, not a measured performance gain.
 ---
 
 ### ⚙️ Complete Tweaks List (35 Selectable Options)
@@ -328,7 +328,7 @@ API references: [WMI power management](https://learn.microsoft.com/en-us/windows
 > 🔒 **High-Risk tweaks** → User confirmation popup required
 > 💾 **Selected backups** → Created before Apply; failed selected backups stop Apply. Restore-point creation is verified (including Windows creation-frequency limits).
 > ⚡ **Competitive vs AAA** → Only one Win32Priority mode can be active: Competitive = 36 (`0x24`), AAA = 24 (`0x18`). The other mode is an alternative, not a missing setting; automatic pre-selection preserves the active mode.
-> 📊 **Estimates** → FPS gains are approximate; actual results vary per system
+> 📊 **Verification** → Measure before/after on your system; stored configuration alone does not prove a performance gain.
 
 `APPLIED` confirms stored configuration, not a measured FPS improvement or proof that a reboot-dependent feature is already effective. The NVMe option only checks an experimental feature override and is never automatically recommended.
 
@@ -524,7 +524,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
 - Downloads are staged and checked for integrity and PowerShell syntax before application. Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
 - Offline, API-rate-limit, integrity or update errors show a visible error and **block app startup**. There is no silent offline fallback. Internet access is required for shortcut launch.
-- Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
+- Both `README.md` and `docs/README.md` are managed application documentation. Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
 - A per-installation file lock blocks overlapping updates. `Start-WindowsAcolyte.ps1 -UpdateOnly` performs the same online update without launching the app. Existing `-OnlineInstaller` links use this same update flow.
 - Uses the dedicated white-background shortcut icon from `logo/Windows_Acolyte_Shortcut_Icon.ico`
 - Logs created shortcut paths and missing local install warnings
@@ -689,8 +689,15 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.6 (Current)
-- ✅ 12 modules available
+## v1.7 (Current) - 2026-10-26
+- Twelve modules, including the separate **Gaming Performance > Recommended Tools** page with categorized publisher links.
+- Mandatory online update check before shortcut launch; commit-pinned downloads, Git blob integrity checks, PowerShell syntax validation, staging and rollback.
+- Missing/modified local files are repaired; online or update failures visibly block app startup.
+- Main README and detailed project overview are synchronized to the local installation.
+- App version, README current version, security support policy and disclaimer version aligned to 1.7.
+
+## v1.6 (Previous)
+- ✅ 11 modules available
 - ✅ Shortcut Arrow Visibility: precheck, transparent multi-size ICO, typed original-value backup/restore and current-session Explorer restart
 - ✅ Ultimate Performance Power Plan: creates a dedicated WindowsAcolyte power plan, activates it, disables monitor standby/sleep/disk idle, and enforces maximum CPU/PCIe/USB/WLAN performance settings
 - ✅ Rescue ISO Downloader: latest rescue/partition/cloning/malware/memory/wipe/boot images with replacement cleanup
@@ -738,9 +745,13 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.5 • May 2026
+Version 1.7 • October 2026
 
 ---
 
 ## 🔗 Repository
 https://github.com/ReAlNoMo/WindowsAcolyte
+
+## Developer and operator reference
+
+See [the detailed project overview](docs/README.md) for architecture, all twelve modules, CLI options, persistence paths, automated test commands and release verification. Screenshots illustrate the UI and may show an earlier version; the source and current-version text define the shipped version.

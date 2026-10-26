@@ -273,3 +273,15 @@ We appreciate contributions that align with these principles.
 
 **ReAlNoMo**
 PowerTools Suite • CONTRIBUTING Guide
+
+## Completion checks for every change
+
+Before marking implementation complete:
+
+- Check the app header/UI version and current-version documentation. Bump functional release versions appropriately and update version history; retain clearly labeled historical versions.
+- Review all affected READMEs: the main guide, `docs/README.md`, its outer-workspace copy and installed documentation. Keep accurate commands, module counts, behavior and limitations aligned with the code.
+- Run change-appropriate syntax, isolated logic and UI checks. Distinguish local tests from live verification.
+- Commit and push authorized changes, synchronize the installed app through the online updater, and compare GitHub/local revisions plus installed application/README hashes.
+- Report remaining verification gaps. Do not describe a repository-only change as deployed or online-verified.
+
+The local user explicitly requested this release/documentation/deployment check after every implementation. Existing unrelated changes, secrets and private data must not be swept into publication.
