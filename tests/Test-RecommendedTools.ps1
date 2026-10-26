@@ -44,7 +44,7 @@ foreach ($key in $shellWindow.Resources.Keys) {
     [System.Windows.Application]::Current.Resources[$key] = $shellWindow.Resources[$key]
 }
 $tools = @(RT-GetTools)
-Assert-RT ($tools.Count -eq 12 -and @($tools.Group | Select-Object -Unique).Count -eq 5) 'Twelve tools in five groups'
+Assert-RT ($tools.Count -eq 13 -and @($tools.Group | Select-Object -Unique).Count -eq 6) 'Thirteen tool entries in six groups'
 foreach ($themeName in @('PTS_Theme','PTS_ThemeDark')) {
     # Use the shell palettes rather than hardcoded color values.
     $assignment = $shellAst.Find({param($n) $n -is [System.Management.Automation.Language.AssignmentStatementAst] -and $n.Left.Extent.Text -eq ('$Global:' + $themeName)}, $true)
@@ -73,12 +73,15 @@ foreach ($themeName in @('PTS_Theme','PTS_ThemeDark')) {
     $report.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent))
     Assert-RT ($script:openedUrls[-1] -eq 'https://github.com/ReAlNoMo/WindowsAcolyte/issues') "Link reporting opens the project issue page: $themeName"
     $cards = @($view.Children | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag -eq 'RecommendedToolCard' })
-    Assert-RT ($cards.Count -eq 12) "All tool cards rendered: $themeName"
+    Assert-RT ($cards.Count -eq 13) "All tool cards rendered: $themeName"
     foreach ($card in $cards) {
-        $button = $card.Child.Children | Where-Object { $_ -is [System.Windows.Controls.Button] }
-        $button.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent))
-        Assert-RT ($script:openedUrls[-1] -eq $button.Tag) "Correct publisher link: $($card.Child.Children[0].Text)"
+        foreach ($button in $card.Child.Children | Where-Object { $_ -is [System.Windows.Controls.Button] }) {
+            $button.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent))
+            Assert-RT ($script:openedUrls[-1] -eq $button.Tag) "Correct publisher link: $($button.Tag)"
+        }
     }
+    $audioCard = $cards | Where-Object { $_.Child.Children[0].Text -eq 'Equalizer APO + Peace' }
+    Assert-RT (@($audioCard.Child.Children | Where-Object { $_ -is [System.Windows.Controls.Button] }).Count -eq 2) "Both official audio project links are available: $themeName"
     $view.Measure([System.Windows.Size]::new(760, [double]::PositiveInfinity))
     $view.Arrange([System.Windows.Rect]::new(0,0,760,$view.DesiredSize.Height))
     $view.UpdateLayout()

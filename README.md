@@ -26,7 +26,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.7.2`
+**Current version:** `v1.7.3`
 
 ---
 
@@ -357,7 +357,7 @@ Command semantics: [Microsoft fsutil behavior](https://learn.microsoft.com/en-us
 A gold warning panel labeled **EXTERNAL LINKS - LIABILITY NOTICE** appears above all recommendations in both Light and Dark modes. It explains that linked websites/downloads are third-party content, describes the limits of warranty/liability to the extent legally permitted, reminds users of destination-site privacy/usage terms and retains statutory liability and review/removal obligations. **Report a problematic link (GitHub Issues)** opens the project issue page without submitting anything automatically. Sensitive security reports should follow `SECURITY.md` instead of public issues.
 
 Research reviewed on 2026-10-26: [Handelskammer Hamburg - link liability](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590), [BGH I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). A notice alone does not automatically exclude liability; the implementation avoids promising this. See also `DISCLAIMER.md`.
-A separate page in Gaming Performance, replacing the Gaming Optimizer's former Recommended Tools popup. Twelve tools are grouped by task:
+A separate page in Gaming Performance, replacing the Gaming Optimizer's former Recommended Tools popup. Thirteen recommendation entries are grouped into six categories:
 
 | Category | Tools |
 |---|---|
@@ -365,6 +365,7 @@ A separate page in Gaming Performance, replacing the Gaming Optimizer's former R
 | CPU & RAM | Process Lasso, ISLC |
 | Monitor & Mouse | Dual Monitor Tools, Custom Resolution Utility (CRU) |
 | Diagnostics | LatencyMon, TimerTool, InSpectre |
+| Audio | Equalizer APO + Peace |
 | Windows Utilities | Chris Titus Tech Windows Utility (WinUtil), O&O ShutUp10 |
 
 Each card explains purpose, when to use it, limitations and links to the official publisher page for documentation/downloads. Links open the browser; the page does not install or execute tools.
@@ -373,6 +374,7 @@ Each card explains purpose, when to use it, limitations and links to the officia
 - LatencyMon: investigate DPC/ISR and pagefault latency; readings are diagnostic clues, not an end-to-end input-lag measurement.
 - CRU: advanced display timings and EDID overrides; export the original configuration and review recovery instructions first.
 - WinUtil: review individual system changes and avoid overlapping WindowsAcolyte tweaks.
+- Equalizer APO + Peace: EQ processing plus a graphical interface and presets. Install Equalizer APO and configure the audio device first, then Peace; follow the project's restart instructions. ASIO/WASAPI exclusive mode bypasses the processing. Use preamp headroom to avoid clipping. Official project sources checked on 2026-10-26: [Equalizer APO](https://sourceforge.net/projects/equalizerapo/), [installation/configuration documentation](https://sourceforge.net/p/equalizerapo/wiki/Documentation/), [Peace](https://sourceforge.net/projects/peace-equalizer-apo-extension/).
 - Existing recommendations are task-specific: no blanket FPS claims, routine DDU requirement or recommendation to disable security mitigations.
 
 Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/afterburner), [Wagnardsoft DDU](https://www.wagnardsoft.com/display-driver-uninstaller-ddu), [ISLC](https://www.wagnardsoft.com/intelligent-standby-list-cleaner-islc), [Bitsum](https://bitsum.com/), [Dual Monitor Tools](https://dualmonitortool.sourceforge.net/dmt_cursor.html), [CRU](https://www.monitortests.com/forum/Thread-Custom-Resolution-Utility-CRU), [LatencyMon](https://www.resplendence.com/latencymon), [TimerTool](https://github.com/tebjan/TimerTool), [InSpectre](https://www.grc.com/inspectre.htm), [WinUtil](https://winutil.christitus.com/), [O&O](https://www.oo-software.com/en/shutup10). The [NVCleanstall publisher page](https://www.techpowerup.com/nvcleanstall/) could not be fetched during review; the retained link and description are marked accordingly on the page.
@@ -692,7 +694,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.7.2 (Current) - 2026-10-26
+## v1.7.3 (Current) - 2026-10-26
+- Recommended Tools: add Audio > Equalizer APO + Peace with separate official project links, installation order and system-effect compatibility notes.
+
+## v1.7.2 (Previous) - 2026-10-26
 - Recommended Tools: translate the external-link disclaimer, accessibility label and report button into English; retain warning colors and statutory liability qualifications.
 - Replace the logo and app/shortcut icons with the compact blue-and-gold shield; include scalable SVG sources.
 - Use a versioned shortcut-icon path so Windows does not reuse the old cached icon for newly created links.
@@ -757,7 +762,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.7.2 • October 2026
+Version 1.7.3 • October 2026
 
 ---
 

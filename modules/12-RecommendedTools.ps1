@@ -51,6 +51,12 @@ function Global:RT-GetTools {
           Use='Reference for these specific vulnerabilities; consult current OS and CPU-vendor guidance for a complete assessment.';
           Note='Not a complete checker for all modern CPU vulnerabilities. Disabling security mitigations is not recommended as a gaming tweak.';
           Url='https://www.grc.com/inspectre.htm'}
+        @{Group='Audio'; Name='Equalizer APO + Peace';
+          Purpose='Equalizer APO processes Windows audio with parametric/graphic EQ; Peace adds a graphical interface, presets and audio controls.';
+          Use='Adjust headphone or speaker frequency response and save different listening profiles.';
+          Note='Install Equalizer APO first, select the intended audio device and follow its restart instructions, then install Peace. ASIO and WASAPI exclusive mode bypass system effects. Leave preamp headroom to avoid clipping; no competitive advantage is guaranteed.';
+          Url='https://sourceforge.net/projects/equalizerapo/';
+          SecondaryUrl='https://sourceforge.net/projects/peace-equalizer-apo-extension/'}
         @{Group='Windows Utilities'; Name='Chris Titus Tech Windows Utility (WinUtil)';
           Purpose='Install applications, select Windows tweaks, run fixes and configure updates.';
           Use='Review Windows setup and maintenance tasks in a single utility.';
@@ -153,7 +159,7 @@ Register-PowerToolsModule `
         $button.Padding = '12,6'
         $button.SetResourceReference([System.Windows.Controls.Button]::StyleProperty, 'SecondaryButton')
         $linkStatus = $status
-        $button.Add_Click({
+        $openPublisher = {
             param($sender, $eventArgs)
             try {
                 Start-Process -FilePath ([string]$sender.Tag) -ErrorAction Stop | Out-Null
@@ -161,8 +167,22 @@ Register-PowerToolsModule `
             } catch {
                 $linkStatus.Text = 'Could not open browser. Publisher URL: ' + [string]$sender.Tag
             }
-        }.GetNewClosure())
+        }.GetNewClosure()
+        $button.Add_Click($openPublisher)
         [void]$panel.Children.Add($button)
+        if ($tool.SecondaryUrl) {
+            $button.Content = 'Open Equalizer APO project / download'
+            $peaceButton = [System.Windows.Controls.Button]::new()
+            $peaceButton.Content = 'Open Peace project / download'
+            $peaceButton.Tag = $tool.SecondaryUrl
+            $peaceButton.ToolTip = $tool.SecondaryUrl
+            $peaceButton.HorizontalAlignment = 'Left'
+            $peaceButton.Padding = '12,6'
+            $peaceButton.Margin = '0,8,0,0'
+            $peaceButton.SetResourceReference([System.Windows.Controls.Button]::StyleProperty, 'SecondaryButton')
+            $peaceButton.Add_Click($openPublisher)
+            [void]$panel.Children.Add($peaceButton)
+        }
         $card.Child = $panel
         [void]$view.Children.Add($card)
     }
