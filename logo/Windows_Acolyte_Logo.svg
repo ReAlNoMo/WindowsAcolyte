@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1371" height="648" viewBox="0 0 1371 648" role="img" aria-labelledby="title">
   <title id="title">WindowsAcolyte</title>
   <g transform="translate(-88 14) scale(5.4 4.8)">
-    <path fill="#00375F" stroke="#D69A25" stroke-width="4" stroke-linejoin="round" d="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
-    <g fill="#A66E00" stroke="#FFFFFF" stroke-width="4" stroke-linejoin="round">
+    <path fill="#00375F" stroke="#D69A25" stroke-width="2.4" stroke-linejoin="round" d="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
+    <g fill="#A66E00" stroke="#FFFFFF" stroke-width="2.2" stroke-linejoin="round">
       <rect x="34" y="35" width="25" height="20" rx="2"/>
       <rect x="69" y="35" width="25" height="20" rx="2"/>
       <rect x="34" y="64" width="25" height="20" rx="2"/>

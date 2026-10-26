@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 1.7.4
+    Version : 1.7.5
 #>
 
 # ===========================================================================
@@ -686,14 +686,30 @@ function Global:Update-PTSStyles {
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- LOGO IMAGE -->
+                <!-- Vector mark and native text stay sharp at sidebar size and on high-DPI displays. -->
                 <Border Grid.Row="0" x:Name="LogoBorder" Padding="8,4,8,4"
                         Background="#FFFFFF" BorderBrush="#C9D8E2" BorderThickness="0,0,0,1">
-                    <Image Source="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/logo/Windows_Acolyte_Logo.png"
-                           Stretch="Uniform"
-                           MaxWidth="244"
-                           MaxHeight="112"
-                           HorizontalAlignment="Left"/>
+                    <Grid Height="112" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="88"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Viewbox Grid.Column="0" Width="88" Height="104" Stretch="Uniform" VerticalAlignment="Center">
+                            <Canvas Width="128" Height="128">
+                                <Path Fill="#00375F" Stroke="#D69A25" StrokeThickness="2.4" StrokeLineJoin="Round"
+                                      Data="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
+                                <Rectangle Canvas.Left="34" Canvas.Top="35" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
+                                <Rectangle Canvas.Left="69" Canvas.Top="35" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
+                                <Rectangle Canvas.Left="34" Canvas.Top="64" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
+                                <Rectangle Canvas.Left="69" Canvas.Top="64" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
+                            </Canvas>
+                        </Viewbox>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
+                            <TextBlock Text="Windows" Foreground="#00375F" FontFamily="Segoe UI" FontWeight="Bold" FontSize="21"/>
+                            <TextBlock Text="Acolyte" Foreground="#A66E00" FontFamily="Segoe UI" FontSize="24"/>
+                        </StackPanel>
+                    </Grid>
                 </Border>
 
                 <Border x:Name="SidebarDivTop" Grid.Row="1" Height="1" Background="#C9D8E2"/>
@@ -778,7 +794,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v1.7.4  |  Administrator"
+                           Text="v1.7.5  |  Administrator"
                            Foreground="#3F5868" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 

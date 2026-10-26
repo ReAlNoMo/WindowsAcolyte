@@ -155,11 +155,13 @@ Register-PowerToolsModule `
     function Global:DSC-GetIconLocation {
         $candidates = @()
         if (-not [string]::IsNullOrWhiteSpace($Global:PTS_RootPath)) {
+            $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon_v4.ico")
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon_v3.ico")
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon_v2.ico")
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon.ico")
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Icon.ico")
         }
+        $candidates += (Join-Path $env:LOCALAPPDATA "WindowsAcolyte\logo\Windows_Acolyte_Shortcut_Icon_v4.ico")
         $candidates += (Join-Path $env:LOCALAPPDATA "WindowsAcolyte\logo\Windows_Acolyte_Shortcut_Icon_v3.ico")
         $candidates += (Join-Path $env:LOCALAPPDATA "WindowsAcolyte\logo\Windows_Acolyte_Shortcut_Icon_v2.ico")
         $candidates += (Join-Path $env:LOCALAPPDATA "WindowsAcolyte\logo\Windows_Acolyte_Shortcut_Icon.ico")

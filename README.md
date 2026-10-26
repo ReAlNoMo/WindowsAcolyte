@@ -26,7 +26,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.7.4`
+**Current version:** `v1.7.5`
 
 ---
 
@@ -531,7 +531,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 - Offline, API-rate-limit, integrity or update errors show a visible error and **block app startup**. There is no silent offline fallback. Internet access is required for shortcut launch.
 - Both `README.md` and `docs/README.md` are managed application documentation. Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
 - A per-installation file lock blocks overlapping updates. `Start-WindowsAcolyte.ps1 -UpdateOnly` performs the same online update without launching the app. Existing `-OnlineInstaller` links use this same update flow.
-- Uses the dedicated white-background shortcut icon from `logo/Windows_Acolyte_Shortcut_Icon_v3.ico`
+- Uses the dedicated white-background shortcut icon from `logo/Windows_Acolyte_Shortcut_Icon_v4.ico`
 - Logs created shortcut paths and missing local install warnings
 
 💡 **Use case**
@@ -694,7 +694,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.7.4 (Current) - 2026-10-26
+## v1.7.5 (Current) - 2026-10-26
+- Refine the shield and pane outlines and render the sidebar brand with WPF vector shapes and native text for sharp display at small sizes.
+
+## v1.7.4 (Previous) - 2026-10-26
 - Add a gold shield outline and white outlines around the four gold panes to improve small-icon separation; regenerate PNG/ICO assets and use a new shortcut icon path.
 
 ## v1.7.3 (Previous) - 2026-10-26
@@ -724,7 +727,7 @@ Register-PowerToolsModule `
 - ✅ Dynamic Light/Dark theme (all 50+ colors)
 - ✅ Logo updated to `logo/Windows_Acolyte_Logo.png`
 - ✅ Windows icon generated from the logo as `logo/Windows_Acolyte_Icon.ico`
-- ✅ Desktop shortcut icon uses white background via `logo/Windows_Acolyte_Shortcut_Icon_v3.ico`
+- ✅ Desktop shortcut icon uses white background via `logo/Windows_Acolyte_Shortcut_Icon_v4.ico`
 - ✅ Theme colors aligned with the logo palette
 - ✅ Explorer View Normalizer: checkbox UI, grouped state view, apply/revert, auto-recheck, small desktop icons
 - ✅ Linux ISO Downloader: distro variant selection, All/Only Server/Only Desktop presets, and one progress row per ISO
@@ -765,7 +768,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.7.4 • October 2026
+Version 1.7.5 • October 2026
 
 ---
 
