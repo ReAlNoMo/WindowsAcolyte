@@ -35,9 +35,6 @@ Register-PowerToolsModule `
                            FontWeight="Bold" Margin="0,0,0,2"/>
                 <TextBlock x:Name="HardwareText" FontSize="11" TextWrapping="Wrap" Text="Detecting..."/>
             </StackPanel>
-            <Button Grid.Column="1" x:Name="SoftwareInfoBtn" Content="Recommended Tools"
-                    Style="{DynamicResource SecondaryButton}" Padding="12,6"
-                    FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
         </Grid>
     </Border>
 
@@ -193,7 +190,6 @@ Register-PowerToolsModule `
     $script:GO_selNone         = $view.FindName("SelectNoneBtn")
     $script:GO_loadProfBtn     = $view.FindName("LoadProfileBtn")
     $script:GO_saveProfBtn     = $view.FindName("SaveProfileBtn")
-    $script:GO_softInfoBtn     = $view.FindName("SoftwareInfoBtn")
     $script:GO_clearLog        = $view.FindName("ClearLogBtn")
     $script:GO_logBox          = $view.FindName("LogBox")
     $script:GO_logScroller     = $view.FindName("LogScroller")
@@ -1598,59 +1594,6 @@ namespace WindowsAcolyteInputV1 {
         } catch { GO-AddLog "Load failed: $_" "FAIL" }
     }
 
-    function Global:GO-ShowSoftwareInfo {
-        [xml]$sXaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Recommended Third-Party Tools" Width="720" Height="620"
-        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" ResizeMode="CanResize" MinWidth="520" MinHeight="480">
-    <Grid Margin="22">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Text="THIRD-PARTY TOOLS" Foreground="{DynamicResource DynAccent}" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
-        <TextBlock Grid.Row="1" x:Name="ST" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,14" Text="Recommended tools that complement Windows optimizations"/>
-        <Border Grid.Row="2" x:Name="SLB" BorderThickness="1.5" CornerRadius="8">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14"><StackPanel x:Name="SS"/></ScrollViewer>
-        </Border>
-        <Button Grid.Row="3" x:Name="SCB" Content="Close" Height="38" Padding="20,6" HorizontalAlignment="Right" Margin="0,14,0,0"/>
-    </Grid>
-</Window>
-"@
-        $r = New-Object System.Xml.XmlNodeReader $sXaml
-        $sw = [Windows.Markup.XamlReader]::Load($r)
-        $sw.Resources.Add("SecondaryButton",(Get-PowerToolsWindow).FindResource("SecondaryButton"))
-        $sw.Resources.Add("PrimaryButton",(Get-PowerToolsWindow).FindResource("PrimaryButton"))
-        $sw.Owner = Get-PowerToolsWindow
-        $sw.Background = $Global:PTS_Brush["Background"]
-        $sw.FindName("ST").Foreground  = $Global:PTS_Brush["TextDark"]
-        $sw.FindName("SLB").Background = $Global:PTS_Brush["Surface"]; $sw.FindName("SLB").BorderBrush = $Global:PTS_Brush["Border"]
-        $scb = $sw.FindName("SCB"); if ($scb) { $scb.Style = $sw.FindResource("SecondaryButton"); $csw=$sw; $scb.Add_Click({$csw.Close()}.GetNewClosure()) }
-        $stack = $sw.FindName("SS")
-        @(
-            @{Name="ISLC - Intelligent Standby List Cleaner";Rec="Very High";What="Clears Windows Standby Memory List. Prevents RAM stutter from cached data.";Why="One of the most effective tools overall. Stabilizes frametimes, reduces stutter spikes especially with 16-32GB RAM.";Cost="Free"}
-            @{Name="Process Lasso";Rec="High (Intel 12+ / AMD X3D)";What="CPU prioritization and core affinity per process. Automatic and persistent.";Why="Moves background processes to E-cores (Intel) or second CCD (AMD), reserves P-cores for game.";Cost="Free / Pro available"}
-            @{Name="NVCleanstall";Rec="High (NVIDIA users)";What="Installs NVIDIA drivers without bloatware (GeForce Experience, telemetry, NVIDIA Container).";Why="Fewer background processes, less RAM usage, cleaner driver stack.";Cost="Free"}
-            @{Name="TimerResolution / TimerTool";Rec="High (Competitive)";What="Increases Windows timer resolution from default 15.6ms to 0.5ms.";Why="More precise process scheduling, more stable frametimes especially in competitive shooters.";Cost="Free"}
-            @{Name="DDU - Display Driver Uninstaller";Rec="High";What="Complete driver removal without residue. Use before every driver update.";Why="Prevents driver conflicts, stuttering from old driver remnants, micro-crashes.";Cost="Free"}
-            @{Name="MSI Afterburner + RTSS";Rec="High (Competitive)";What="GPU monitoring and FPS limiter.";Why="FPS limit to refresh rate -3 FPS reduces input lag significantly.";Cost="Free"}
-            @{Name="O&O ShutUp10++";Rec="Medium";What="GUI tool for telemetry, privacy, and background processes.";Why="Quick disabling of 50+ tracking/telemetry functions.";Cost="Free"}
-            @{Name="InSpectre (Gibson Research)";Rec="Medium";What="Shows status of all CPU security mitigations (Spectre, Meltdown, Downfall).";Why="Visual control whether mitigations are active. Enables one-click deactivation if needed.";Cost="Free"}
-        ) | ForEach-Object {
-            $tool = $_
-            $card = New-Object System.Windows.Controls.Border
-            $card.Background=$Global:PTS_Brush["LogBg"]; $card.BorderBrush=$Global:PTS_Brush["LogBorder"]
-            $card.BorderThickness=1; $card.CornerRadius=[System.Windows.CornerRadius]::new(8); $card.Padding="14,10"; $card.Margin="0,0,0,10"
-            $cs = New-Object System.Windows.Controls.StackPanel
-            $t1=New-Object System.Windows.Controls.TextBlock; $t1.Text=$tool.Name; $t1.FontSize=14; $t1.FontWeight="SemiBold"; $t1.Foreground=$Global:PTS_Brush["TextDark"]; $t1.Margin="0,0,0,6"; $cs.Children.Add($t1)|Out-Null
-            $t2=New-Object System.Windows.Controls.TextBlock; $t2.Text="Recommended: $($tool.Rec)  |  Cost: $($tool.Cost)"; $t2.FontSize=10; $t2.FontWeight="Bold"; $t2.Foreground=$Global:PTS_Brush["Primary"]; $t2.Margin="0,0,0,8"; $cs.Children.Add($t2)|Out-Null
-            foreach ($pair in @(@{L="WHAT IT DOES";T=$tool.What},@{L="WHY USE IT";T=$tool.Why})) {
-                $lbl=New-Object System.Windows.Controls.TextBlock; $lbl.Text=$pair.L; $lbl.FontSize=9; $lbl.FontWeight="Bold"; $lbl.Foreground=$Global:PTS_Brush["TextMuted"]; $lbl.Margin="0,0,0,2"; $cs.Children.Add($lbl)|Out-Null
-                $txt=New-Object System.Windows.Controls.TextBlock; $txt.Text=$pair.T; $txt.FontSize=12; $txt.TextWrapping="Wrap"; $txt.Foreground=$Global:PTS_Brush["TextDark"]; $txt.Margin="0,0,0,8"; $cs.Children.Add($txt)|Out-Null
-            }
-            $card.Child=$cs; $stack.Children.Add($card)|Out-Null
-        }
-        $sw.Show()
-    }
-
     function Global:GO-RevertAll {
         $res = [System.Windows.MessageBox]::Show("Reset all managed settings to the module's reset presets?`n`nThis enables HVCI/VBS, switches to Balanced, resets priority to 38 (0x26) and removes custom network settings. Shared settings and the separate Ultimate Performance module's active plan are affected. Optional input/USB controls instead restore saved original states only; no backup means unchanged. This includes pointer speed and may re-enable previously active accessibility features. Missing hubs/plans retain their baseline.`n`nContinue?","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
         if ($res -ne [System.Windows.MessageBoxResult]::Yes) { return }
@@ -1689,7 +1632,6 @@ namespace WindowsAcolyteInputV1 {
     $script:GO_recheckBtn.Add_Click({ GO-RenderList; GO-AddLog "Rechecked all tweaks." "INFO" })
     $script:GO_loadProfBtn.Add_Click({ GO-LoadProfile })
     $script:GO_saveProfBtn.Add_Click({ GO-SaveProfile })
-    $script:GO_softInfoBtn.Add_Click({ GO-ShowSoftwareInfo })
     $script:GO_revertBtn.Add_Click({ GO-RevertAll })
 
     $script:GO_applyBtn.Add_Click({
