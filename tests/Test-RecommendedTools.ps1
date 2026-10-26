@@ -7,6 +7,13 @@ function Assert-RT($Condition, $Message) {
     if (-not $Condition) { throw $Message }
     Write-Output "PASS: $Message"
 }
+function Get-RTLuminance($Color) {
+    $channels = @($Color.R, $Color.G, $Color.B) | ForEach-Object {
+        $value = $_ / 255.0
+        if ($value -le 0.04045) { $value / 12.92 } else { [math]::Pow(($value + 0.055) / 1.055, 2.4) }
+    }
+    return 0.2126*$channels[0] + 0.7152*$channels[1] + 0.0722*$channels[2]
+}
 $tokens = $null; $errors = $null
 $shellAst = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $root 'WindowsAcolyte.ps1'), [ref]$tokens, [ref]$errors)
 foreach ($name in @('Register-PowerToolsModule', 'Show-PTSModuleView')) {
@@ -53,7 +60,19 @@ foreach ($themeName in @('PTS_Theme','PTS_ThemeDark')) {
     $view.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString($palette.Background)
     [System.Windows.Documents.TextElement]::SetFontFamily($view, [System.Windows.Media.FontFamily]::new('Segoe UI'))
     Assert-RT ($view -is [System.Windows.Controls.StackPanel] -and $script:headerTitle -eq 'Recommended Tools') "Shell navigation loads page: $themeName"
-    $cards = @($view.Children | Where-Object { $_ -is [System.Windows.Controls.Border] })
+    $notice = $view.Children | Where-Object Name -eq 'RTExternalLinksNotice'
+    Assert-RT ($view.Children[0] -eq $notice -and $notice.Child.Children[0].Text -like '*HAFTUNGSHINWEIS*') "Prominent labeled external-link warning precedes every tool: $themeName"
+    $expectedNoticeBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($palette.AccentSoft)
+    Assert-RT ($notice.Background.ToString() -eq $expectedNoticeBrush.ToString() -and $notice.BorderThickness.Left -eq 5) "Notice has theme-aware warning colors and strong border: $themeName"
+    $noticeForeground = $notice.Child.Children[0].Foreground.Color
+    $light = Get-RTLuminance $noticeForeground
+    $dark = Get-RTLuminance $notice.Background.Color
+    $contrast = ([math]::Max($light,$dark)+0.05) / ([math]::Min($light,$dark)+0.05)
+    Assert-RT ($contrast -ge 4.5) "Disclaimer text contrast is at least 4.5:1: $themeName"
+    $report = $notice.Child.Children | Where-Object { $_ -is [System.Windows.Controls.Button] }
+    $report.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent))
+    Assert-RT ($script:openedUrls[-1] -eq 'https://github.com/ReAlNoMo/WindowsAcolyte/issues') "Link reporting opens the project issue page: $themeName"
+    $cards = @($view.Children | Where-Object { $_ -is [System.Windows.Controls.Border] -and $_.Tag -eq 'RecommendedToolCard' })
     Assert-RT ($cards.Count -eq 12) "All tool cards rendered: $themeName"
     foreach ($card in $cards) {
         $button = $card.Child.Children | Where-Object { $_ -is [System.Windows.Controls.Button] }
@@ -86,4 +105,4 @@ Assert-RT ($null -ne $optimizerView.FindName('HardwareText')) 'Optimizer XAML lo
 function Global:Start-Process { param($FilePath) throw 'Simulated browser failure' }
 $lastButton = $cards[-1].Child.Children | Where-Object { $_ -is [System.Windows.Controls.Button] }
 $lastButton.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent))
-Assert-RT ($view.Children[1].Text -like 'Could not open browser.*') 'Browser failure displays publisher URL fallback'
+Assert-RT (($view.Children | Where-Object Name -eq 'RTLinkStatus').Text -like 'Could not open browser.*') 'Browser failure displays publisher URL fallback'

@@ -175,4 +175,12 @@ Before applying advanced or high-risk changes, users are strongly encouraged to:
 ---
 
 **WindowsAcolyte**
-Version 1.7 • ReAlNoMo
+Version 1.7.1 • ReAlNoMo
+
+## Externe Links in Recommended Tools
+
+Die verlinkten Websites und Downloads stammen von externen Anbietern, die ihre Inhalte verantworten. WindowsAcolyte hat keinen Einfluss auf diese fremden Inhalte oder spätere Änderungen. Soweit gesetzlich zulässig, übernehmen wir keine Gewähr oder Haftung für deren Richtigkeit, Vollständigkeit, Aktualität oder Sicherheit. Beim Besuch gelten die Datenschutz- und Nutzungsbedingungen des jeweiligen Anbieters. Nutzer sollten Anbieter und Downloads prüfen und vor Systemänderungen wichtige Daten sichern.
+
+Dieser Hinweis ist kein pauschaler Ausschluss gesetzlicher Haftung. Zwingende Haftung und gesetzliche Prüf- und Entfernungspflichten bleiben unberührt. Konkrete Hinweise auf Rechtsverletzungen können über die Projekt-Issues gemeldet werden; Hinweise werden geprüft und rechtswidrige Verlinkungen entfernt. Vertrauliche Sicherheitsmeldungen gehören in den in SECURITY.md beschriebenen privaten Meldeweg.
+
+Recherche vom 26.10.2026: [Handelskammer Hamburg](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590) und [BGH, Urteil vom 18.06.2015, I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). Keine Zusicherung einer rechtlichen Haftungsfreistellung.

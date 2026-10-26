@@ -85,9 +85,43 @@ Register-PowerToolsModule `
         return $label
     }
 
+    $notice = [System.Windows.Controls.Border]::new()
+    $notice.Name = 'RTExternalLinksNotice'
+    $notice.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'DynAccentSoft')
+    $notice.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'DynAccent')
+    $notice.BorderThickness = '5,1,1,1'
+    $notice.CornerRadius = 8
+    $notice.Padding = '16,14'
+    $notice.Margin = '0,0,0,16'
+    [System.Windows.Automation.AutomationProperties]::SetName($notice, 'Externe Links - Haftungshinweis')
+    $noticePanel = [System.Windows.Controls.StackPanel]::new()
+    $noticeTitle = RT-AddText $noticePanel (([char]0x26A0) + ' EXTERNE LINKS - HAFTUNGSHINWEIS') 'TextDark' 15
+    $noticeTitle.FontWeight = 'Bold'
+    $null = RT-AddText $noticePanel 'Die Links öffnen externe Websites im Browser. Deren Inhalte und Downloads werden von den jeweiligen Anbietern verantwortet; WindowsAcolyte hat darauf keinen Einfluss. Soweit gesetzlich zulässig, übernehmen wir keine Gewähr oder Haftung für Richtigkeit, Vollständigkeit, Aktualität oder Sicherheit dieser fremden Inhalte.' 'TextDark'
+    $null = RT-AddText $noticePanel 'Es gelten die Datenschutz- und Nutzungsbedingungen der Zielseite. Prüfe Anbieter, Downloads und Änderungen selbst; sichere wichtige Daten vor der Nutzung externer Tools.' 'TextDark'
+    $null = RT-AddText $noticePanel 'Dieser Hinweis schließt gesetzliche Haftung nicht pauschal aus. Zwingende Haftung sowie gesetzliche Prüf- und Entfernungspflichten bleiben unberührt. Melde konkrete Rechtsverletzungen über GitHub Issues; Hinweise werden geprüft und rechtswidrige Verlinkungen entfernt.' 'TextDark'
+    $report = [System.Windows.Controls.Button]::new()
+    $report.Content = 'Problematischen Link melden (GitHub Issues)'
+    $report.HorizontalAlignment = 'Left'
+    $report.Padding = '12,6'
+    $report.SetResourceReference([System.Windows.Controls.Button]::StyleProperty, 'SecondaryButton')
+    $report.Tag = 'https://github.com/ReAlNoMo/WindowsAcolyte/issues'
+    $notice.Child = $noticePanel
+    [void]$view.Children.Add($notice)
     $intro = RT-AddText $view 'Choose tools for a specific task. Open publisher pages for documentation and downloads; nothing is installed automatically.' 'TextMid' 13
     $status = RT-AddText $view '' 'TextMuted' 11
     $status.Name = 'RTLinkStatus'
+    $reportStatus = $status
+    $report.Add_Click({
+        param($sender, $eventArgs)
+        try {
+            Start-Process -FilePath ([string]$sender.Tag) -ErrorAction Stop | Out-Null
+            $reportStatus.Text = 'GitHub Issues opened. Do not post private data; report security-sensitive details privately.'
+        } catch {
+            $reportStatus.Text = 'Could not open browser. Report URL: ' + [string]$sender.Tag
+        }
+    }.GetNewClosure())
+    [void]$noticePanel.Children.Add($report)
     $tools = @(RT-GetTools)
     $currentGroup = ''
     foreach ($tool in $tools) {
@@ -98,6 +132,7 @@ Register-PowerToolsModule `
             $heading.Margin = '0,14,0,12'
         }
         $card = [System.Windows.Controls.Border]::new()
+        $card.Tag = 'RecommendedToolCard'
         $card.SetResourceReference([System.Windows.Controls.Border]::BackgroundProperty, 'DynTileBg')
         $card.SetResourceReference([System.Windows.Controls.Border]::BorderBrushProperty, 'DynTileBorder')
         $card.BorderThickness = 1

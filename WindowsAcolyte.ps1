@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 1.7
+    Version : 1.7.1
 #>
 
 # ===========================================================================
@@ -778,7 +778,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v1.7  |  Administrator"
+                           Text="v1.7.1  |  Administrator"
                            Foreground="#3F5868" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
