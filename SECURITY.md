@@ -18,7 +18,8 @@ Only the latest stable release receives active security updates and vulnerabilit
 
 | Version | Supported |
 | ------- | --------- |
-| 1.7.x   | ✅ Yes     |
+| 1.8.x   | ✅ Yes     |
+| 1.7.x   | ❌ No      |
 | 1.6.x   | ❌ No      |
 | 1.5.x   | ❌ No      |
 | 1.4.x   | ❌ No      |

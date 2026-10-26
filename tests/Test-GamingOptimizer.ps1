@@ -9,6 +9,7 @@ if ($parseErrors.Count) { throw ($parseErrors.Message -join '; ') }
 foreach ($name in @('GO-GetReg', 'GO-SetDW', 'GO-TestDWord', 'GO-ApplyVerifiedTweak', 'GO-IsRecommended',
     'GO-RenderList', 'GO-ApplyRecommendedPreselection', 'GO-HandleMutex', 'GO-UpdateApplyState',
     'GO-GetRiskColor', 'GO-GetRiskLabel', 'GO-GetTweakState', 'GO-GetStateSnapshot', 'GO-SelectTweaks',
+    'GO-NewText', 'GO-AddDescriptionSection', 'GO-GetPresentationState',
     'GO-GetProfileSelection', 'GO-ApplyProfileSelection')) {
     $definition = $ast.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq "Global:$name"
@@ -95,9 +96,9 @@ try {
     GO-ApplyVerifiedTweak $aaa
     GO-RenderList
     GO-ApplyRecommendedPreselection
-    $status = $script:GO_checkboxes[9].Parent.Children | Where-Object {
-        $_ -is [System.Windows.Controls.TextBlock] -and [System.Windows.Controls.Grid]::GetColumn($_) -eq 1
-    }
+    $status = ($script:GO_checkboxes[9].Parent.Children | Where-Object {
+        $_ -is [System.Windows.Controls.Border] -and [System.Windows.Controls.Grid]::GetColumn($_) -eq 0
+    }).Child
     Assert-Result ($status.Text -eq 'ALTERNATIVE') 'WPF marks inactive priority preset as ALTERNATIVE'
     Assert-Result (-not $script:GO_checkboxes[8].IsEnabled) 'WPF recognizes network setting as already applied'
     Assert-Result (-not $script:GO_checkboxes[10].IsEnabled) 'WPF recognizes active AAA preset'
@@ -118,7 +119,7 @@ try {
     $script:GO_checkboxes[10].IsChecked = $true
     GO-UpdateApplyState
     Assert-Result ($script:GO_impactText.Text -like '*Replaces Competitive*') 'Selection impact is visible before applying'
-    Assert-Result ($script:GO_checkboxes[10].Content.Children.Count -eq 2) 'Conflict note appears directly below the priority option'
+    Assert-Result (@($script:GO_cardViews[10].Child.Children | Where-Object { $_ -is [System.Windows.Controls.TextBlock] -and $_.Text -eq $aaa.Note }).Count -eq 1) 'Conflict note remains visible in the priority card'
     $profileIds = @(GO-GetProfileSelection)
     Assert-Result (8 -in $profileIds -and 10 -in $profileIds -and 9 -notin $profileIds) 'Profile save includes applied settings and pending priority replacement without conflict'
     GO-SelectTweaks None

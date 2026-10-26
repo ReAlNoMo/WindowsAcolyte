@@ -26,7 +26,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.7.5`
+**Current version:** `v1.8`
 
 ---
 
@@ -208,6 +208,24 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ---
 
+### Clear status and explanations
+
+Each option now appears as a wrapping card, with its configuration status **before** the checkbox and title. All 35 options include both a short **IN PLAIN ENGLISH** explanation and a **TECHNICAL SUMMARY** directly in the list. **Details** opens a scrollable explanation with separate plain-English and technical sections, plus risk, expected effect, restart and Apply/Reset notes. Applied and unavailable cards remain readable and their Details button stays usable.
+
+| Status | Meaning |
+|---|---|
+| APPLIED | The requested target configuration is present. For an OFF option, the feature is configured OFF; this is not a claim that the feature is enabled. |
+| MISSING | The target is not present. The existing configuration can still be a valid default; users do not need to apply everything. |
+| ALTERNATIVE | The other mutually exclusive priority preset is active. Applying this preset replaces it. |
+| UNAVAILABLE | The current setup does not support this control. |
+| CHECK ERROR | Current state is unknown because readback failed; it is not labeled MISSING and selection is disabled. |
+
+**Risk**, **Impact / Expected effect**, **Restart** and **Selection** are separate labels. Risk is not a benefit rating. Checkboxes select pending changes, rather than acting as an on/off-state indicator. Optional input/USB controls remain manual opt-in. The selection overview shows the number of changes and shared/reset consequences; it no longer adds speculative FPS percentages or promises ping improvements. No Apply/Check/Reset scripts or risk/opt-in/mutual-exclusion rules were changed for this layout.
+
+The selection toolbar wraps at narrow widths. Layout tests render all 35 cards at 540 and 900 pixels in both themes using synthetic state; they do not change Windows settings. Pointer-speed and local Windows Update controls also explain their purpose in plain English and technical terms.
+
+Technical wording was checked against the source operations and relevant Microsoft documentation: [memory integrity](https://learn.microsoft.com/en-us/windows/security/hardware-security/enable-virtualization-based-protection-of-code-integrity), [MMCSS](https://learn.microsoft.com/en-us/windows/win32/procthread/multimedia-class-scheduler-service), [USB selective suspend](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/usb-selective-suspend), [windowed-games optimization](https://support.microsoft.com/en-us/windows/hardware/display-graphics/optimizations-for-windowed-games-in-windows-11). Readback still does not prove runtime activation or a game-performance improvement.
+
 ### ⚙️ Configuration and Risk
 
 | Configuration | Scope | Reboot | Risk |
@@ -265,7 +283,7 @@ The project does not supply benchmark evidence for universal FPS, latency or pin
 
 ### Input & USB Stability - Optional
 
-All six options (#30-35) target troubleshooting, prevention of accidental accessibility activation or desktop comfort, not higher FPS. They start unselected and are excluded from **All**, **Missing Only**, **Safe Only** and recommended pre-selection. Select them individually; explicitly saved profiles can also select them. No settings are changed merely by opening the module or checking status.
+All six options (#30-35) target troubleshooting, prevention of accidental accessibility activation or desktop comfort, not higher FPS. They start unselected and are excluded from **All**, **Missing Only**, **Low Risk Only** and recommended pre-selection. Select them individually; explicitly saved profiles can also select them. No settings are changed merely by opening the module or checking status.
 
 - **USBHUB3 override (experimental):** sets `HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\DisableSelectiveSuspend` to DWORD `1`. This exact driver override is not reliably documented across Windows versions. `APPLIED` confirms the stored value/type, not that the driver honors it or disconnects are fixed.
 - **Root-hub power permission:** clears the device power-off permission on all currently present USB root hubs with an unambiguous supported WMI provider. Unsupported hubs block Apply before any device write. Other USB devices and wake permissions are untouched; devices are not disabled or reconnected.
@@ -288,7 +306,7 @@ API references: [WMI power management](https://learn.microsoft.com/en-us/windows
 ---
 
 ### 🧠 UI Features
-- ✅ Checkbox selection with risk indicators (🟢 SAFE / 🟡 MODERATE / 🔴 HIGH)
+- ✅ Separate status badges and pending-change checkboxes; risk is labeled LOW / MODERATE / HIGH (low risk does not mean risk-free)
 - 🔍 Hardware detection (Intel 12+ / AMD Ryzen 5000+ / AMD X3D / NVIDIA)
 - ⚠️ X3D CPU auto-detection with Game Mode guidance (not forced)
 - 🔍 Status detection (APPLIED / MISSING / ALTERNATIVE / UNAVAILABLE / CHECK ERROR)
@@ -338,6 +356,7 @@ Validation (PowerShell 7 on Windows):
 
 ```powershell
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizer.ps1
+pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerLayout.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerInput.ps1
 pwsh -NoProfile -File .\tests\Test-GamingOptimizerAudit.ps1
@@ -694,7 +713,12 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.7.5 (Current) - 2026-10-26
+## v1.8 (Current) - 2026-10-26
+- Gaming Optimizer: status-first cards for all 35 options, plain-English and technical summaries/details, separate risk/effect/restart labels and wrapping selection controls.
+- Replace speculative FPS totals with a factual selection overview; retain all configuration operations, presets, optional controls and saved-state restore rules.
+- Add isolated layout/detail tests at narrow/wide widths in both themes; expand the pointer-speed and local-update explanations.
+
+## v1.7.5 (Previous) - 2026-10-26
 - Refine the shield and pane outlines and render the sidebar brand with WPF vector shapes and native text for sharp display at small sizes.
 
 ## v1.7.4 (Previous) - 2026-10-26
@@ -768,7 +792,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.7.5 • October 2026
+Version 1.8 • October 2026
 
 ---
 

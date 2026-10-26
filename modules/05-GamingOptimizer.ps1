@@ -1,10 +1,10 @@
-# Module: Windows 11 Gaming Optimizer v2.0
+# Module: Windows 11 Gaming Optimizer v2.1
 # Comprehensive gaming tweaks with profile support, backup, and detailed info.
 
 Register-PowerToolsModule `
     -Id            "gaming-optimizer" `
     -Name          "Windows 11 Gaming Optimizer" `
-    -Description   "Apply curated gaming and performance tweaks. Profile save/load, backup, and detailed info included." `
+    -Description   "Review gaming settings with plain-English explanations, technical details and clear configuration status." `
     -Category      "Performance" `
     -RequiresAdmin $true `
     -Show          {
@@ -62,35 +62,16 @@ Register-PowerToolsModule `
         </Grid>
     </Border>
 
-    <!-- ROW 2: Selection toolbar -->
-    <Grid Grid.Row="2" Margin="0,0,0,6">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="0" Text="SELECT:" Foreground="{DynamicResource DynSectionLabel}"
-                   FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-        <Button Grid.Column="1" x:Name="SelectAllBtn" Content="All"
-                Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,0"/>
-        <Button Grid.Column="2" x:Name="SelectMissingBtn" Content="Missing Only"
-                Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,0"/>
-        <Button Grid.Column="3" x:Name="SelectSafeBtn" Content="Safe Only"
-                Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,0"/>
-        <Button Grid.Column="4" x:Name="SelectNoneBtn" Content="None"
-                Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11"/>
-        <TextBlock Grid.Column="5"/>
-        <Button Grid.Column="6" x:Name="LoadProfileBtn" Content="Load Profile"
-                Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,0"/>
-        <Button Grid.Column="7" x:Name="SaveProfileBtn" Content="Save Profile"
-                Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11"/>
-    </Grid>
-
+    <!-- ROW 2: Selection toolbar; wraps instead of hiding controls at narrow widths. -->
+    <WrapPanel Grid.Row="2" Margin="0,0,0,8">
+        <TextBlock Text="SELECT CHANGES:" Foreground="{DynamicResource DynSectionLabel}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,6"/>
+        <Button x:Name="SelectAllBtn" Content="All" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
+        <Button x:Name="SelectMissingBtn" Content="Missing Only" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
+        <Button x:Name="SelectSafeBtn" Content="Low Risk Only" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
+        <Button x:Name="SelectNoneBtn" Content="None" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,12,6"/>
+        <Button x:Name="LoadProfileBtn" Content="Load Profile" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
+        <Button x:Name="SaveProfileBtn" Content="Save Profile" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
+    </WrapPanel>
     <!-- ROW 3: TWEAK LIST -->
     <Border Grid.Row="3" x:Name="TweakListBorder"
             BorderThickness="1.5" CornerRadius="8" Margin="0,0,0,6">
@@ -107,12 +88,12 @@ Register-PowerToolsModule `
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Margin="0,0,12,0">
                 <TextBlock x:Name="EstimateText" FontSize="11" TextWrapping="Wrap"
-                           Text="No tweaks selected. All estimates without warranty."/>
+                           Text="No changes selected. Read the descriptions and choose only what you need."/>
                 <TextBlock x:Name="ImpactText" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
                            Foreground="{DynamicResource DynTextDark}"
                            Text="APPLIED = configuration verified. Reboot-marked settings may not be effective until restart."/>
             </StackPanel>
-            <TextBlock Grid.Column="1" Text="Hover = short info  |  Click name = full details"
+            <TextBlock Grid.Column="1" Text="Details = plain-English + technical explanation"
                        Foreground="{DynamicResource DynTextMuted}" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
         </Grid>
     </Border>
@@ -793,41 +774,53 @@ namespace WindowsAcolyteInputV1 {
     }
 
     $script:GO_tweaks = @(
-        @{ Id=1; Group="Security - High Impact"; Risk=1; NeedsReboot=$true;
+        @{ Id=1; Group="Security & Recording"; Risk=1; NeedsReboot=$true;
            Label="Memory Integrity / HVCI (OFF)";
-           ShortDesc="Disables Hypervisor-Protected Code Integrity. Biggest FPS gainer.";
-           LongDesc="Hypervisor-Protected Code Integrity (HVCI) validates every kernel driver access via hypervisor. Disabling yields 3-25% FPS gain, more stable 1% lows, significantly less microstutter in CPU-limited games. Risk: Kernel exploits through manipulated drivers become possible. Acceptable for dedicated gaming PC without sensitive data.";
-           FPSGain="3-25% FPS";
+           SimpleShort='Turns off a Windows security check for low-level drivers.';
+           SimpleLong='Think of this as removing a security guard who checks important software near the heart of Windows. It may reduce some work for the PC, but also removes protection. This option also turns off VBS. A restart may be needed; a green APPLIED label is not proof that the running protection has already changed.';
+           Impact='Security protection reduced; performance varies';
+           ShortDesc='Sets HVCI Enabled=0 and EnableVirtualizationBasedSecurity=0.';
+           LongDesc='Requests HVCI and VBS off through their registry flags. These are security controls, not a guaranteed FPS fix. Runtime state can depend on restart, policy and platform configuration. Reset writes both flags to 1 and can invalidate the separate VBS-off option.';
+           FPSGain='Security protection reduced; performance varies';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled") -eq 0 -and
                    (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity") -eq 0 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled" 0
                    GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 0 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" "Enabled" 1
                     GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 1 } }
-        @{ Id=2; Group="Security - High Impact"; Risk=1; NeedsReboot=$true;
+        @{ Id=2; Group="Security & Recording"; Risk=1; NeedsReboot=$true;
            Label="VBS Registry Configuration (OFF)";
-           ShortDesc="Sets the VBS registry configuration to OFF; runtime state can differ until reboot or due to policy.";
-           LongDesc="Sets EnableVirtualizationBasedSecurity to 0. This does not remove the Virtual Machine Platform Windows feature or override policy/UEFI locks. APPLIED verifies the stored value, not the hypervisor runtime state. Reset enables VBS and invalidates the combined HVCI-off configuration.";
-           FPSGain="2-8% FPS";
+           SimpleShort='Asks Windows to turn off its isolated security area.';
+           SimpleLong='Windows can keep some security work in a separate protected area. This setting asks it to stop doing that. Protection can be reduced, and other Windows rules may keep it running anyway. It does not uninstall a Windows feature. Reset turns the VBS setting back on.';
+           Impact='Security configuration; runtime effect may differ';
+           ShortDesc='Sets the VBS registry configuration flag to 0.';
+           LongDesc='Writes EnableVirtualizationBasedSecurity=0. Does not remove Virtual Machine Platform or bypass policy/UEFI locks. APPLIED reports the stored target, not hypervisor runtime state. Reset writes 1 and invalidates the combined HVCI-off configuration.';
+           FPSGain='Security configuration; runtime effect may differ';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity") -eq 0 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 0 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard" "EnableVirtualizationBasedSecurity" 1 } }
-        @{ Id=3; Group="Security - High Impact"; Risk=0; NeedsReboot=$true;
+        @{ Id=3; Group="Security & Recording"; Risk=0; NeedsReboot=$true;
            Label="GameDVR / Xbox Recording (OFF)";
-           ShortDesc="Disables Xbox Game Bar DVR recording. Frees GPU/CPU resources during gameplay.";
-           LongDesc="Xbox Game Bar DVR captures gameplay in background consuming GPU and CPU resources. Disabling yields 2-5% FPS in GPU-limited scenarios. No risk - only removes screen recording. Manual screenshots still work.";
-           FPSGain="2-5% FPS";
+           SimpleShort='Turns off the Windows game-recording feature.';
+           SimpleLong='If you do not use Windows to record game clips, you can turn that feature off. This can remove recording work when it was in use, but it is not a promise of more frames. You lose the affected recording feature until you turn it back on.';
+           Impact='Recording availability; workload-dependent overhead';
+           ShortDesc='Disables the per-user GameDVR flag and machine recording policy.';
+           LongDesc='Writes GameDVR_Enabled=0 and AllowGameDVR=0. Whether recording overhead changes depends on the original recording activity. Reset enables the user flag and removes the machine policy.';
+           FPSGain='Recording availability; workload-dependent overhead';
            Check={ (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_Enabled") -eq 0 -and
                    (GO-GetReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR") -eq 0 };
            Apply={ GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 0
                    GO-SetDW "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" 0 };
            Revert={ GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_Enabled" 1
                     GO-DelReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR" "AllowGameDVR" } }
-        @{ Id=4; Group="Security - High Impact"; Risk=2; NeedsReboot=$true;
+        @{ Id=4; Group="Security & Recording"; Risk=2; NeedsReboot=$true;
            Label="Spectre/Meltdown Mitigations (OFF) - HIGH RISK";
-           ShortDesc="Disables CPU vulnerability mitigations. +5-15% FPS on older CPUs. SECURITY RISK.";
-           LongDesc="Spectre and Meltdown mitigations protect against CPU-level attacks. Disabling yields 5-15% FPS on older CPUs (Intel 6-9th gen). HIGH RISK: Only on isolated gaming PCs without browser or sensitive data access. Not recommended.";
-           FPSGain="5-15% FPS";
+           SimpleShort='Weakens protection against certain processor attacks.';
+           SimpleLong='These protections help stop software from stealing information through processor weaknesses. Turning them off trades protection for an uncertain possible speed difference. This is a high-risk choice, not a normal fix for a slow game.';
+           Impact='Security-sensitive; no guaranteed speed improvement';
+           ShortDesc='Writes FeatureSettingsOverride=3 and FeatureSettingsOverrideMask=3.';
+           LongDesc='Changes CPU-mitigation override configuration in Memory Management. Security impact and runtime behavior depend on CPU, Windows and restart state. No measured performance benefit is established here. Reset deletes these managed override values.';
+           FPSGain='Security-sensitive; no guaranteed speed improvement';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride") -eq 3 -and
                    (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverrideMask") -eq 3 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverride" 3
@@ -836,81 +829,111 @@ namespace WindowsAcolyteInputV1 {
                     GO-DelReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "FeatureSettingsOverrideMask" } }
         @{ Id=5; Group="Power / CPU"; Risk=0; NeedsReboot=$false;
            Label="Ultimate Performance Power Plan";
-           ShortDesc="Activates an Ultimate Performance power plan. Replaces the current active power plan.";
-           LongDesc="Activates or creates an Ultimate Performance plan. For explicitly managed CPU/core-parking/display settings, use the separate Ultimate Performance Power Plan module. Reset switches to Balanced, including when the dedicated WindowsAcolyte plan is currently active.";
-           FPSGain="5-15% FPS";
+           SimpleShort='Switches Windows to an Ultimate Performance power plan.';
+           SimpleLong='A power plan tells Windows how to balance energy saving and responsiveness. This selects a performance-focused plan instead of your current one. It can use more electricity and produce more heat. Reset selects Balanced; it does not remember your old plan.';
+           Impact='Power use, heat and responsiveness trade-off';
+           ShortDesc='Finds or creates and activates an Ultimate Performance plan.';
+           LongDesc='Uses powercfg plan identity for readback. This option selects a plan; the separate Ultimate Performance module manages additional explicit AC/DC settings. Reset selects SCHEME_BALANCED, including after that module was used.';
+           FPSGain='Power use, heat and responsiveness trade-off';
            Check={ GO-TestUltimatePlan };
            Apply={ GO-EnableUltimatePlan };
            Revert={ GO-InvokeNative 'powercfg.exe' @('/setactive','SCHEME_BALANCED') | Out-Null } }
         @{ Id=6; Group="Power / CPU"; Risk=1; NeedsReboot=$true;
            Label="Disable Power Throttling";
-           ShortDesc="Prevents Windows from throttling CPU for background processes.";
-           LongDesc="Windows automatically throttles CPU resources for background processes. Disabling gives all processes full resources - less frame variance. Risk: Background processes can consume more CPU.";
-           FPSGain="1-3% FPS";
+           SimpleShort='Stops Windows from using one background power-saving policy.';
+           SimpleLong='Windows can give background apps less energy to save power. This disables that power-saving policy. Background apps may then use more resources too, so your game is not automatically faster. Expect a possible battery or heat trade-off.';
+           Impact='Background power use; results depend on workload';
+           ShortDesc='Sets PowerThrottlingOff=1 for the Windows power-throttling policy.';
+           LongDesc='Writes the machine PowerThrottlingOff flag. This is not a per-game CPU reservation and does not prevent all other power limits. Reset removes the managed value.';
+           FPSGain='Background power use; results depend on workload';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" "PowerThrottlingOff") -eq 1 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" "PowerThrottlingOff" 1 };
            Revert={ GO-DelReg "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" "PowerThrottlingOff" } }
         @{ Id=7; Group="Power / CPU"; Risk=0; NeedsReboot=$false;
            Label="System Responsiveness = 10";
-           ShortDesc="Controls CPU share for multimedia/foreground apps. More CPU cycles for active applications.";
-           LongDesc="Controls CPU share for multimedia and foreground applications. Default is 20. Value 10 is moderate and recommended for stability.";
-           FPSGain="1-2% FPS";
+           SimpleShort='Changes how a Windows media scheduler shares processor time.';
+           SimpleLong='Imagine several jobs taking turns at one desk. This changes one rule Windows uses to share that desk between special media work and lower-priority work. It does not give every game a fixed extra share or guarantee more frames.';
+           Impact='Multimedia scheduling; application-dependent';
+           ShortDesc='Sets MMCSS SystemResponsiveness to 10.';
+           LongDesc='Changes the configured CPU-resource percentage guaranteed to low-priority tasks under MMCSS. Only work participating in this scheduling system is affected; this is not a universal foreground CPU allocation. Reset uses 20.';
+           FPSGain='Multimedia scheduling; application-dependent';
            Check={ (GO-GetReg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness") -eq 10 };
            Apply={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 10 };
            Revert={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "SystemResponsiveness" 20 } }
         @{ Id=8; Group="Power / CPU"; Risk=0; NeedsReboot=$false;
            Label="Network Throttling Disabled";
-           ShortDesc="Removes network throughput limit. Better network latency and throughput.";
-           LongDesc="Windows limits network throughput to save CPU. Disabling improves network latency and throughput.";
-           FPSGain="Latency";
+           SimpleShort='Changes a Windows limit on some network-processing work.';
+           SimpleLong='This removes one Windows network-throttling setting. Your router, internet connection and game server still affect lag. A MISSING label does not mean your internet is broken, and applying this cannot promise lower ping.';
+           Impact='Network configuration; no promised ping reduction';
+           ShortDesc='Sets NetworkThrottlingIndex to DWORD 0xFFFFFFFF.';
+           LongDesc='Readback accepts signed or unsigned representations of this DWORD. It verifies the multimedia network-throttling configuration, not measured throughput, packet latency or server round-trip time. Reset writes 10.';
+           FPSGain='Network configuration; no promised ping reduction';
            Check={ GO-TestDWord "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" ([uint32]::MaxValue) };
            Apply={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" ([uint32]::MaxValue) };
            Revert={ GO-SetDW "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" "NetworkThrottlingIndex" 10 } }
         @{ Id=9; Group="Power / CPU"; Risk=0; NeedsReboot=$false; Mutex="PrioritySep";
            Label="Win32PrioritySeparation = 36 (Competitive)";
-           ShortDesc="Short variable quanta without focus boost. Minimal scheduling latency.";
-           LongDesc="Controls CPU time quanta per process before context switch. Value 36 (0x24) uses short variable quanta without focus boost - minimal scheduling latency. Best for competitive shooters.";
-           FPSGain="1-3% FPS";
+           SimpleShort='Selects one processor time-sharing preset; replaces the AAA preset.';
+           SimpleLong='Windows lets programs take turns using the processor. This selects one time-sharing rule, called Competitive here. The name is a preset label, not proof it is best for your game. Only one of the two presets can be active. Reset uses the module default.';
+           Impact='Processor scheduling preset; compare on your PC';
+           ShortDesc='Sets Win32PrioritySeparation=36 (0x24).';
+           LongDesc='Alternative to the value 24 preset. Both write the same machine registry value and therefore cannot be active together. Actual scheduling/performance depends on Windows and workload; compare repeatable measurements. Reset writes 38 (0x26).';
+           FPSGain='Processor scheduling preset; compare on your PC';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation") -eq 0x24 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 0x24 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 0x26 } }
         @{ Id=10; Group="Power / CPU"; Risk=0; NeedsReboot=$false; Mutex="PrioritySep";
            Label="Win32PrioritySeparation = 24 (AAA Games)";
-           ShortDesc="Long fixed quanta (server mode). Maximum consistency for games with many background threads.";
-           LongDesc="Value 24 (0x18) uses long fixed quanta in server mode - maximum consistency for AAA games with many background threads.";
-           FPSGain="1-3% FPS";
+           SimpleShort='Selects another processor time-sharing preset; replaces Competitive.';
+           SimpleLong='This is a different rule for how programs take turns using the processor. The AAA name does not mean all large games will run better. Selecting it replaces the Competitive preset. ALTERNATIVE means the other preset is already active, not that you need both.';
+           Impact='Alternative scheduling preset; compare on your PC';
+           ShortDesc='Sets Win32PrioritySeparation=24 (0x18).';
+           LongDesc='Mutually exclusive with value 36 because both manage Win32PrioritySeparation. No game-specific improvement is verified by the label or registry readback. Reset writes 38 (0x26).';
+           FPSGain='Alternative scheduling preset; compare on your PC';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation") -eq 0x18 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 0x18 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl" "Win32PrioritySeparation" 0x26 } }
         @{ Id=11; Group="Power / CPU"; Risk=0; NeedsReboot=$false;
            Label="Startup Delay Disabled";
-           ShortDesc="Removes artificial startup delay for autostart apps. Faster desktop after login.";
-           LongDesc="Windows artificially delays autostart apps after login. Disabling gives a faster desktop after login.";
-           FPSGain="Boot speed";
+           SimpleShort='Removes one wait before startup apps open after sign-in.';
+           SimpleLong='Some apps open automatically when you sign in. This asks Windows not to add its configured startup delay. More apps may start together, which can also make sign-in busier. It does not increase game FPS once everything is running.';
+           Impact='Sign-in/startup behavior; no game-FPS claim';
+           ShortDesc='Sets the current-user StartupDelayInMSec value to 0.';
+           LongDesc='Writes Explorer/Serialize startup-delay configuration. It does not remove startup apps or measure boot time. Reset removes this user value.';
+           FPSGain='Sign-in/startup behavior; no game-FPS claim';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" "StartupDelayInMSec") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" "StartupDelayInMSec" 0 };
            Revert={ GO-DelReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" "StartupDelayInMSec" } }
         @{ Id=12; Group="Graphics / Gaming"; Risk=0; NeedsReboot=$true;
            Label="Hardware-Accelerated GPU Scheduling (ON)";
-           ShortDesc="GPU manages its own memory and tasks instead of CPU. Required for DLSS 3 Frame Generation.";
-           LongDesc="GPU takes over own memory and task management instead of CPU. Reduces system latency by ~2ms, more stable frametimes. Mandatory for DLSS 3 Frame Generation.";
-           FPSGain="1-5% FPS";
+           SimpleShort='Asks the graphics system to use hardware-assisted scheduling.';
+           SimpleLong='Your graphics card and Windows must organize lots of small drawing jobs. This requests a different way to organize that work. It needs suitable hardware and drivers, and games can react differently. The setting alone does not prove the feature is running.';
+           Impact='Graphics scheduling; hardware/driver-dependent';
+           ShortDesc='Sets Hardware-Accelerated GPU Scheduling configuration HwSchMode=2.';
+           LongDesc='Requests HAGS through the GraphicsDrivers registry value. Support and effective runtime state depend on the GPU, driver, Windows version and restart. This check only verifies the stored value. Reset writes 1.';
+           FPSGain='Graphics scheduling; hardware/driver-dependent';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode") -eq 2 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 2 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" "HwSchMode" 1 } }
         @{ Id=13; Group="Graphics / Gaming"; Risk=0; NeedsReboot=$false;
            Label="Windows Game Mode (ON)";
-           ShortDesc="Prioritizes game threads. Pauses Windows updates during gaming. REQUIRED for AMD X3D CPUs.";
-           LongDesc="Prioritizes game threads and pauses Windows Update downloads during gaming. CRITICAL: Must stay ON for AMD X3D chips.";
-           FPSGain="1-5% FPS";
+           SimpleShort='Turns Windows Game Mode on.';
+           SimpleLong='Game Mode tells Windows to focus on gaming while you play. It is not a magic speed switch. Some processor setups use it as part of their normal game handling. Reset turns it off, which is important to notice before clicking Reset.';
+           Impact='Windows gaming preference; effect varies';
+           ShortDesc='Sets the current-user AutoGameModeEnabled flag to 1.';
+           LongDesc='Verifies the Game Mode preference rather than per-game scheduling behavior. Keep platform/vendor guidance in mind, especially for AMD X3D setups. Reset writes 0 and disables this preference.';
+           FPSGain='Windows gaming preference; effect varies';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\GameBar" "AutoGameModeEnabled") -eq 1 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\GameBar" "AutoGameModeEnabled" 1 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\GameBar" "AutoGameModeEnabled" 0 } }
         @{ Id=14; Group="Graphics / Gaming"; Risk=0; NeedsReboot=$false;
            Label="Legacy Fullscreen Compatibility Flags";
-           ShortDesc="Configures legacy GameDVR fullscreen compatibility flags.";
-           LongDesc="Sets GameDVR_FSEBehaviorMode=2 and GameDVR_HonorUserFSEBehaviorMode=1. These legacy flags are not the Windows 11 Optimizations for windowed games switch and do not verify flip-model, VRR, or Auto-HDR support.";
-           FPSGain="Latency";
+           SimpleShort='Changes older fullscreen compatibility flags, not the modern windowed-games switch.';
+           SimpleLong='Windows has several different settings for how games fill the screen. This changes older compatibility flags. It is not the Windows 11 windowed-games setting. Leave a working setup alone unless you are testing a specific display problem.';
+           Impact='Fullscreen compatibility; targeted testing only';
+           ShortDesc='Sets GameDVR_FSEBehaviorMode=2 and GameDVR_HonorUserFSEBehaviorMode=1.';
+           LongDesc='These legacy GameDVR flags are distinct from Optimizations for windowed games and do not prove a game is using a particular presentation mode. Test the same game/scene before and after; no universal latency benefit is claimed.';
+           FPSGain='Fullscreen compatibility; targeted testing only';
            Check={ (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode") -eq 2 -and
                    (GO-GetReg "HKCU:\System\GameConfigStore" "GameDVR_HonorUserFSEBehaviorMode") -eq 1 };
            Apply={ GO-SetDW "HKCU:\System\GameConfigStore" "GameDVR_FSEBehaviorMode" 2
@@ -919,19 +942,25 @@ namespace WindowsAcolyteInputV1 {
                     GO-DelReg "HKCU:\System\GameConfigStore" "GameDVR_HonorUserFSEBehaviorMode" } }
         @{ Id=15; Group="Graphics / Gaming"; Risk=0; NeedsReboot=$false;
            Label="Games Task Scheduling = High";
-           ShortDesc="Sets Multimedia scheduler priority for games to High.";
-           LongDesc="Sets Multimedia scheduler priority for games to High. More CPU cycles for gaming threads.";
-           FPSGain="1% FPS";
+           SimpleShort='Changes the priority category for programs using the Games media task.';
+           SimpleLong='This is like changing the priority of one special queue. Only programs that actually join that queue can use the rule. It does not force every game to use it or guarantee that more important work becomes faster.';
+           Impact='Registered multimedia-task priority only';
+           ShortDesc='Sets the MMCSS Games Scheduling Category to High.';
+           LongDesc='The task configuration only applies to threads that register for the relevant MMCSS task. A stored High category does not prove the game participates or improves. Reset uses the module-defined category.';
+           FPSGain='Registered multimedia-task priority only';
            Check={ (GO-GetReg "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category") -eq "High" };
            Apply={ GO-SetStr "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" "High" };
            Revert={ GO-SetStr "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" "Scheduling Category" "Medium" } }
         @{ Id=16; Group="Network"; Risk=1; NeedsReboot=$false;
            Label="Disable Nagle Algorithm";
-           ShortDesc="Configures TCP ACK/Nagle values on active physical Ethernet and Wi-Fi adapters.";
-           LongDesc="Writes TcpAckFrequency=1, TCPNoDelay=1 and TcpDelAckTicks=0 for active physical Ethernet/Wi-Fi adapters. Does not configure disconnected adapters or VPN tunnels. Games using UDP may not benefit; latency gains are not guaranteed.";
+           SimpleShort='Changes small-packet waiting rules for some TCP connections.';
+           SimpleLong='Some network connections wait briefly to group small pieces of data. This changes settings related to that behavior on active physical network adapters. It does not change every kind of game traffic; many games use another protocol, UDP.';
+           Impact='TCP behavior; not a universal game-lag fix';
+           ShortDesc='Sets TCPNoDelay=1, TcpAckFrequency=1 and TcpDelAckTicks=0 per active physical adapter.';
+           LongDesc='Targets the current physical Ethernet/Wi-Fi interface registry keys; VPN interfaces are excluded. TCP settings do not directly tune UDP game packets. Adapter changes can change which values are checked. Reset removes these three per-adapter values.';
            Available={ @(GO-GetGamingAdapters).Count -gt 0 };
            UnavailableReason="No active physical Ethernet/Wi-Fi adapter. Connect an adapter and recheck.";
-           FPSGain="-10-30ms ping";
+           FPSGain='TCP behavior; not a universal game-lag fix';
            Check={
                $nics = @(GO-GetGamingAdapters)
                if ($nics.Count -eq 0) { return $false }
@@ -959,9 +988,12 @@ namespace WindowsAcolyteInputV1 {
            } }
         @{ Id=17; Group="Network"; Risk=0; NeedsReboot=$false;
            Label="Advanced TCP Optimizations";
-           ShortDesc="Enables RSS, disables RSC/ECN/timestamps. Better network throughput and latency.";
-           LongDesc="Multiple netsh optimizations: autotuning=normal, RSS=enabled, RSC=disabled, ECN=disabled, timestamps=disabled.";
-           FPSGain="Latency";
+           SimpleShort='Changes several Windows-wide network settings together.';
+           SimpleLong='This adjusts how Windows handles some internet traffic. Because the settings are shared by the PC, they can affect more than your game. A different driver, VPN or connection may react differently. Test only when investigating a specific problem.';
+           Impact='Global network/offload configuration';
+           ShortDesc='Sets TCP autotuning=normal, RSS=enabled, RSC/ECN/timestamps=disabled.';
+           LongDesc='Uses netsh global TCP configuration and checks all five managed values. These settings interact with network adapters and other tuning software. Reset uses the module reset values, not a saved snapshot of the previous global configuration.';
+           FPSGain='Global network/offload configuration';
            Check={ GO-TestTCPSettings };
            Apply={ foreach ($setting in @('autotuninglevel=normal','rss=enabled','rsc=disabled','ecncapability=disabled','timestamps=disabled')) {
                        GO-InvokeNative 'netsh.exe' @('int','tcp','set','global',$setting) | Out-Null
@@ -971,76 +1003,103 @@ namespace WindowsAcolyteInputV1 {
                     } } }
         @{ Id=18; Group="UI / Visual"; Risk=0; NeedsReboot=$false;
            Label="Transparency Effects (OFF)";
-           ShortDesc="Disables Windows transparency effects. Less GPU overhead for UI.";
-           LongDesc="Windows transparency effects consume GPU resources. Disabling yields minimal FPS gain but reduces UI overhead.";
-           FPSGain="0-1% FPS";
+           SimpleShort='Makes Windows panels solid instead of see-through.';
+           SimpleLong='Menus and panels lose their see-through appearance. Choose this if you prefer a simpler-looking desktop. It is a visual preference; do not expect a noticeable improvement in game performance.';
+           Impact='Desktop appearance';
+           ShortDesc='Sets the current-user EnableTransparency flag to 0.';
+           LongDesc='Changes Windows desktop transparency preference. It does not adjust game graphics settings or verify a frame-rate improvement. Reset enables transparency.';
+           FPSGain='Desktop appearance';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" "EnableTransparency") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" "EnableTransparency" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" "EnableTransparency" 1 } }
         @{ Id=19; Group="UI / Visual"; Risk=0; NeedsReboot=$false;
            Label="Window Animations (OFF)";
-           ShortDesc="Disables window minimize/maximize animations. Snappier UI response.";
-           LongDesc="Disables window animations for minimize/maximize. Snappier UI response.";
-           FPSGain="UI speed";
+           SimpleShort='Stops the animations when windows open, minimize or restore.';
+           SimpleLong='Windows move into place without the usual animation. That can make the desktop feel more immediate, even though it does not make a game draw more frames. You can turn the animations back on with Reset.';
+           Impact='Desktop motion/comfort';
+           ShortDesc='Sets the current-user MinAnimate preference to 0.';
+           LongDesc='Controls window animation preference in WindowMetrics. The effect concerns desktop transitions rather than game rendering. Reset uses the enabled value.';
+           FPSGain='Desktop motion/comfort';
            Check={ (GO-GetReg "HKCU:\Control Panel\Desktop\WindowMetrics" "MinAnimate") -eq "0" };
            Apply={ GO-SetStr "HKCU:\Control Panel\Desktop\WindowMetrics" "MinAnimate" "0" };
            Revert={ GO-SetStr "HKCU:\Control Panel\Desktop\WindowMetrics" "MinAnimate" "1" } }
         @{ Id=20; Group="UI / Visual"; Risk=0; NeedsReboot=$false;
            Label="Menu Show Delay = 0";
-           ShortDesc="Removes menu open delay. Instant menu response.";
-           LongDesc="Windows has a default 400ms menu show delay. Setting to 0 gives instant menu response.";
-           FPSGain="UI speed";
+           SimpleShort='Removes the configured wait before menus appear.';
+           SimpleLong='Windows menus can appear with less waiting. This changes menu behavior, not internet lag or the time between a mouse click and a game reacting. Faster menus can also feel too eager if you prefer a delay.';
+           Impact='Desktop menu timing';
+           ShortDesc='Sets MenuShowDelay to the string 0.';
+           LongDesc='Changes the current-user Desktop menu delay. Readback verifies the configured value, not measured game input latency. Reset uses the module menu-delay preset.';
+           FPSGain='Desktop menu timing';
            Check={ (GO-GetReg "HKCU:\Control Panel\Desktop" "MenuShowDelay") -eq "0" };
            Apply={ GO-SetStr "HKCU:\Control Panel\Desktop" "MenuShowDelay" "0" };
            Revert={ GO-SetStr "HKCU:\Control Panel\Desktop" "MenuShowDelay" "400" } }
         @{ Id=21; Group="UI / Visual"; Risk=0; NeedsReboot=$false;
            Label="Taskbar Animations (OFF)";
-           ShortDesc="Disables taskbar animations. Snappier taskbar response.";
-           LongDesc="Disables taskbar animations. Snappier response when hovering or clicking taskbar.";
-           FPSGain="UI speed";
+           SimpleShort='Turns off taskbar animations.';
+           SimpleLong='Taskbar items change without some of their usual motion effects. This is mainly a preference for how Windows looks and feels. It is not a proven game-FPS improvement.';
+           Impact='Taskbar appearance/comfort';
+           ShortDesc='Sets TaskbarAnimations to 0 for the current user.';
+           LongDesc='Changes Explorer taskbar animation configuration. It does not modify game simulation or rendering. Reset enables the preference.';
+           FPSGain='Taskbar appearance/comfort';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" "TaskbarAnimations") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" "TaskbarAnimations" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" "TaskbarAnimations" 1 } }
         @{ Id=22; Group="Filesystem / Storage"; Risk=0; NeedsReboot=$true;
            Label="NTFS Disable Last Access Time";
-           ShortDesc="Configures NTFS last-access timestamp updates as disabled.";
-           LongDesc="Disables last-access timestamp updates. Backup/archiving tools using these timestamps may be affected. Check reads the numeric NTFS configuration, including system-managed disabled state.";
-           FPSGain="SSD life";
+           SimpleShort='Stops one kind of automatic file-access timestamp update.';
+           SimpleLong='Windows can record when a file was last opened. This changes that record-keeping rule. Some backup or archive tools may depend on those timestamps, so check your tools before changing it. The files themselves are not deleted.';
+           Impact='File metadata / backup-tool compatibility';
+           ShortDesc='Configures NTFS last-access timestamp updates as disabled.';
+           LongDesc='Uses fsutil behavior and numeric NTFS state readback, including system-managed states. This is timestamp policy, not file deletion or a measured disk-speed gain. Check compatibility with timestamp-based workflows.';
+           FPSGain='File metadata / backup-tool compatibility';
            Check={ $v = GO-GetReg 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' 'NtfsDisableLastAccessUpdate'
                    $null -ne $v -and ([long]$v -band 3) -in @(1,3) };
            Apply={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disablelastaccess','1') | Out-Null };
            Revert={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disablelastaccess','0') | Out-Null } }
         @{ Id=23; Group="Filesystem / Storage"; Risk=0; NeedsReboot=$false;
            Label="NTFS Disable 8.3 Filenames";
-           ShortDesc="Disables creation of new DOS-compatible 8.3 names on all volumes.";
-           LongDesc="Sets global NTFS 8.3-name creation policy to 1 (disabled on all volumes). Existing names are not removed. Legacy programs/installers needing short paths may be affected. Reset selects per-volume policy (2); individual volume flags remain unchanged.";
-           FPSGain="Dir listing";
+           SimpleShort='Stops Windows from creating new old-style short filenames.';
+           SimpleLong='Older programs sometimes use short names such as PROGRA~1 instead of long folder names. This stops new short-name creation according to the global policy. Modern apps may be fine, but old software or installers can depend on it.';
+           Impact='Legacy software / filename compatibility';
+           ShortDesc='Sets the global NTFS 8.3 name-creation policy to 1.';
+           LongDesc='Writes the global fsutil 8dot3name policy and verifies its numeric state. Existing names are not stripped by this option. Reset uses per-volume policy 2 rather than a saved original policy.';
+           FPSGain='Legacy software / filename compatibility';
            Check={ GO-TestDWord 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' 'NtfsDisable8dot3NameCreation' 1 };
            Apply={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disable8dot3','1') | Out-Null };
            Revert={ GO-InvokeNative 'fsutil.exe' @('behavior','set','disable8dot3','2') | Out-Null } }
         @{ Id=24; Group="Filesystem / Storage"; Risk=1; NeedsReboot=$true;
            Label="Experimental NVMe Feature Override (26100+)";
-           ShortDesc="Writes an experimental feature override; does not verify native NVMe driver activation.";
-           LongDesc="Writes feature override 1176759950=1 on build 26100+. APPLIED only verifies the registry override. Actual driver support and performance effects depend on Windows build, storage hardware and driver. Experimental; never automatically preselected.";
+           SimpleShort='Writes an experimental storage setting; a working driver change is not confirmed.';
+           SimpleLong='This is an advanced experiment for certain newer Windows builds. It writes a setting related to storage features, but the app cannot confirm that the intended driver feature actually starts. APPLIED must not be read as a proven faster SSD.';
+           Impact='Experimental storage configuration; effect unverified';
+           ShortDesc='Writes the experimental feature override on build 26100 or newer.';
+           LongDesc='Availability is build-gated and readback verifies the managed override only. Native NVMe-driver activation, compatibility and performance are not verified. The option is not automatically recommended.';
            Available={ $script:GO_hw.Build -ge 26100 };
            UnavailableReason="Experimental override requires Windows build 26100 or later.";
-           FPSGain="SSD speed";
+           FPSGain='Experimental storage configuration; effect unverified';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" "1176759950") -eq 1 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" "1176759950" 1 };
            Revert={ GO-DelReg "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" "1176759950" } }
         @{ Id=25; Group="Filesystem / Storage"; Risk=0; NeedsReboot=$true;
            Label="Disable Paging Executive";
-           ShortDesc="Prevents kernel/driver code paging to disk. Uses ~32MB more RAM but faster kernel.";
-           LongDesc="Prevents paging of kernel and driver code to disk. Minimal risk (~32MB more RAM usage). Faster kernel operations.";
-           FPSGain="Kernel speed";
+           SimpleShort='Asks Windows to keep certain system code in memory.';
+           SimpleLong='Windows normally chooses what to keep in fast memory and what can wait on storage. This changes a rule for some system code. It does not add RAM or guarantee that a game loads faster, and it can change memory usage.';
+           Impact='System memory policy; benefit not measured';
+           ShortDesc='Sets DisablePagingExecutive to 1.';
+           LongDesc='Changes the Memory Management paging-executive configuration. Stored readback is not proof of a specific memory residency pattern, RAM amount saved/used, or game-performance gain. Reset uses the module reset value.';
+           FPSGain='System memory policy; benefit not measured';
            Check={ (GO-GetReg "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive") -eq 1 };
            Apply={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 1 };
            Revert={ GO-SetDW "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" "DisablePagingExecutive" 0 } }
         @{ Id=26; Group="Privacy / Telemetry"; Risk=1; NeedsReboot=$false;
            Label="Disable Telemetry";
-           ShortDesc="Requests telemetry policy level 0 and disables/stops DiagTrack.";
-           LongDesc="Sets AllowTelemetry=0 and disables/stops DiagTrack. Supported policy levels depend on the Windows edition; this is not proof that all Windows data collection has stopped. Reset removes the policy and restores automatic service startup.";
-           FPSGain="Privacy";
+           SimpleShort='Requests less Windows diagnostic collection and stops one related service.';
+           SimpleLong='This changes a diagnostic-data preference and stops one Windows service. It is not a switch that blocks all tracking everywhere. What Windows honors can depend on the Windows edition and other rules, and some features may behave differently.';
+           Impact='Privacy / diagnostic-service behavior';
+           ShortDesc='Requests AllowTelemetry=0 and stops/disables DiagTrack.';
+           LongDesc='Checks the policy request plus DiagTrack startup type and running status. Effective diagnostic limits depend on Windows edition and policy. This does not disable all telemetry, application tracking or internet communication.';
+           FPSGain='Privacy / diagnostic-service behavior';
            Check={ $service = Get-Service -Name 'DiagTrack' -EA Stop
                    (GO-GetReg "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection" "AllowTelemetry") -eq 0 -and
                    $service.StartType -eq 'Disabled' -and $service.Status -eq 'Stopped' };
@@ -1051,25 +1110,34 @@ namespace WindowsAcolyteInputV1 {
                     Set-Service -Name "DiagTrack" -StartupType Automatic -EA Stop } }
         @{ Id=27; Group="Privacy / Telemetry"; Risk=0; NeedsReboot=$false;
            Label="Search History (OFF)";
-           ShortDesc="Disables device search history tracking. Privacy improvement.";
-           LongDesc="Disables device search history tracking by Windows Search.";
-           FPSGain="Privacy";
+           SimpleShort='Stops Windows from keeping this device search history.';
+           SimpleLong='This turns off one Windows search-history preference on this account. It does not erase every search record from every app or website. Use it for privacy preference, not as a way to improve gaming speed.';
+           Impact='Windows search privacy preference';
+           ShortDesc='Sets IsDeviceSearchHistoryEnabled to 0.';
+           LongDesc='Changes the current-user Windows search-history preference. It is not a complete history cleanup and does not control third-party applications or online account history. Reset enables the preference.';
+           FPSGain='Windows search privacy preference';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" "IsDeviceSearchHistoryEnabled") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" "IsDeviceSearchHistoryEnabled" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" "IsDeviceSearchHistoryEnabled" 1 } }
         @{ Id=28; Group="Privacy / Telemetry"; Risk=0; NeedsReboot=$false;
            Label="Share Across Devices (OFF)";
-           ShortDesc="Disables cross-device sharing. Reduces background network activity.";
-           LongDesc="Disables Windows cross-device sharing feature (CDP). Reduces background network activity and telemetry.";
-           FPSGain="Privacy";
+           SimpleShort='Turns off the managed share-across-devices preference.';
+           SimpleLong='If you do not want Windows to share supported app experiences between devices, this switches off that preference. Features that rely on it may stop working. It is not a full network firewall or a guaranteed speed boost.';
+           Impact='Cross-device feature availability';
+           ShortDesc='Sets CdpSessionUserAuthzPolicy to 0.';
+           LongDesc='Changes the current-user cross-device sharing policy value. It does not remove all device communication or verify that every cross-device service is inactive. Reset enables this managed preference.';
+           FPSGain='Cross-device feature availability';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Windows\CurrentVersion\CDP" "CdpSessionUserAuthzPolicy") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\CDP" "CdpSessionUserAuthzPolicy" 0 };
            Revert={ GO-SetDW "HKCU:\Software\Microsoft\Windows\CurrentVersion\CDP" "CdpSessionUserAuthzPolicy" 1 } }
         @{ Id=29; Group="Dynamic Lighting"; Risk=0; NeedsReboot=$false;
            Label="Dynamic Lighting (OFF)";
-           ShortDesc="Disables Windows 11 Dynamic Lighting for RGB peripherals. Use vendor software instead.";
-           LongDesc="Disables Windows 11 Dynamic Lighting for RGB peripherals. Allows vendor software to control RGB without conflicts.";
-           FPSGain="Compatibility";
+           SimpleShort='Turns off Windows control of supported RGB lighting.';
+           SimpleLong='This changes who can manage compatible colored lights on devices. It can be useful if you prefer your device maker software instead. It does not make the lights or hardware faster, and vendor software still needs its own configuration.';
+           Impact='RGB lighting control / software compatibility';
+           ShortDesc='Disables both managed Windows Dynamic Lighting flags.';
+           LongDesc='Checks the two current-user lighting configuration values. This does not configure vendor RGB software or establish that a particular device supports Dynamic Lighting. Reset uses the module enabled values.';
+           FPSGain='RGB lighting control / software compatibility';
            Check={ (GO-GetReg "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled") -eq 0 -and
                    (GO-GetReg "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp") -eq 0 };
            Apply={ GO-SetDW "HKCU:\Software\Microsoft\Lighting" "AmbientLightingEnabled" 0
@@ -1078,9 +1146,12 @@ namespace WindowsAcolyteInputV1 {
                     GO-SetDW "HKCU:\Software\Microsoft\Lighting" "ControlledByForegroundApp" 1 } }
         @{ Id=30; Group="Input & USB Stability"; Risk=1; NeedsReboot=$true; Optional=$true;
            Label="USBHUB3 Selective-Suspend Override (Experimental / Optional)";
-           ShortDesc="Optional stability experiment: sets USBHUB3 DisableSelectiveSuspend as DWORD 1.";
-           LongDesc="Sets HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\DisableSelectiveSuspend to REG_DWORD 1. Saves the original value/type or absence before writing. This exact service-level override is not reliably documented for all Windows USBHUB3 versions: APPLIED proves the stored DWORD only, not driver behavior. No FPS benefit is claimed. Reset restores the saved original value, never an assumed default.";
-           FPSGain="Stability only";
+           SimpleShort='Tests an advanced USB sleep-related driver setting.';
+           SimpleLong='Try this only when investigating a specific USB sleep/wake problem. The app can confirm that it saved the setting, but not that your USB driver uses it. It is optional and does not guarantee a cure for disconnects or faster mouse input.';
+           Impact='Experimental USB troubleshooting';
+           ShortDesc='Sets USBHUB3 DisableSelectiveSuspend as DWORD 1.';
+           LongDesc='Experimental driver override. Readback verifies value presence/type, not driver effect. Apply saves the typed original value; Reset restores that baseline. Excluded from bulk selection and requires explicit opt-in.';
+           FPSGain='Experimental USB troubleshooting';
            Available={ Test-Path -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\USBHUB3' };
            UnavailableReason="USBHUB3 service key is absent; no unsupported driver key will be created.";
            Check={ $state = GO-ReadUsbRegistry; $state.Exists -and $state.Kind -eq 'DWord' -and [long]$state.Data -eq 1 };
@@ -1088,9 +1159,12 @@ namespace WindowsAcolyteInputV1 {
            Revert={ GO-ResetUsbRegistryOverride } }
         @{ Id=31; Group="Input & USB Stability"; Risk=1; NeedsReboot=$true; Optional=$true;
            Label="USB Root Hubs: Prevent Power-Off (Allow... unchecked)";
-           ShortDesc="Optional stability setting: removes permission to power off present USB root hubs.";
-           LongDesc="Sets the supported per-device WMI energy-management Enable flag to False for every currently present USB root hub. This corresponds to leaving Allow the computer to turn off this device to save power unchecked. Saves each hub's original Boolean by exact device/provider identity; Reset restores those states. No USB device is disabled, restarted or re-enumerated. Unsupported hubs block Apply; disconnected backup entries are retained until they can be restored. This is distinct from the active power plan's selective-suspend policy. No FPS improvement or guaranteed cure for disconnects is claimed.";
-           FPSGain="Stability only";
+           SimpleShort='Stops supported USB hubs from being powered off by this setting.';
+           SimpleLong='A USB hub is a junction connecting several USB devices. This removes permission for Windows to power off each currently supported hub to save energy. It can use more power. It does not unplug or restart your mouse, and cannot fix every USB fault.';
+           Impact='USB hub power policy / possible battery trade-off';
+           ShortDesc='Sets supported present root-hub MSPower_DeviceEnable.Enable=False.';
+           LongDesc='Equivalent to leaving Allow the computer to turn off this device to save power unchecked. Baselines are saved by exact provider/device identity. Unsupported hubs block Apply; disconnected originals remain available for a later Reset.';
+           FPSGain='USB hub power policy / possible battery trade-off';
            Available={ GO-UsbHubControlAvailable };
            UnavailableReason="One or more present USB root hubs lack unambiguous WMI power control, or no root hub is present.";
            Check={ GO-TestUsbHubPowerOff };
@@ -1098,30 +1172,42 @@ namespace WindowsAcolyteInputV1 {
            Revert={ GO-ResetUsbHubPowerOff } }
         @{ Id=32; Group="Input & USB Stability"; Risk=1; NeedsReboot=$false; Optional=$true;
            Label="Filter Keys + activation shortcut (OFF / Optional)";
-           ShortDesc="Disables Filter Keys and its Right Shift activation shortcut for the current Windows user.";
-           LongDesc="Turns off Filter Keys and its activation shortcut using the documented Windows API, not guessed registry flags. Existing acceptance/repeat/bounce timings and unrelated flags are preserved. This is an accessibility preference, not a proven raw-input latency boost. Do not apply if you need this assistive feature. Original settings are saved per Windows user and restored by Reset.";
-           FPSGain="No FPS gain claimed";
+           SimpleShort='Turns off Filter Keys and the hold-Right-Shift shortcut.';
+           SimpleLong='Filter Keys can ignore brief or repeated key presses to help people type. Turn it off only if you do not need that help. The shortcut is disabled too, so holding Right Shift does not enable it accidentally. Reset restores the saved preference.';
+           Impact='Keyboard accessibility / accidental activation';
+           ShortDesc='Clears Filter Keys ON/shortcut flags via SystemParametersInfo.';
+           LongDesc='Preserves acceptance/repeat/bounce timings and unrelated persistent flags. Uses a per-user original-state backup. This is an accessibility choice, not a proven raw-input latency optimization. Optional and excluded from bulk selection.';
+           FPSGain='Keyboard accessibility / accidental activation';
            Check={ ((GO-ReadInputState 32).Flags -band 5) -eq 0 };
            Apply={ GO-ApplyInputOption 32 }; Revert={ GO-ResetInputOption 32 } }
         @{ Id=33; Group="Input & USB Stability"; Risk=1; NeedsReboot=$false; Optional=$true;
            Label="Sticky Keys + activation shortcut (OFF / Optional)";
-           ShortDesc="Disables Sticky Keys and its five-times-Shift activation shortcut for the current Windows user.";
-           LongDesc="Turns off Sticky Keys and its activation shortcut, preserving other persistent preferences. Helps prevent accidental activation, not USB latency. Only apply if you do not need this accessibility feature. Reset restores the saved per-user configuration, not transient held/latched modifier keys.";
-           FPSGain="No FPS gain claimed";
+           SimpleShort='Turns off Sticky Keys and the five-Shift-press shortcut.';
+           SimpleLong='Sticky Keys lets you press combinations such as Ctrl and another key one at a time. Turn it off only if you do not need that help. Pressing Shift five times will not activate it accidentally. Reset can turn the saved accessibility preference back on.';
+           Impact='Keyboard accessibility / accidental activation';
+           ShortDesc='Clears Sticky Keys ON/shortcut flags via SystemParametersInfo.';
+           LongDesc='Preserves other persistent flags and restores the saved per-user configuration on Reset, not transient latched modifier keys. This is optional accessibility behavior, not a USB-latency fix.';
+           FPSGain='Keyboard accessibility / accidental activation';
            Check={ ((GO-ReadInputState 33).Flags -band 5) -eq 0 };
            Apply={ GO-ApplyInputOption 33 }; Revert={ GO-ResetInputOption 33 } }
         @{ Id=34; Group="Input & USB Stability"; Risk=1; NeedsReboot=$false; Optional=$true;
            Label="USB Selective Suspend: active power plan AC + DC (OFF / Optional)";
-           ShortDesc="Sets USB selective suspend to Disabled for AC and DC in the currently active power plan.";
-           LongDesc="Targets idle/suspend-resume troubleshooting, not a guaranteed improvement during active gaming. Saves each edited power plan's original AC/DC indexes before writing. Repeated Apply after a plan switch captures that plan separately. Reset restores all saved plans and retains the baseline on failures or missing plans. An inactive saved plan is not deliberately activated. The Ultimate Performance module also writes this setting: applying it again can overwrite a restored value. Microsoft recommends leaving selective suspend enabled unless addressing a specific issue.";
-           FPSGain="Stability troubleshooting only";
+           SimpleShort='Stops USB selective sleep in the currently selected power plan.';
+           SimpleLong='This asks the active power plan to keep USB devices from using this selective sleep feature, both plugged in and on battery. Use it for a specific sleep/wake problem rather than as a normal speed tweak. Switching power plans can change the status again.';
+           Impact='USB power-plan troubleshooting / energy use';
+           ShortDesc='Sets active-plan USB selective-suspend AC and DC indexes to 0.';
+           LongDesc='Saves each edited plan GUID and its separate original AC/DC indexes. Reset restores saved plans and retains missing/failed baselines; it does not deliberately activate an inactive plan. Other power tools can overwrite the policy. Microsoft recommends keeping selective suspend enabled unless troubleshooting.';
+           FPSGain='USB power-plan troubleshooting / energy use';
            Check={ $plan=GO-GetUsbPlanState; $plan.AC -eq 0 -and $plan.DC -eq 0 };
            Apply={ GO-DisableUsbPlanSuspend }; Revert={ GO-ResetUsbPlanSuspend } }
         @{ Id=35; Group="Input & USB Stability"; Risk=0; NeedsReboot=$false; Optional=$true;
            Label="Enhance Pointer Precision (OFF / Desktop comfort / Optional)";
-           ShortDesc="Disables Windows pointer acceleration for desktop/non-Raw input; does not improve actual Raw Mouse Input.";
-           LongDesc="Sets Windows mouse acceleration to off through SystemParametersInfo while preserving both threshold values and pointer speed. This changes desktop/non-Raw pointer behavior only. Genuine Raw Mouse Input bypasses Windows pointer ballistics; no latency, connection or FPS benefit is claimed. Reset restores the original per-user acceleration/threshold values. Use the separate speed control below for an explicit pointer-speed change.";
-           FPSGain="Desktop comfort only";
+           SimpleShort='Makes desktop pointer movement independent of movement speed.';
+           SimpleLong='With pointer acceleration off, moving the mouse faster no longer adds this Windows acceleration to desktop pointer movement. This changes how the pointer feels outside games that use genuine Raw Input. It does not change the sensor DPI or make the mouse connection faster.';
+           Impact='Desktop pointer feel; no Raw Input/FPS claim';
+           ShortDesc='Disables Windows mouse acceleration via SystemParametersInfo.';
+           LongDesc='Preserves thresholds and pointer speed while saving the original per-user state. Genuine Raw Mouse Input bypasses Windows pointer ballistics. Reset restores saved settings. Use the separate speed control for an explicit desktop-speed change.';
+           FPSGain='Desktop pointer feel; no Raw Input/FPS claim';
            Check={ (GO-ReadInputState 35).Values[2] -eq 0 };
            Apply={ GO-ApplyInputOption 35 }; Revert={ GO-ResetInputOption 35 } }
     )
@@ -1157,37 +1243,18 @@ namespace WindowsAcolyteInputV1 {
         param($Risk)
         switch ($Risk) { 0{return Get-PowerToolsBrush "Success"} 1{return Get-PowerToolsBrush "Warning"} 2{return Get-PowerToolsBrush "Danger"} }
     }
-    function Global:GO-GetRiskLabel { param($Risk) switch ($Risk) { 0{"SAFE"} 1{"MODERATE"} 2{"HIGH RISK"} } }
+    function Global:GO-GetRiskLabel { param($Risk) switch ($Risk) { 0{"LOW"} 1{"MODERATE"} 2{"HIGH"} } }
 
     function Global:GO-UpdateApplyState {
-        $any = $false; $totalGain = 0.0; $latencyGain = $false; $stabilityOnly = $true
-        $impact = @()
-        foreach ($id in $script:GO_checkboxes.Keys) {
-            if ($script:GO_checkboxes[$id].IsChecked -eq $true -and $script:GO_checkboxes[$id].IsEnabled) {
-                $any = $true
-                $tweak = $script:GO_tweaks | Where-Object { $_.Id -eq $id } | Select-Object -First 1
-                if (-not $tweak.Optional) { $stabilityOnly = $false }
-                if ($tweak -and $tweak.FPSGain -match "(\d+)(?:-(\d+))?% FPS") {
-                    $low = [double]$Matches[1]; $high = if ($Matches[2]) { [double]$Matches[2] } else { $low }
-                    $totalGain += ($low + $high) / 2.0
-                }
-                if ($tweak -and $tweak.FPSGain -match "Latency|ping") { $latencyGain = $true }
-                if ($tweak.Note) { $impact += "#$($tweak.Id): $($tweak.Note)" }
-            }
-        }
-        $script:GO_applyBtn.IsEnabled = $any
-        if ($any) {
-            $text = if ($stabilityOnly) { 'Input / USB stability or comfort options selected; no FPS gain claimed' } else { "Estimated FPS gain: ~$([math]::Round($totalGain,1))%" }
-            if ($latencyGain) { $text += " | Plus latency/ping improvements" }
-            $script:GO_estimate.Text = "$text | All estimates without warranty"
-        } else { $script:GO_estimate.Text = "No tweaks selected. All estimates without warranty." }
-        if ($script:GO_impactText) {
-            $script:GO_impactText.Text = if ($impact.Count) { $impact -join "`n" } else {
-                'APPLIED = configuration verified. Reboot-marked settings may not be effective until restart.'
-            }
+        $selected=@($script:GO_tweaks | Where-Object { $cb=$script:GO_checkboxes[$_.Id];$cb -and $cb.IsEnabled -and $cb.IsChecked })
+        $script:GO_applyBtn.IsEnabled=$selected.Count -gt 0
+        $scope=if(@($selected | Where-Object { -not $_.Optional }).Count -eq 0){'input/USB stability or comfort '}else{''}
+        $script:GO_estimate.Text=if($selected.Count){"$($selected.Count) ${scope}change(s) selected. No FPS or latency improvement is guaranteed."}else{'No changes selected. Read the descriptions and choose only what you need.'}
+        if($script:GO_impactText){
+            $notes=@($selected | Where-Object Note | ForEach-Object {"#$($_.Id): $($_.Note)"})
+            $script:GO_impactText.Text=if($notes.Count){$notes -join "`n"}else{'APPLIED means the requested configuration is present, including OFF targets. Restart may still be required.'}
         }
     }
-
     function Global:GO-SelectTweaks {
         param([ValidateSet('All','Missing','Safe','None','Recommended')][string]$Mode)
         # Deterministic order; bulk selections preserve already active mutex presets.
@@ -1224,73 +1291,92 @@ namespace WindowsAcolyteInputV1 {
         GO-UpdateApplyState
     }
 
+    function Global:GO-NewText {
+        param([string]$Text, [int]$Size=12, [string]$Brush='TextDark', [switch]$Bold)
+        $label = [System.Windows.Controls.TextBlock]::new()
+        $label.Text=$Text; $label.FontSize=$Size; $label.TextWrapping='Wrap'
+        $label.Foreground=Get-PowerToolsBrush $Brush
+        if ($Bold) { $label.FontWeight='SemiBold' }
+        return $label
+    }
+
+    function Global:GO-AddDescriptionSection {
+        param($Panel, [string]$Heading, [string]$Text)
+        $headingText=GO-NewText $Heading 10 'Primary' -Bold
+        $headingText.Margin='0,10,0,3'
+        [void]$Panel.Children.Add($headingText)
+        [void]$Panel.Children.Add((GO-NewText $Text 12))
+    }
+
+    function Global:GO-GetPresentationState {
+        param($Tweak, $States)
+        $state=if ($States -and $States.ContainsKey($Tweak.Id)) { $States[$Tweak.Id] } else { GO-GetTweakState $Tweak }
+        $status=$state.Status
+        if (-not $state.Applied -and $status -eq 'MISSING' -and $Tweak.Mutex -and $States) {
+            foreach ($other in $script:GO_tweaks) {
+                if ($other.Id -ne $Tweak.Id -and $other.Mutex -eq $Tweak.Mutex -and $States[$other.Id].Applied) { $status='ALTERNATIVE'; break }
+            }
+        }
+        $explanation=switch ($status) {
+            'APPLIED' {'The requested configuration is present. For an OFF option, this means the feature is configured OFF. A restart may still be needed.'}
+            'MISSING' {'This requested configuration is not present. Your current setting may be a valid default; you do not have to apply every option.'}
+            'ALTERNATIVE' {'The other preset is already active. Choosing this one replaces it; both cannot be active together.'}
+            'UNAVAILABLE' {'This option cannot be used on the currently detected setup.'}
+            default {'The current setting could not be checked. It is unknown, rather than confirmed missing. Apply is blocked.'}
+        }
+        $brush=if ($state.Applied) {'Success'} elseif ($status -eq 'CHECK ERROR') {'Danger'} else {'Warning'}
+        return @{Status=$status;Applied=$state.Applied;Message=$explanation;CheckMessage=$state.Message;Brush=$brush}
+    }
+
+    function Global:GO-CreateDetailWindow {
+        param($Tweak)
+        $presentation=GO-GetPresentationState $Tweak $script:GO_states
+        $dw=[System.Windows.Window]::new()
+        $dw.Title='Tweak details - ' + $Tweak.Label
+        $dw.Width=720; $dw.Height=720; $dw.MinWidth=500; $dw.MinHeight=420
+        $dw.FontFamily='Segoe UI'; $dw.WindowStartupLocation='CenterOwner'
+        $dw.Background=Get-PowerToolsBrush 'Background'
+        foreach($key in $Global:PTS_Brush.Keys){$dw.Resources["Dyn$key"]=$Global:PTS_Brush[$key]}
+        $layout=[System.Windows.Controls.Grid]::new(); $layout.Margin=20
+        $layout.Background=Get-PowerToolsBrush 'Background'
+        foreach ($height in @('*','Auto')) {
+            $row=[System.Windows.Controls.RowDefinition]::new();$row.Height=$height;[void]$layout.RowDefinitions.Add($row)
+        }
+        $scroll=[System.Windows.Controls.ScrollViewer]::new()
+        $scroll.VerticalScrollBarVisibility='Auto'; $scroll.HorizontalScrollBarVisibility='Disabled'
+        $panel=[System.Windows.Controls.StackPanel]::new();$panel.Margin='0,0,14,0'
+        [void]$panel.Children.Add((GO-NewText $Tweak.Group.ToUpper() 11 'Primary' -Bold))
+        $title=GO-NewText $Tweak.Label 22 'TextDark' -Bold;$title.Margin='0,8,0,12';[void]$panel.Children.Add($title)
+        $status=GO-NewText ('STATUS: ' + $presentation.Status) 14 'TextDark' -Bold
+        $status.Name='DetailStatus';[void]$panel.Children.Add($status)
+        [void]$panel.Children.Add((GO-NewText $presentation.Message 12 'TextMid'))
+        GO-AddDescriptionSection $panel 'IN PLAIN ENGLISH' $(if ($Tweak.SimpleLong) {$Tweak.SimpleLong} else {$Tweak.ShortDesc})
+        GO-AddDescriptionSection $panel 'TECHNICAL DETAILS' $Tweak.LongDesc
+        GO-AddDescriptionSection $panel 'RISK LEVEL' ((GO-GetRiskLabel $Tweak.Risk) + '. Lower risk does not mean risk-free.')
+        GO-AddDescriptionSection $panel 'IMPACT / EXPECTED EFFECT' $(if ($Tweak.Impact) {$Tweak.Impact} else {'Effect depends on your system; no measured improvement is established here.'})
+        GO-AddDescriptionSection $panel 'RESTART REQUIRED' $(if ($Tweak.NeedsReboot) {'Yes. APPLIED verifies stored configuration, not that a restart-dependent change is already running.'} else {'No restart is requested by this option. Applications may still need to reload a preference.'})
+        if ($Tweak.Note) { GO-AddDescriptionSection $panel 'IMPORTANT BEFORE APPLY / RESET' $Tweak.Note }
+        if ($presentation.Status -in @('UNAVAILABLE','CHECK ERROR') -or $Tweak.Id -eq 34) { GO-AddDescriptionSection $panel 'CHECK INFORMATION' $presentation.CheckMessage }
+        $scroll.Content=$panel;[void]$layout.Children.Add($scroll)
+        $close=[System.Windows.Controls.Button]::new();$close.Content='Close';$close.Padding='20,8';$close.Margin='0,16,0,0';$close.HorizontalAlignment='Right'
+        $close.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+        $captured=$dw;$close.Add_Click({$captured.Close()}.GetNewClosure())
+        [System.Windows.Controls.Grid]::SetRow($close,1);[void]$layout.Children.Add($close)
+        $dw.Content=$layout
+        return $dw
+    }
+
     function Global:GO-ShowDetailWindow {
         param($Tweak)
         if ($script:GO_detailWindows.ContainsKey($Tweak.Id) -and $script:GO_detailWindows[$Tweak.Id].IsVisible) {
-            $script:GO_detailWindows[$Tweak.Id].Activate(); return
+            $script:GO_detailWindows[$Tweak.Id].Close()
         }
-        [xml]$dXaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Tweak Details" Width="560" Height="440"
-        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI"
-        ResizeMode="CanResize" MinWidth="420" MinHeight="320">
-    <Grid Margin="22">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" x:Name="DC" Foreground="{DynamicResource DynAccent}" FontSize="10" FontWeight="Bold" Margin="0,0,0,4"/>
-        <TextBlock Grid.Row="1" x:Name="DT" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,14"/>
-        <Border Grid.Row="2" x:Name="DMB" BorderThickness="1.5" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
-            <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="RISK LEVEL" Foreground="{DynamicResource DynSectionLabel}" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="DR" FontSize="13" FontWeight="SemiBold"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1">
-                    <TextBlock Text="PERFORMANCE GAIN" Foreground="{DynamicResource DynSectionLabel}" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="DG" Foreground="#2A9D5C" FontSize="13" FontWeight="SemiBold"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="REBOOT REQUIRED" Foreground="{DynamicResource DynSectionLabel}" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="DRB" FontSize="13" FontWeight="SemiBold"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-        <Border Grid.Row="3" x:Name="DDB" BorderThickness="1.5" CornerRadius="8" Padding="16,14">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <TextBlock x:Name="DLD" FontSize="13" TextWrapping="Wrap" LineHeight="20"/>
-            </ScrollViewer>
-        </Border>
-        <Button Grid.Row="4" x:Name="DCB" Content="Close" Height="38" Padding="20,6" HorizontalAlignment="Right" Margin="0,14,0,0"/>
-    </Grid>
-</Window>
-"@
-        $r = New-Object System.Xml.XmlNodeReader $dXaml
-        $dw = [Windows.Markup.XamlReader]::Load($r)
-        $dw.Resources.Add("SecondaryButton", (Get-PowerToolsWindow).FindResource("SecondaryButton"))
-        $dw.Resources.Add("PrimaryButton",   (Get-PowerToolsWindow).FindResource("PrimaryButton"))
-        $dw.Owner = Get-PowerToolsWindow
-        $dw.Background = $Global:PTS_Brush["Background"]
-        $dw.FindName("DT").Foreground  = $Global:PTS_Brush["TextDark"]
-        $dw.FindName("DMB").Background = $Global:PTS_Brush["Surface"]; $dw.FindName("DMB").BorderBrush = $Global:PTS_Brush["Border"]
-        $dw.FindName("DDB").Background = $Global:PTS_Brush["Surface"]; $dw.FindName("DDB").BorderBrush = $Global:PTS_Brush["Border"]
-        $dw.FindName("DLD").Foreground = $Global:PTS_Brush["TextDark"]
-        $dw.FindName("DRB").Foreground = $Global:PTS_Brush["TextDark"]
-        $dw.FindName("DC").Text  = $Tweak.Group.ToUpper()
-        $dw.FindName("DT").Text  = $Tweak.Label
-        $dw.FindName("DR").Text  = GO-GetRiskLabel $Tweak.Risk
-        $dw.FindName("DR").Foreground = GO-GetRiskColor $Tweak.Risk
-        $dw.FindName("DG").Text  = $Tweak.FPSGain
-        $dw.FindName("DRB").Text = if ($Tweak.NeedsReboot) { "Yes" } else { "No" }
-        $dw.FindName("DLD").Text = ("$($Tweak.LongDesc)`n`n$($Tweak.Note)").Trim()
-        $dcb = $dw.FindName("DCB")
-        if ($dcb) { $dcb.Style = $dw.FindResource("SecondaryButton"); $capturedDw = $dw; $dcb.Add_Click({ $capturedDw.Close() }.GetNewClosure()) }
-        $script:GO_detailWindows[$Tweak.Id] = $dw
+        $dw=GO-CreateDetailWindow $Tweak
+        $dw.Owner=Get-PowerToolsWindow
+        $script:GO_detailWindows[$Tweak.Id]=$dw
         $dw.Show()
     }
+
 
     function Global:GO-RenderInputExtras {
         $panel = [System.Windows.Controls.StackPanel]::new()
@@ -1300,9 +1386,10 @@ namespace WindowsAcolyteInputV1 {
         $title.FontWeight = 'Bold'; $title.FontSize = 10; $title.Foreground = Get-PowerToolsBrush 'Primary'
         $panel.Children.Add($title) | Out-Null
         $description = [System.Windows.Controls.TextBlock]::new()
-        $description.Text = 'Current Windows user only. Desktop/non-Raw pointer speed, not mouse DPI or a Raw Input/FPS improvement. Moving the slider only selects a target; Apply Speed changes Windows. Reset restores your saved original. This custom speed target is not saved in gaming profiles.'
+        $description.Text = 'IN PLAIN ENGLISH: Choose how far the desktop pointer moves for the same mouse movement. Moving the slider changes only your target; click Apply Speed to change Windows. This is not mouse-sensor DPI or a game-FPS boost.'
         $description.TextWrapping = 'Wrap'; $description.FontSize = 11; $description.Margin = '0,4,0,4'
         $description.Foreground = Get-PowerToolsBrush 'TextMuted'; $panel.Children.Add($description) | Out-Null
+        $null=GO-AddDescriptionSection $panel 'TECHNICAL SUMMARY' 'Current-user desktop/non-Raw pointer speed, range 1-20. Reset restores the saved original. Genuine Raw Input is unaffected. This separate target is not included in saved gaming profiles.'
         $controls = [System.Windows.Controls.WrapPanel]::new()
         $script:GO_speedSlider = [System.Windows.Controls.Slider]::new()
         $script:GO_speedSlider.Minimum=1; $script:GO_speedSlider.Maximum=20; $script:GO_speedSlider.TickFrequency=1
@@ -1354,6 +1441,8 @@ namespace WindowsAcolyteInputV1 {
         $updateTitle.Text='WINDOWS UPDATE - READ-ONLY'; $updateTitle.FontSize=10; $updateTitle.FontWeight='Bold'
         $updateTitle.Foreground=Get-PowerToolsBrush 'Primary'; $updateTitle.Margin='0,12,0,0'
         $panel.Children.Add($updateTitle) | Out-Null
+        $null=GO-AddDescriptionSection $panel 'IN PLAIN ENGLISH' 'Read the update records already stored on this PC. This does not search the internet or prove that all updates are installed. Open Windows Update to check with Windows itself.'
+        $null=GO-AddDescriptionSection $panel 'TECHNICAL SUMMARY' 'Read-only local Windows Update history and pending-restart status. Availability remains UNKNOWN; this control does not request a scan, installation or restart.'
         $script:GO_updateText=[System.Windows.Controls.TextBlock]::new()
         $script:GO_updateText.Text=if ($script:GO_updateStatus) {$script:GO_updateStatus} else {'WINDOWS UPDATE - local status not read yet. Availability is UNKNOWN; use Read Local Status or open Windows Update.'}
         $script:GO_updateText.TextWrapping='Wrap'; $script:GO_updateText.FontSize=11; $script:GO_updateText.Margin='0,10,0,6'
@@ -1380,116 +1469,84 @@ namespace WindowsAcolyteInputV1 {
 
     function Global:GO-RenderList {
         param($States)
-        $script:GO_states = if ($States) { $States } else { GO-GetStateSnapshot }
-        $script:GO_tweakList.Items.Clear(); $script:GO_checkboxes.Clear(); $lastGroup = ""
+        $script:GO_states=if ($States) {$States} else {GO-GetStateSnapshot}
+        $script:GO_tweakList.Items.Clear();$script:GO_checkboxes.Clear();$script:GO_cardViews=@{};$lastGroup=''
+        $guide=[System.Windows.Controls.Border]::new();$guide.Padding=14;$guide.Margin='8,4,8,10';$guide.CornerRadius=8
+        $guide.Background=Get-PowerToolsBrush 'AccentSoft';$guide.BorderBrush=Get-PowerToolsBrush 'Accent';$guide.BorderThickness=1
+        $guidePanel=[System.Windows.Controls.StackPanel]::new()
+        [void]$guidePanel.Children.Add((GO-NewText 'HOW TO READ THIS PAGE' 12 'TextDark' -Bold))
+        [void]$guidePanel.Children.Add((GO-NewText 'APPLIED = the requested setting is present (including OFF settings). MISSING = that target is not present, not necessarily a problem. ALTERNATIVE = another exclusive preset is active. UNAVAILABLE / CHECK ERROR = cannot apply or cannot verify.' 12))
+        $guideNote=GO-NewText 'Checkboxes select pending changes; they are not on/off switches. Risk describes possible downsides, not FPS benefit. Low risk is not risk-free. Restart labels matter even when a setting says APPLIED.' 11 'TextMid';$guideNote.Margin='0,8,0,0';[void]$guidePanel.Children.Add($guideNote)
+        $guide.Child=$guidePanel;[void]$script:GO_tweakList.Items.Add($guide)
         foreach ($t in $script:GO_tweaks) {
             if ($t.Group -ne $lastGroup) {
-                if ($lastGroup -ne "") {
-                    $sep = New-Object System.Windows.Controls.Separator
-                    $sep.Margin = "8,4,8,0"; $sep.Background = Get-PowerToolsBrush "Divider"
-                    $script:GO_tweakList.Items.Add($sep) | Out-Null
-                }
-                $hdr = New-Object System.Windows.Controls.TextBlock
-                $hdr.Text = $t.Group.ToUpper(); $hdr.Foreground = Get-PowerToolsBrush "Primary"
-                $hdr.FontSize = 9; $hdr.FontWeight = "Bold"; $hdr.Margin = "8,10,8,2"
-                $script:GO_tweakList.Items.Add($hdr) | Out-Null
-                $lastGroup = $t.Group
+                $heading=GO-NewText $t.Group.ToUpper() 15 'Primary' -Bold;$heading.Margin='8,18,8,6'
+                [void]$script:GO_tweakList.Items.Add($heading);$lastGroup=$t.Group
             }
-            $state = $script:GO_states[$t.Id]
-            $isOk = $state.Applied
-            $isAlternative = $false
-            if (-not $isOk -and $t.Mutex) {
-                foreach ($other in $script:GO_tweaks) {
-                    if ($other.Id -ne $t.Id -and $other.Mutex -eq $t.Mutex -and $script:GO_states[$other.Id].Applied) {
-                        $isAlternative = $true
-                        break
-                    }
-                }
-            }
-            $row = New-Object System.Windows.Controls.Grid
-            $row.Margin = "8,2,8,2"
-            $row.MinHeight = 28
-            $row.HorizontalAlignment = "Stretch"
-            foreach ($w in @("*","100","72","60","52")) {
-                $col = New-Object System.Windows.Controls.ColumnDefinition; $col.Width = $w
-                $row.ColumnDefinitions.Add($col) | Out-Null
-            }
-            $cb = New-Object System.Windows.Controls.CheckBox
-            $cb.FontSize = 12; $cb.VerticalContentAlignment = "Center"; $cb.VerticalAlignment = "Center"
-            $cb.Tag = $t.Id; $cb.ToolTip = $t.ShortDesc
-            $cbText = New-Object System.Windows.Controls.TextBlock
-            $cbText.Text = $t.Label; $cbText.TextWrapping = "NoWrap"; $cbText.TextTrimming = "CharacterEllipsis"
-            $cbText.FontSize = 12; $cbText.Cursor = [System.Windows.Input.Cursors]::Hand
-            $cbText.Foreground = if ($isOk) { Get-PowerToolsBrush "TextMuted" } else { Get-PowerToolsBrush "TextDark" }
-            $cbText.TextDecorations = [System.Windows.TextDecorations]::Underline
-            $capturedTweak = $t
-            $cbText.Add_MouseLeftButtonUp({ param($s,$e) GO-ShowDetailWindow -Tweak $capturedTweak; $e.Handled=$true }.GetNewClosure())
-            $cbContent = [System.Windows.Controls.StackPanel]::new()
-            $cbContent.Children.Add($cbText) | Out-Null
-            $noteText = if ($state.Status -in @('UNAVAILABLE','CHECK ERROR') -or ($t.Id -eq 34 -and $t.Optional)) { $state.Message } else { $t.Note }
-            if ($noteText) {
-                $note = [System.Windows.Controls.TextBlock]::new()
-                $note.Text = $noteText; $note.FontSize = 10; $note.TextWrapping = 'Wrap'
-                $note.Foreground = Get-PowerToolsBrush 'TextMuted'; $note.Margin = '0,3,8,3'
-                $cbContent.Children.Add($note) | Out-Null
-            }
-            $cb.Content = $cbContent
-            if ($isOk -or $state.Status -in @('UNAVAILABLE','CHECK ERROR')) { $cb.IsEnabled = $false }
+            $state=$script:GO_states[$t.Id]
+            $presentation=GO-GetPresentationState $t $script:GO_states
+            $isOk=$state.Applied
+            $card=[System.Windows.Controls.Border]::new();$card.Padding=14;$card.Margin='8,4,8,6';$card.CornerRadius=8;$card.BorderThickness=1
+            $card.Background=Get-PowerToolsBrush 'Surface';$card.BorderBrush=Get-PowerToolsBrush 'Border';$card.Tag=$t.Id
+            $content=[System.Windows.Controls.StackPanel]::new()
+            $header=[System.Windows.Controls.Grid]::new()
+            foreach ($width in @('112','26','*')) {$col=[System.Windows.Controls.ColumnDefinition]::new();$col.Width=$width;[void]$header.ColumnDefinitions.Add($col)}
+            $badge=[System.Windows.Controls.Border]::new();$badge.Padding='7,5';$badge.Margin='0,0,10,0';$badge.CornerRadius=4;$badge.BorderThickness='4,1,1,1'
+            $badge.VerticalAlignment='Top';$badge.BorderBrush=Get-PowerToolsBrush $presentation.Brush
+            $badge.ToolTip=$presentation.Message
+            $status=GO-NewText $presentation.Status 10 'TextDark' -Bold;$status.Name='TweakStatus';$badge.Child=$status
+            [System.Windows.Controls.Grid]::SetColumn($badge,0);[void]$header.Children.Add($badge)
+            $cb=[System.Windows.Controls.CheckBox]::new();$cb.Tag=$t.Id;$cb.Margin='0,5,6,0';$cb.VerticalAlignment='Top'
+            $cb.ToolTip='Select this target for Apply Selected. This checkbox does not show the current Windows on/off state.'
+            [System.Windows.Automation.AutomationProperties]::SetName($cb,('Select change: ' + $t.Label))
+            if ($isOk -or $state.Status -in @('UNAVAILABLE','CHECK ERROR')) {$cb.IsEnabled=$false}
             else {
-                $capturedId = $t.Id
-                $cb.Add_Checked({ param($s,$e) GO-HandleMutex -ChangedId $capturedId -IsChecked $true; GO-UpdateApplyState }.GetNewClosure())
-                $cb.Add_Unchecked({ GO-UpdateApplyState })
+                $capturedId=$t.Id
+                $cb.Add_Checked({param($s,$e) GO-HandleMutex -ChangedId $capturedId -IsChecked $true;GO-UpdateApplyState}.GetNewClosure())
+                $cb.Add_Unchecked({GO-UpdateApplyState})
             }
-            [System.Windows.Controls.Grid]::SetColumn($cb, 0); $row.Children.Add($cb) | Out-Null
-            $lbl = New-Object System.Windows.Controls.TextBlock
-            $lbl.Text = if ($isAlternative){"ALTERNATIVE"}else{$state.Status}
-            $lbl.ToolTip = if ($t.Mutex) { 'Only one priority preset can be active. Selecting the alternative replaces the current value.' } else { $state.Message }
-            $lbl.Foreground = if ($isOk){Get-PowerToolsBrush "Success"}else{Get-PowerToolsBrush "Warning"}
-            $lbl.FontSize = 9; $lbl.FontWeight = "Bold"; $lbl.VerticalAlignment = "Center"; $lbl.Margin = "8,0,4,0"
-            [System.Windows.Controls.Grid]::SetColumn($lbl, 1); $row.Children.Add($lbl) | Out-Null
-            $riskLbl = New-Object System.Windows.Controls.TextBlock
-            $riskLbl.Text = GO-GetRiskLabel $t.Risk; $riskLbl.Foreground = GO-GetRiskColor $t.Risk
-            $riskLbl.FontSize = 9; $riskLbl.FontWeight = "Bold"; $riskLbl.VerticalAlignment = "Center"; $riskLbl.Margin = "4,0,4,0"
-            [System.Windows.Controls.Grid]::SetColumn($riskLbl, 2); $row.Children.Add($riskLbl) | Out-Null
-            $detailBtn = New-Object System.Windows.Controls.Button
-            $detailBtn.Content = "Details"; $detailBtn.Style = (Get-PowerToolsWindow).FindResource("SecondaryButton")
-            $detailBtn.Padding = "10,3"; $detailBtn.FontSize = 10; $detailBtn.Margin = "4,0,4,0"; $detailBtn.VerticalAlignment = "Center"
-            $detailBtn.Width = 52; $detailBtn.HorizontalAlignment = "Center"
-            $capturedTweak2 = $t; $detailBtn.Add_Click({ GO-ShowDetailWindow -Tweak $capturedTweak2 }.GetNewClosure())
-            [System.Windows.Controls.Grid]::SetColumn($detailBtn, 3); $row.Children.Add($detailBtn) | Out-Null
-            $usbBackup = $null
-            if ($t.Optional) { try { $usbBackup = GO-ReadUsbBackup $t.Id } catch { } }
-            if ($isOk -or $null -ne $usbBackup) {
-                $resetBtn = New-Object System.Windows.Controls.Button
-                $resetBtn.Content = "Reset"; $resetBtn.Style = (Get-PowerToolsWindow).FindResource("SecondaryButton")
-                $resetBtn.Padding = "4,2"; $resetBtn.FontSize = 9; $resetBtn.Width = 42; $resetBtn.Height = 20
-                $resetBtn.Foreground = Get-PowerToolsBrush "Warning"; $resetBtn.Margin = "0,0,4,0"
-                $resetBtn.VerticalAlignment = "Center"; $resetBtn.HorizontalAlignment = "Center"
-                if ($t.Optional -and -not $usbBackup) {
-                    $resetBtn.IsEnabled = $false
-                    $resetBtn.ToolTip = 'No original state saved by WindowsAcolyte; this pre-existing setting will not be reset.'
-                }
-                $capturedTweak3 = $t
-                $resetBtn.Add_Click({
-                    $resetInfo = if ($capturedTweak3.Optional) { 'Restore the saved original input/USB configuration. Disconnected hubs or missing plans keep their baseline for a later retry. Accessibility Reset may re-enable previously active assistive features.' } else { 'Reset may also affect settings sharing the same values. Original pre-app values are not restored.' }
-                    $r = [System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)'?`n`n$($capturedTweak3.Note)`n`n$resetInfo","Confirm Reset",[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
-                    if ($r -eq [System.Windows.MessageBoxResult]::Yes) {
-                        $before = GO-GetStateSnapshot
-                        try { GO-ResetTweak $capturedTweak3; GO-AddLog "Reset: $($capturedTweak3.Label)" "OK" }
-                        catch { GO-AddLog "Reset failed: $($capturedTweak3.Label) - $_" "FAIL" }
-                        $after = GO-GetStateSnapshot
-                        GO-LogStateChanges $before $after "Reset '$($capturedTweak3.Label)'"
-                        GO-RenderList -States $after
+            [System.Windows.Controls.Grid]::SetColumn($cb,1);[void]$header.Children.Add($cb)
+            $title=GO-NewText $t.Label 14 'TextDark' -Bold;$title.Cursor=[System.Windows.Input.Cursors]::Hand;$title.ToolTip='Open simple and technical details'
+            $capturedTweak=$t;$title.Add_MouseLeftButtonUp({param($s,$e) GO-ShowDetailWindow $capturedTweak;$e.Handled=$true}.GetNewClosure())
+            [System.Windows.Controls.Grid]::SetColumn($title,2);[void]$header.Children.Add($title)
+            [void]$content.Children.Add($header)
+            $metadata=[System.Windows.Controls.WrapPanel]::new();$metadata.Margin='0,9,0,0'
+            foreach ($value in @("RISK: $(GO-GetRiskLabel $t.Risk)", "RESTART: $(if($t.NeedsReboot){'Required'}else{'Not requested'})", "SELECTION: $(if($t.Optional){'Manual opt-in'}else{'Standard'})")) {
+                $item=GO-NewText $value 10 'TextDark' -Bold;$item.Margin='0,0,18,4';[void]$metadata.Children.Add($item)
+            }
+            [void]$content.Children.Add($metadata)
+            GO-AddDescriptionSection $content 'IN PLAIN ENGLISH' $(if($t.SimpleShort){$t.SimpleShort}else{$t.ShortDesc})
+            GO-AddDescriptionSection $content 'TECHNICAL SUMMARY' $t.ShortDesc
+            GO-AddDescriptionSection $content 'IMPACT / EXPECTED EFFECT' $(if($t.Impact){$t.Impact}else{'Effect depends on your system; no measured improvement is established here.'})
+            $noteText=if($state.Status -in @('UNAVAILABLE','CHECK ERROR') -or ($t.Id -eq 34 -and $t.Optional)){$state.Message}else{$t.Note}
+            if ($noteText) {GO-AddDescriptionSection $content 'IMPORTANT BEFORE APPLY / RESET' $noteText}
+            $actions=[System.Windows.Controls.WrapPanel]::new();$actions.Margin='0,12,0,0'
+            $details=[System.Windows.Controls.Button]::new();$details.Content='Details';$details.Padding='12,5';$details.Margin='0,0,8,0';$details.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+            $capturedTweak2=$t;$details.Add_Click({GO-ShowDetailWindow $capturedTweak2}.GetNewClosure());[void]$actions.Children.Add($details)
+            $usbBackup=$null
+            if($t.Optional){try{$usbBackup=GO-ReadUsbBackup $t.Id}catch{}}
+            if($isOk -or $null -ne $usbBackup){
+                $reset=[System.Windows.Controls.Button]::new();$reset.Content='Reset';$reset.Padding='12,5';$reset.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+                if($t.Optional -and -not $usbBackup){$reset.IsEnabled=$false;$reset.ToolTip='No original state saved by WindowsAcolyte; this pre-existing setting will not be reset.'}
+                $capturedTweak3=$t
+                $reset.Add_Click({
+                    $resetInfo=if($capturedTweak3.Optional){'Restore the saved original input/USB configuration. Disconnected hubs or missing plans keep their baseline for a later retry. Accessibility Reset may re-enable previously active assistive features.'}else{'Reset may also affect settings sharing the same values. Original pre-app values are not restored.'}
+                    $r=[System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)'?`n`n$($capturedTweak3.Note)`n`n$resetInfo",'Confirm Reset',[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+                    if($r -eq [System.Windows.MessageBoxResult]::Yes){
+                        $before=GO-GetStateSnapshot
+                        try{GO-ResetTweak $capturedTweak3;GO-AddLog "Reset: $($capturedTweak3.Label)" 'OK'}catch{GO-AddLog "Reset failed: $($capturedTweak3.Label) - $_" 'FAIL'}
+                        $after=GO-GetStateSnapshot;GO-LogStateChanges $before $after "Reset '$($capturedTweak3.Label)'";GO-RenderList -States $after
                     }
                 }.GetNewClosure())
-                [System.Windows.Controls.Grid]::SetColumn($resetBtn, 4); $row.Children.Add($resetBtn) | Out-Null
+                [void]$actions.Children.Add($reset)
             }
-            $script:GO_tweakList.Items.Add($row) | Out-Null
-            $script:GO_checkboxes[$t.Id] = $cb
+            [void]$content.Children.Add($actions);$card.Child=$content
+            [void]$script:GO_tweakList.Items.Add($card);$script:GO_cardViews[$t.Id]=$card;$script:GO_checkboxes[$t.Id]=$cb
         }
-        if ($script:GO_tweaks.Id -contains 35) { GO-RenderInputExtras }
+        if($script:GO_tweaks.Id -contains 35){GO-RenderInputExtras}
         GO-UpdateApplyState
     }
+
 
     function Global:GO-ApplyRecommendedPreselection {
         GO-SelectTweaks -Mode Recommended

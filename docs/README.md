@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v1.7.5` (2026-10-26).
+Current version: `v1.8` (2026-10-26).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -16,7 +16,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Explorer View Normalizer | Windows Tools | Compose Explorer settings, grouped state readback, apply/revert, optional small desktop icons |
 | Hardware Inventory | Diagnostics | CIM/WMI inventory and desktop HTML report |
 | Sandboxie Browser Launcher | Security | Detect browsers and Sandboxie, start supported browsers sandboxed |
-| Windows 11 Gaming Optimizer | Gaming Performance | 35 selectable settings, profiles, backup/reset, optional input/USB controls and read-only Windows Update history |
+| Windows 11 Gaming Optimizer | Gaming Performance | 35 selectable settings with status-first cards, plain-English + technical summaries/details, separate risk/effect/restart labels, profiles, backup/reset and optional input/USB controls |
 | Linux ISO Downloader | Downloader | Distro variants, desktop/server presets, per-ISO progress, parallel downloads and fallback |
 | AV Scanner Downloader | Downloader | Portable scanner downloads, source checks and progress |
 | Desktop Shortcut Creator | Windows Tools | Stable Windows PowerShell desktop links to the update-aware starter |
@@ -56,7 +56,7 @@ Start-WindowsAcolyte.ps1        Online update gate and local startup
 README.md                      User guide and version history
 docs/README.md                 This architecture/operator overview
 modules/                       Twelve PowerShell modules, 01 through 12
-tests/                         Seven standalone PowerShell test scripts
+tests/                         Eight standalone PowerShell test scripts
 logo/                          Logo and app/shortcut ICO assets
 screenshots/                   README illustrations, not installed
 .github/ISSUE_TEMPLATE/        GitHub issue templates
@@ -121,6 +121,7 @@ From the repository root:
 
 ```powershell
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizer.ps1
+pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerLayout.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerAudit.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerInput.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
@@ -130,7 +131,7 @@ pwsh -NoProfile -File .\tests\Test-LocalUpdater.ps1
 powershell.exe -NoProfile -File .\tests\Test-LocalUpdater.ps1
 ```
 
-These scripts cover isolated temporary HKCU/file IO, simulated system writes/hub providers/power plans, WPF views and link routing, plus updater online-check gating, changed/missing files, document synchronization, corrupt downloads, syntax errors, locks and rollback. They do not establish full live hardware, driver, download-source or game-performance correctness. `Test-GamingOptimizerAudit.ps1 -ReadOnly` additionally reads production status from the current machine.
+These scripts cover isolated temporary HKCU/file IO, simulated system writes/hub providers/power plans, WPF views and link routing, status-first Gaming Optimizer cards and scrollable simple/technical details at 540/900 pixels in both themes, plus updater online-check gating, changed/missing files, document synchronization, corrupt downloads, syntax errors, locks and rollback. They do not establish full live hardware, driver, download-source or game-performance correctness. `Test-GamingOptimizerAudit.ps1 -ReadOnly` additionally reads production status from the current machine.
 
 ## Build and deployment
 
