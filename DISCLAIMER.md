@@ -175,12 +175,12 @@ Before applying advanced or high-risk changes, users are strongly encouraged to:
 ---
 
 **WindowsAcolyte**
-Version 1.7.1 • ReAlNoMo
+Version 1.7.2 • ReAlNoMo
 
-## Externe Links in Recommended Tools
+## External links in Recommended Tools
 
-Die verlinkten Websites und Downloads stammen von externen Anbietern, die ihre Inhalte verantworten. WindowsAcolyte hat keinen Einfluss auf diese fremden Inhalte oder spätere Änderungen. Soweit gesetzlich zulässig, übernehmen wir keine Gewähr oder Haftung für deren Richtigkeit, Vollständigkeit, Aktualität oder Sicherheit. Beim Besuch gelten die Datenschutz- und Nutzungsbedingungen des jeweiligen Anbieters. Nutzer sollten Anbieter und Downloads prüfen und vor Systemänderungen wichtige Daten sichern.
+The linked websites and downloads are supplied by external providers, who are responsible for their content. WindowsAcolyte has no control over that content or subsequent changes. To the extent permitted by law, we provide no warranty and accept no liability for its accuracy, completeness, currency or security. The destination provider's privacy policy and terms of use apply. Users should check providers and downloads and back up important data before making system changes.
 
-Dieser Hinweis ist kein pauschaler Ausschluss gesetzlicher Haftung. Zwingende Haftung und gesetzliche Prüf- und Entfernungspflichten bleiben unberührt. Konkrete Hinweise auf Rechtsverletzungen können über die Projekt-Issues gemeldet werden; Hinweise werden geprüft und rechtswidrige Verlinkungen entfernt. Vertrauliche Sicherheitsmeldungen gehören in den in SECURITY.md beschriebenen privaten Meldeweg.
+This notice does not exclude statutory liability across the board. Mandatory liability and legal duties to review and remove links remain unaffected. Specific legal violations can be reported through the project issues; reports will be reviewed and unlawful links removed. Confidential security reports should use the private reporting route described in SECURITY.md.
 
-Recherche vom 26.10.2026: [Handelskammer Hamburg](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590) und [BGH, Urteil vom 18.06.2015, I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). Keine Zusicherung einer rechtlichen Haftungsfreistellung.
+Research reviewed on 2026-10-26: [Handelskammer Hamburg](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590) and [BGH, judgment of 2015-06-18, I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). This is not a guarantee of exemption from legal liability.

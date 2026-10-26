@@ -93,15 +93,15 @@ Register-PowerToolsModule `
     $notice.CornerRadius = 8
     $notice.Padding = '16,14'
     $notice.Margin = '0,0,0,16'
-    [System.Windows.Automation.AutomationProperties]::SetName($notice, 'Externe Links - Haftungshinweis')
+    [System.Windows.Automation.AutomationProperties]::SetName($notice, 'External links - liability notice')
     $noticePanel = [System.Windows.Controls.StackPanel]::new()
-    $noticeTitle = RT-AddText $noticePanel (([char]0x26A0) + ' EXTERNE LINKS - HAFTUNGSHINWEIS') 'TextDark' 15
+    $noticeTitle = RT-AddText $noticePanel (([char]0x26A0) + ' EXTERNAL LINKS - LIABILITY NOTICE') 'TextDark' 15
     $noticeTitle.FontWeight = 'Bold'
-    $null = RT-AddText $noticePanel 'Die Links öffnen externe Websites im Browser. Deren Inhalte und Downloads werden von den jeweiligen Anbietern verantwortet; WindowsAcolyte hat darauf keinen Einfluss. Soweit gesetzlich zulässig, übernehmen wir keine Gewähr oder Haftung für Richtigkeit, Vollständigkeit, Aktualität oder Sicherheit dieser fremden Inhalte.' 'TextDark'
-    $null = RT-AddText $noticePanel 'Es gelten die Datenschutz- und Nutzungsbedingungen der Zielseite. Prüfe Anbieter, Downloads und Änderungen selbst; sichere wichtige Daten vor der Nutzung externer Tools.' 'TextDark'
-    $null = RT-AddText $noticePanel 'Dieser Hinweis schließt gesetzliche Haftung nicht pauschal aus. Zwingende Haftung sowie gesetzliche Prüf- und Entfernungspflichten bleiben unberührt. Melde konkrete Rechtsverletzungen über GitHub Issues; Hinweise werden geprüft und rechtswidrige Verlinkungen entfernt.' 'TextDark'
+    $null = RT-AddText $noticePanel 'These links open external websites in your browser. Their providers are responsible for their content and downloads; WindowsAcolyte has no control over them. To the extent permitted by law, we provide no warranty and accept no liability for the accuracy, completeness, currency or security of this third-party content.' 'TextDark'
+    $null = RT-AddText $noticePanel "The destination website's privacy policy and terms of use apply. Check providers, downloads and proposed changes yourself; back up important data before using external tools." 'TextDark'
+    $null = RT-AddText $noticePanel 'This notice does not exclude statutory liability across the board. Mandatory liability and legal duties to review and remove links remain unaffected. Report specific legal violations via GitHub Issues; reports will be reviewed and unlawful links removed.' 'TextDark'
     $report = [System.Windows.Controls.Button]::new()
-    $report.Content = 'Problematischen Link melden (GitHub Issues)'
+    $report.Content = 'Report a problematic link (GitHub Issues)'
     $report.HorizontalAlignment = 'Left'
     $report.Padding = '12,6'
     $report.SetResourceReference([System.Windows.Controls.Button]::StyleProperty, 'SecondaryButton')

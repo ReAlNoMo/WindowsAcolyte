@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v1.7.1` (2026-10-26).
+Current version: `v1.7.2` (2026-10-26).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -149,7 +149,7 @@ Before declaring work finished, review the app/UI version and current-version te
 
 ## Security and limitations
 
-The application runs elevated and includes security-impacting and experimental tweaks. Read the per-setting warnings, preserve backups and test controlled changes. `APPLIED` verifies stored configuration, not a measured FPS/latency improvement or reboot completion. External tool cards open publisher pages; they do not install tools. A prominent German warning panel above the list distinguishes third-party responsibility, external privacy/download conditions and statutory liability limits. Its gold border, warning icon and explicit heading remain visible in both themes. The report button opens GitHub Issues without submitting a report; use the private route in SECURITY.md for sensitive security details.
+The application runs elevated and includes security-impacting and experimental tweaks. Read the per-setting warnings, preserve backups and test controlled changes. `APPLIED` verifies stored configuration, not a measured FPS/latency improvement or reboot completion. External tool cards open publisher pages; they do not install tools. A prominent English warning panel above the list distinguishes third-party responsibility, external privacy/download conditions and statutory liability limits. Its gold border, warning icon and explicit heading remain visible in both themes. The report button opens GitHub Issues without submitting a report; use the private route in SECURITY.md for sensitive security details.
 
 The update path trusts this project's GitHub repository over HTTPS and checks Git blob identity; it is not an independent signed-release verification system. Public GitHub availability and rate limits affect launch. GitHub tags/releases are separate from source-version text; updating `main` does not create a GitHub Release automatically. Screenshots are illustrative and are not regenerated with every release.
 

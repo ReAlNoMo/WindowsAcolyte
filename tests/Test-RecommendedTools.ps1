@@ -61,7 +61,7 @@ foreach ($themeName in @('PTS_Theme','PTS_ThemeDark')) {
     [System.Windows.Documents.TextElement]::SetFontFamily($view, [System.Windows.Media.FontFamily]::new('Segoe UI'))
     Assert-RT ($view -is [System.Windows.Controls.StackPanel] -and $script:headerTitle -eq 'Recommended Tools') "Shell navigation loads page: $themeName"
     $notice = $view.Children | Where-Object Name -eq 'RTExternalLinksNotice'
-    Assert-RT ($view.Children[0] -eq $notice -and $notice.Child.Children[0].Text -like '*HAFTUNGSHINWEIS*') "Prominent labeled external-link warning precedes every tool: $themeName"
+    Assert-RT ($view.Children[0] -eq $notice -and $notice.Child.Children[0].Text -like '*LIABILITY NOTICE*') "Prominent labeled English external-link warning precedes every tool: $themeName"
     $expectedNoticeBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($palette.AccentSoft)
     Assert-RT ($notice.Background.ToString() -eq $expectedNoticeBrush.ToString() -and $notice.BorderThickness.Left -eq 5) "Notice has theme-aware warning colors and strong border: $themeName"
     $noticeForeground = $notice.Child.Children[0].Foreground.Color

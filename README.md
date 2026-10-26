@@ -26,7 +26,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.7.1`
+**Current version:** `v1.7.2`
 
 ---
 
@@ -354,7 +354,7 @@ Command semantics: [Microsoft fsutil behavior](https://learn.microsoft.com/en-us
 > **Category:** Gaming Performance
 > **Admin:** No (individual external tools may require elevation)
 
-A gold warning panel labeled **EXTERNE LINKS - HAFTUNGSHINWEIS** appears above all recommendations in both Light and Dark modes. It explains that linked websites/downloads are third-party content, describes the limits of warranty/liability to the extent legally permitted, reminds users of destination-site privacy/usage terms and retains statutory liability and review/removal obligations. **Problematischen Link melden (GitHub Issues)** opens the project issue page without submitting anything automatically. Sensitive security reports should follow `SECURITY.md` instead of public issues.
+A gold warning panel labeled **EXTERNAL LINKS - LIABILITY NOTICE** appears above all recommendations in both Light and Dark modes. It explains that linked websites/downloads are third-party content, describes the limits of warranty/liability to the extent legally permitted, reminds users of destination-site privacy/usage terms and retains statutory liability and review/removal obligations. **Report a problematic link (GitHub Issues)** opens the project issue page without submitting anything automatically. Sensitive security reports should follow `SECURITY.md` instead of public issues.
 
 Research reviewed on 2026-10-26: [Handelskammer Hamburg - link liability](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590), [BGH I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). A notice alone does not automatically exclude liability; the implementation avoids promising this. See also `DISCLAIMER.md`.
 A separate page in Gaming Performance, replacing the Gaming Optimizer's former Recommended Tools popup. Twelve tools are grouped by task:
@@ -692,7 +692,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.7.1 (Current) - 2026-10-26
+## v1.7.2 (Current) - 2026-10-26
+- Recommended Tools: translate the external-link disclaimer, accessibility label and report button into English; retain warning colors and statutory liability qualifications.
+
+## v1.7.1 (Previous) - 2026-10-26
 - Recommended Tools: prominent German external-link disclaimer above the tool list, with a warning symbol, gold border, theme-aware colors and a link-report button.
 - Clarifies publisher responsibility, external privacy/download conditions and statutory liability limits; does not claim a blanket legal exemption.
 
@@ -752,7 +755,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.7.1 • October 2026
+Version 1.7.2 • October 2026
 
 ---
 
