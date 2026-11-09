@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 2.0
+    Version : 2.0.1
 #>
 
 param([string]$LogRoot)
@@ -689,30 +689,11 @@ function Global:Update-PTSStyles {
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Vector mark and native text stay sharp at sidebar size and on high-DPI displays. -->
+                <!-- Local brand artwork -->
                 <Border Grid.Row="0" x:Name="LogoBorder" Padding="8,4,8,4"
                         Background="#FFFFFF" BorderBrush="#C9D8E2" BorderThickness="0,0,0,1">
-                    <Grid Height="112" HorizontalAlignment="Left">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="88"/>
-                            <ColumnDefinition Width="8"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Viewbox Grid.Column="0" Width="88" Height="104" Stretch="Uniform" VerticalAlignment="Center">
-                            <Canvas Width="128" Height="128">
-                                <Path Fill="#00375F" Stroke="#D69A25" StrokeThickness="2.4" StrokeLineJoin="Round"
-                                      Data="M64 8 108 25v35c0 27-18 46-44 60-26-14-44-33-44-60V25L64 8Z"/>
-                                <Rectangle Canvas.Left="34" Canvas.Top="35" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
-                                <Rectangle Canvas.Left="69" Canvas.Top="35" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
-                                <Rectangle Canvas.Left="34" Canvas.Top="64" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
-                                <Rectangle Canvas.Left="69" Canvas.Top="64" Width="25" Height="20" RadiusX="2" RadiusY="2" Fill="#A66E00" Stroke="White" StrokeThickness="2.2"/>
-                            </Canvas>
-                        </Viewbox>
-                        <StackPanel Grid.Column="2" VerticalAlignment="Center" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType">
-                            <TextBlock Text="Windows" Foreground="#00375F" FontFamily="Segoe UI" FontWeight="Bold" FontSize="21"/>
-                            <TextBlock Text="Acolyte" Foreground="#A66E00" FontFamily="Segoe UI" FontSize="24"/>
-                        </StackPanel>
-                    </Grid>
+                    <Image x:Name="BrandLogoImage" Width="244" Height="112" Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Left"/>
                 </Border>
 
                 <Border x:Name="SidebarDivTop" Grid.Row="1" Height="1" Background="#C9D8E2"/>
@@ -797,7 +778,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v2.0  |  Administrator"
+                           Text="v2.0.1  |  Administrator"
                            Foreground="#3F5868" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
@@ -819,6 +800,15 @@ function Global:Update-PTSStyles {
 
 $reader            = New-Object System.Xml.XmlNodeReader $xaml
 $Global:PTS_Window = [Windows.Markup.XamlReader]::Load($reader)
+$brandLogoPath = Join-Path $Global:PTS_RootPath 'logo\Windows_Acolyte_Logo.png'
+if (-not (Test-Path -LiteralPath $brandLogoPath)) { throw "Brand logo missing: $brandLogoPath" }
+$brandBitmap = New-Object System.Windows.Media.Imaging.BitmapImage
+$brandBitmap.BeginInit()
+$brandBitmap.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+$brandBitmap.UriSource = [Uri]([IO.Path]::GetFullPath($brandLogoPath))
+$brandBitmap.EndInit()
+$brandBitmap.Freeze()
+$Global:PTS_Window.FindName('BrandLogoImage').Source = $brandBitmap
 
 $Global:PTS_Window.Dispatcher.add_UnhandledException({
     param($sender, $e)
