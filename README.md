@@ -29,7 +29,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.9`
+**Current version:** `v1.9.1`
 
 ---
 
@@ -545,10 +545,10 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
 - Supports local/GitHub and windowsacolyte.de Start/Installer shortcut variants
 - Uses English shortcut names:
-  - `WindowsAcolyte - Start (Local).lnk`
-  - `WindowsAcolyte - Installer (Online).lnk`
-  - `WindowsAcolyte - Start (windowsacolyte.de).lnk`
-  - `WindowsAcolyte - Installer (windowsacolyte.de).lnk`
+  - `WindowsAcolyte - Local Start (GitHub Update).lnk`
+  - `WindowsAcolyte - Local Installer (GitHub Update).lnk`
+  - `WindowsAcolyte - Online Start (windowsacolyte.de).lnk`
+  - `WindowsAcolyte - Online Installer (windowsacolyte.de).lnk`
 - The two .de links both run `irm https://windowsacolyte.de | iex` and fetch the same update-and-start script. The local/GitHub links use the installed starter and GitHub update check.
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
@@ -719,7 +719,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.9 (Current) - 2026-11-09
+## v1.9.1 (Current) - 2026-11-09
+- Clarify Local/GitHub and Online/windowsacolyte.de in all four shortcut labels and generated filenames. Existing shortcuts remain valid.
+
+## v1.9 (Previous) - 2026-11-09
 - Add selectable windowsacolyte.de Start and Installer desktop shortcuts and document domain and GitHub PowerShell entry points.
 - Rename the shortcut module to WindowsAcolyte Desktop Shortcut Creator.
 
@@ -802,7 +805,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.9 • November 2026
+Version 1.9.1 • November 2026
 
 ---
 

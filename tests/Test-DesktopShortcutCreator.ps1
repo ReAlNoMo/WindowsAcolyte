@@ -31,14 +31,23 @@ try {
         if($link.Arguments -notmatch 'irm https://windowsacolyte\.de \| iex'){throw 'Domain command missing'}
         "PASS: $($linkFile.Name) targets windowsacolyte.de"
     }
-    if(-not (Test-Path -LiteralPath (Join-Path $testDirectory 'WindowsAcolyte - Start (windowsacolyte.de).lnk')) -or -not (Test-Path -LiteralPath (Join-Path $testDirectory 'WindowsAcolyte - Installer (windowsacolyte.de).lnk'))){throw 'Expected domain names missing'}
+    if(-not (Test-Path -LiteralPath (Join-Path $testDirectory 'WindowsAcolyte - Online Start (windowsacolyte.de).lnk')) -or -not (Test-Path -LiteralPath (Join-Path $testDirectory 'WindowsAcolyte - Online Installer (windowsacolyte.de).lnk'))){throw 'Expected domain names missing'}
     $Global:DSC_domainStartCheck.IsChecked=$false
     $Global:DSC_domainInstallerCheck.IsChecked=$false
     $Global:DSC_localCheck.IsChecked=$true
+    $Global:DSC_installerCheck.IsChecked=$true
     DSC-CreateSelectedShortcuts
-    $local=$shell.CreateShortcut((Join-Path $testDirectory 'WindowsAcolyte - Start (Local).lnk'))
-    if($local.Arguments -notmatch '-File' -or $local.Arguments -match 'windowsacolyte\.de'){throw 'Local selection changed'}
-    'PASS: existing local shortcut remains selectable'
+    foreach($name in @('WindowsAcolyte - Local Start (GitHub Update)','WindowsAcolyte - Local Installer (GitHub Update)')) {
+        $path=Join-Path $testDirectory ($name+'.lnk')
+        if(-not (Test-Path -LiteralPath $path)){throw "Missing local shortcut: $name"}
+        $local=$shell.CreateShortcut($path)
+        if($local.Arguments -notmatch '-File' -or $local.Arguments -match 'windowsacolyte\.de'){throw 'Local selection changed'}
+        "PASS: $name uses the local starter"
+    }
+    foreach($control in @($Global:DSC_localCheck,$Global:DSC_installerCheck,$Global:DSC_domainStartCheck,$Global:DSC_domainInstallerCheck)) {
+        if(-not (Test-Path -LiteralPath (Join-Path $testDirectory ($control.Content+'.lnk')))){throw "Label does not match generated filename: $($control.Content)"}
+    }
+    'PASS: all four UI labels match generated filenames'
 } finally {
     $safeParent=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\')+'\'
     $resolved=[IO.Path]::GetFullPath($testDirectory)
