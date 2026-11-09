@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 2.0.3
+    Version : 2.1
 #>
 
 param([string]$LogRoot)
@@ -215,101 +215,103 @@ $Global:PTS_CategoryOrder = @(
 # THEMES
 # ===========================================================================
 $Global:PTS_Theme = @{
-    Primary              = "#006A9A"
-    PrimaryDark          = "#00577F"
-    PrimaryHover         = "#0080B3"
-    PrimaryPressed       = "#004C70"
-    Accent               = "#C88A00"
-    AccentHover          = "#D79A00"
-    AccentSoft           = "#F7E7C1"
-    AccentText           = "#102A3A"
-    SectionLabel         = "#C88A00"
-    SidebarBg            = "#EAF2F7"
-    SidebarDivider       = "#C9D8E2"
-    SidebarHover         = "#DDEAF1"
-    SidebarActive        = "#D6E8F1"
-    SidebarBadgeBg       = "#D7E4EB"
-    SidebarBadgeBgActive = "#C88A00"
-    SidebarText          = "#3F5868"
-    SidebarTextActive    = "#102A3A"
+    Primary              = "#00375F"
+    PrimaryDark          = "#002A49"
+    PrimaryHover         = "#00476F"
+    PrimaryPressed       = "#002A49"
+    PrimaryText          = "#FFFFFF"
+    Accent               = "#A66E00"
+    AccentHover          = "#805400"
+    AccentSoft           = "#FFF1D5"
+    AccentText           = "#00375F"
+    SectionLabel         = "#805400"
+    SidebarBg            = "#E4EDF3"
+    SidebarDivider       = "#8CA6B7"
+    SidebarHover         = "#D5E4ED"
+    SidebarActive        = "#C4DAE8"
+    SidebarBadgeBg       = "#D5E4ED"
+    SidebarBadgeBgActive = "#D69A25"
+    SidebarText          = "#3C5669"
+    SidebarTextActive    = "#00375F"
     LogoBg               = "#FFFFFF"
-    LogoBorder           = "#C9D8E2"
-    Background           = "#F3F7FA"
+    LogoBorder           = "#8CA6B7"
+    Background           = "#F2F5F7"
     Surface              = "#FFFFFF"
-    Border               = "#C9D8E2"
-    TextDark             = "#102A3A"
-    TextMid              = "#3F5868"
-    TextMuted            = "#718696"
-    TextFaint            = "#9AAEBB"
-    Success              = "#2A9D5C"
-    Danger               = "#B9352A"
-    Warning              = "#C88A00"
-    LogBg                = "#F8FBFD"
-    LogBorder            = "#C9D8E2"
-    Divider              = "#DDE7ED"
+    Border               = "#6C8799"
+    TextDark             = "#00375F"
+    TextMid              = "#3C5669"
+    TextMuted            = "#3C5669"
+    TextFaint            = "#3C5669"
+    Success              = "#16723A"
+    Danger               = "#A62020"
+    Warning              = "#805400"
+    LogBg                = "#F7F9FA"
+    LogBorder            = "#6C8799"
+    Divider              = "#8CA6B7"
     BtnSecBg             = "#FFFFFF"
-    BtnSecFg             = "#3F5868"
-    BtnSecBorder         = "#C9D8E2"
-    BtnSecHover          = "#F7E7C1"
-    BtnSecHoverBorder    = "#C88A00"
+    BtnSecFg             = "#00375F"
+    BtnSecBorder         = "#6C8799"
+    BtnSecHover          = "#FFF1D5"
+    BtnSecHoverBorder    = "#805400"
     TileBg               = "#FFFFFF"
-    TileBorder           = "#C9D8E2"
-    TileHoverBg          = "#F8FBFD"
-    TileHoverBorder      = "#C88A00"
+    TileBorder           = "#6C8799"
+    TileHoverBg          = "#EDF3F7"
+    TileHoverBorder      = "#805400"
     InputBg              = "#FFFFFF"
-    InputFg              = "#102A3A"
-    InputBorder          = "#C9D8E2"
-    BtnDisabledBg        = "#CAD8E0"
-    BtnDisabledFg        = "#8195A3"
+    InputFg              = "#00375F"
+    InputBorder          = "#6C8799"
+    BtnDisabledBg        = "#DCE5EB"
+    BtnDisabledFg        = "#607B8B"
 }
 
 $Global:PTS_ThemeDark = @{
-    Primary              = "#0078A8"
-    PrimaryDark          = "#00648E"
-    PrimaryHover         = "#0090C8"
-    PrimaryPressed       = "#00557A"
-    Accent               = "#D79A00"
-    AccentHover          = "#E5AC20"
-    AccentSoft           = "#2D260E"
-    AccentText           = "#102A3A"
-    SectionLabel         = "#D79A00"
-    SidebarBg            = "#061B2E"
-    SidebarDivider       = "#11324A"
-    SidebarHover         = "#0A2B45"
-    SidebarActive        = "#0A3754"
-    SidebarBadgeBg       = "#0D2B42"
-    SidebarBadgeBgActive = "#D79A00"
-    SidebarText          = "#A8BBC8"
-    SidebarTextActive    = "#F7FBFD"
-    LogoBg               = "#EAF2F7"
-    LogoBorder           = "#D79A00"
-    Background           = "#07111D"
-    Surface              = "#0D2235"
-    Border               = "#1C4057"
-    TextDark             = "#EAF4FA"
-    TextMid              = "#A8BBC8"
-    TextMuted            = "#6F8797"
-    TextFaint            = "#4F6878"
-    Success              = "#4AB876"
-    Danger               = "#E45A54"
-    Warning              = "#D79A00"
-    LogBg                = "#091827"
-    LogBorder            = "#1C4057"
-    Divider              = "#123148"
-    BtnSecBg             = "#0B1E30"
-    BtnSecFg             = "#A8BBC8"
-    BtnSecBorder         = "#1C4057"
-    BtnSecHover          = "#162B3D"
-    BtnSecHoverBorder    = "#D79A00"
-    TileBg               = "#0D2235"
-    TileBorder           = "#1C4057"
-    TileHoverBg          = "#102B42"
-    TileHoverBorder      = "#D79A00"
-    InputBg              = "#0A1A29"
-    InputFg              = "#EAF4FA"
-    InputBorder          = "#1C4057"
-    BtnDisabledBg        = "#142637"
-    BtnDisabledFg        = "#4F6878"
+    Primary              = "#D69A25"
+    PrimaryDark          = "#D69A25"
+    PrimaryHover         = "#E8BA60"
+    PrimaryPressed       = "#D69A25"
+    PrimaryText          = "#00375F"
+    Accent               = "#D69A25"
+    AccentHover          = "#E8BA60"
+    AccentSoft           = "#3B2B0B"
+    AccentText           = "#00375F"
+    SectionLabel         = "#D69A25"
+    SidebarBg            = "#00253F"
+    SidebarDivider       = "#7292A6"
+    SidebarHover         = "#003C64"
+    SidebarActive        = "#004A75"
+    SidebarBadgeBg       = "#003050"
+    SidebarBadgeBgActive = "#D69A25"
+    SidebarText          = "#CDDBE6"
+    SidebarTextActive    = "#FFFFFF"
+    LogoBg               = "#FFFFFF"
+    LogoBorder           = "#D69A25"
+    Background           = "#001A2D"
+    Surface              = "#003050"
+    Border               = "#7292A6"
+    TextDark             = "#FFFFFF"
+    TextMid              = "#CDDBE6"
+    TextMuted            = "#CDDBE6"
+    TextFaint            = "#CDDBE6"
+    Success              = "#7FDB9C"
+    Danger               = "#FF9C95"
+    Warning              = "#D69A25"
+    LogBg                = "#00253F"
+    LogBorder            = "#7292A6"
+    Divider              = "#7292A6"
+    BtnSecBg             = "#003050"
+    BtnSecFg             = "#FFFFFF"
+    BtnSecBorder         = "#7292A6"
+    BtnSecHover          = "#004A75"
+    BtnSecHoverBorder    = "#D69A25"
+    TileBg               = "#003050"
+    TileBorder           = "#7292A6"
+    TileHoverBg          = "#004A75"
+    TileHoverBorder      = "#D69A25"
+    InputBg              = "#00253F"
+    InputFg              = "#FFFFFF"
+    InputBorder          = "#7292A6"
+    BtnDisabledBg        = "#15384E"
+    BtnDisabledFg        = "#87A3B5"
 }
 
 $Global:PTS_DarkModeEnabled = $false
@@ -439,15 +441,21 @@ function Global:Apply-PTSTheme {
     param([bool]$DarkMode = $false)
     $Global:PTS_DarkModeEnabled = $DarkMode
     $src = if ($DarkMode) { $Global:PTS_ThemeDark } else { $Global:PTS_Theme }
-    $Global:PTS_Brush = @{}
-    foreach ($k in $src.Keys) { $Global:PTS_Brush[$k] = New-PTSBrush $src[$k] }
+    foreach ($k in $src.Keys) {
+        $color = [System.Windows.Media.ColorConverter]::ConvertFromString($src[$k])
+        if ($Global:PTS_Brush.ContainsKey($k) -and -not $Global:PTS_Brush[$k].IsFrozen) {
+            $Global:PTS_Brush[$k].Color = $color
+        } else {
+            $Global:PTS_Brush[$k] = [System.Windows.Media.SolidColorBrush]::new($color)
+        }
+    }
 
     $Global:PTS_Window.Background = $Global:PTS_Brush["Background"]
 
     if ($Global:PTS_UI) {
         $Global:PTS_UI.SidebarGrid.Background     = $Global:PTS_Brush["SidebarBg"]
         $Global:PTS_UI.ContentScroller.Background = $Global:PTS_Brush["Background"]
-        $Global:PTS_UI.HeaderEyebrow.Foreground   = $Global:PTS_Brush["Accent"]
+        $Global:PTS_UI.HeaderEyebrow.Foreground   = $Global:PTS_Brush["SectionLabel"]
         $Global:PTS_UI.HeaderTitle.Foreground     = $Global:PTS_Brush["TextDark"]
         $Global:PTS_UI.HeaderSubtitle.Foreground  = $Global:PTS_Brush["TextMuted"]
         $Global:PTS_UI.HeaderBorder.Background    = $Global:PTS_Brush["Surface"]
@@ -472,6 +480,7 @@ function Global:Update-PTSStyles {
     $pbStyle = $Global:PTS_Window.FindResource("PrimaryButton")
     if ($pbStyle) { $pbStyle.IsSealed | Out-Null }
     $Global:PTS_Window.Resources["DynPrimary"]           = $Global:PTS_Brush["Primary"]
+    $Global:PTS_Window.Resources["DynPrimaryText"]       = $Global:PTS_Brush["PrimaryText"]
     $Global:PTS_Window.Resources["DynPrimaryHover"]      = $Global:PTS_Brush["PrimaryHover"]
     $Global:PTS_Window.Resources["DynPrimaryPressed"]    = $Global:PTS_Brush["PrimaryPressed"]
     $Global:PTS_Window.Resources["DynAccent"]            = $Global:PTS_Brush["Accent"]
@@ -506,36 +515,37 @@ function Global:Update-PTSStyles {
     MinWidth="900" MinHeight="600"
     WindowState="Maximized"
     WindowStartupLocation="CenterScreen"
-    Background="#F3F7FA"
+    Background="#F2F5F7"
     FontFamily="Segoe UI">
 
     <Window.Resources>
 
-        <SolidColorBrush x:Key="DynPrimary"            Color="#006A9A"/>
-        <SolidColorBrush x:Key="DynPrimaryHover"       Color="#0080B3"/>
-        <SolidColorBrush x:Key="DynPrimaryPressed"     Color="#004C70"/>
-        <SolidColorBrush x:Key="DynAccent"             Color="#C88A00"/>
-        <SolidColorBrush x:Key="DynAccentSoft"         Color="#F7E7C1"/>
-        <SolidColorBrush x:Key="DynAccentText"         Color="#102A3A"/>
-        <SolidColorBrush x:Key="DynSectionLabel"       Color="#C88A00"/>
-        <SolidColorBrush x:Key="DynTextDark"           Color="#102A3A"/>
-        <SolidColorBrush x:Key="DynTextMid"            Color="#3F5868"/>
-        <SolidColorBrush x:Key="DynTextMuted"          Color="#718696"/>
+        <SolidColorBrush x:Key="DynPrimary"            Color="#00375F"/>
+        <SolidColorBrush x:Key="DynPrimaryText"        Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="DynPrimaryHover"       Color="#00476F"/>
+        <SolidColorBrush x:Key="DynPrimaryPressed"     Color="#002A49"/>
+        <SolidColorBrush x:Key="DynAccent"             Color="#805400"/>
+        <SolidColorBrush x:Key="DynAccentSoft"         Color="#FFF1D5"/>
+        <SolidColorBrush x:Key="DynAccentText"         Color="#00375F"/>
+        <SolidColorBrush x:Key="DynSectionLabel"       Color="#805400"/>
+        <SolidColorBrush x:Key="DynTextDark"           Color="#00375F"/>
+        <SolidColorBrush x:Key="DynTextMid"            Color="#3C5669"/>
+        <SolidColorBrush x:Key="DynTextMuted"          Color="#3C5669"/>
         <SolidColorBrush x:Key="DynBtnSecBg"           Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="DynBtnSecFg"           Color="#3F5868"/>
-        <SolidColorBrush x:Key="DynBtnSecBorder"       Color="#C9D8E2"/>
-        <SolidColorBrush x:Key="DynBtnSecHover"        Color="#F7E7C1"/>
-        <SolidColorBrush x:Key="DynBtnSecHoverBorder"  Color="#C88A00"/>
+        <SolidColorBrush x:Key="DynBtnSecFg"           Color="#3C5669"/>
+        <SolidColorBrush x:Key="DynBtnSecBorder"       Color="#6C8799"/>
+        <SolidColorBrush x:Key="DynBtnSecHover"        Color="#FFF1D5"/>
+        <SolidColorBrush x:Key="DynBtnSecHoverBorder"  Color="#805400"/>
         <SolidColorBrush x:Key="DynTileBg"             Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="DynTileBorder"         Color="#C9D8E2"/>
-        <SolidColorBrush x:Key="DynTileHoverBg"        Color="#F8FBFD"/>
-        <SolidColorBrush x:Key="DynTileHoverBorder"    Color="#C88A00"/>
-        <SolidColorBrush x:Key="DynBtnDisabledBg"      Color="#CAD8E0"/>
-        <SolidColorBrush x:Key="DynBtnDisabledFg"      Color="#8195A3"/>
+        <SolidColorBrush x:Key="DynTileBorder"         Color="#6C8799"/>
+        <SolidColorBrush x:Key="DynTileHoverBg"        Color="#F7F9FA"/>
+        <SolidColorBrush x:Key="DynTileHoverBorder"    Color="#805400"/>
+        <SolidColorBrush x:Key="DynBtnDisabledBg"      Color="#DCE5EB"/>
+        <SolidColorBrush x:Key="DynBtnDisabledFg"      Color="#607B8B"/>
 
         <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="Background"     Value="{DynamicResource DynPrimary}"/>
-            <Setter Property="Foreground"     Value="White"/>
+            <Setter Property="Foreground"     Value="{DynamicResource DynPrimaryText}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding"        Value="16,10"/>
             <Setter Property="FontSize"       Value="13"/>
@@ -598,16 +608,16 @@ function Global:Update-PTSStyles {
         </Style>
 
         <ControlTemplate x:Key="DarkModeToggleTemplate" TargetType="ToggleButton">
-            <Border x:Name="Track" Background="#DDE7ED" CornerRadius="12" Width="50" Height="24">
-                <Border x:Name="Thumb" Background="#006A9A" CornerRadius="10"
+            <Border x:Name="Track" Background="#8CA6B7" CornerRadius="12" Width="50" Height="24">
+                <Border x:Name="Thumb" Background="#00375F" CornerRadius="10"
                         Width="20" Height="20" HorizontalAlignment="Left" Margin="2,0,0,0"/>
             </Border>
             <ControlTemplate.Triggers>
                 <Trigger Property="IsChecked" Value="True">
-                    <Setter TargetName="Track" Property="Background" Value="#0A2B45"/>
+                    <Setter TargetName="Track" Property="Background" Value="#004A75"/>
                     <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
                     <Setter TargetName="Thumb" Property="Margin" Value="0,0,2,0"/>
-                    <Setter TargetName="Thumb" Property="Background" Value="#D79A00"/>
+                    <Setter TargetName="Thumb" Property="Background" Value="#D69A25"/>
                 </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -639,7 +649,7 @@ function Global:Update-PTSStyles {
         </Style>
 
         <Style x:Key="SidebarButton" TargetType="Button">
-            <Setter Property="Background"             Value="#EAF2F7"/>
+            <Setter Property="Background"             Value="#E4EDF3"/>
             <Setter Property="BorderThickness"        Value="0"/>
             <Setter Property="Cursor"                 Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -665,7 +675,7 @@ function Global:Update-PTSStyles {
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Rectangle Grid.Row="0" Fill="#C88A00"/>
+        <Rectangle Grid.Row="0" Fill="#805400"/>
 
         <Grid Grid.Row="1" Grid.IsSharedSizeScope="True">
             <Grid.ColumnDefinitions>
@@ -680,7 +690,7 @@ function Global:Update-PTSStyles {
             </Grid.RowDefinitions>
 
             <!-- SIDEBAR -->
-            <Grid x:Name="SidebarGrid" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4" Background="#EAF2F7">
+            <Grid x:Name="SidebarGrid" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4" Background="#E4EDF3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" SharedSizeGroup="HeaderRow"/>
                     <RowDefinition Height="Auto"/>
@@ -691,16 +701,16 @@ function Global:Update-PTSStyles {
 
                 <!-- Local brand artwork -->
                 <Border Grid.Row="0" x:Name="LogoBorder" Padding="8,4,8,4"
-                        Background="#FFFFFF" BorderBrush="#C9D8E2" BorderThickness="0,0,0,1">
+                        Background="#FFFFFF" BorderBrush="#6C8799" BorderThickness="0,0,0,1">
                     <Image x:Name="BrandLogoImage" Width="244" Height="112" Stretch="Uniform"
                            RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Left"/>
                 </Border>
 
-                <Border x:Name="SidebarDivTop" Grid.Row="1" Height="1" Background="#C9D8E2"/>
+                <Border x:Name="SidebarDivTop" Grid.Row="1" Height="1" Background="#6C8799"/>
 
                 <StackPanel x:Name="SidebarPanel" Grid.Row="2" Margin="0,8,0,0"/>
 
-                <Border x:Name="SidebarDivBot" Grid.Row="3" Height="1" Background="#C9D8E2" Margin="0,8,0,8"/>
+                <Border x:Name="SidebarDivBot" Grid.Row="3" Height="1" Background="#6C8799" Margin="0,8,0,8"/>
 
                 <!-- DARK MODE TOGGLE -->
                 <Grid Grid.Row="4" Margin="12,0,12,14">
@@ -711,7 +721,7 @@ function Global:Update-PTSStyles {
                     <TextBlock x:Name="DarkModeLabel"
                                Grid.Column="0"
                                Text="Light / Dark Mode"
-                               Foreground="#3F5868" FontSize="11"
+                               Foreground="#3C5669" FontSize="11"
                                VerticalAlignment="Center"/>
                     <ToggleButton x:Name="DarkModeToggle"
                                   Grid.Column="1"
@@ -727,7 +737,7 @@ function Global:Update-PTSStyles {
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Border x:Name="HeaderBorder" Grid.Row="0" Background="#FFFFFF" BorderBrush="#DDE7ED"
+                <Border x:Name="HeaderBorder" Grid.Row="0" Background="#FFFFFF" BorderBrush="#8CA6B7"
                         BorderThickness="0,0,0,1" Padding="28,16,28,14">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -745,14 +755,14 @@ function Global:Update-PTSStyles {
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock x:Name="HeaderEyebrow"
                                        Text="POWERTOOLS SUITE"
-                                       Foreground="#C88A00" FontSize="10" FontWeight="Bold"
+                                       Foreground="#805400" FontSize="10" FontWeight="Bold"
                                        Margin="0,0,0,3"/>
                             <TextBlock x:Name="HeaderTitle"
                                        Text="Select a category"
-                                       Foreground="#102A3A" FontSize="20" FontWeight="SemiBold"/>
+                                       Foreground="#00375F" FontSize="20" FontWeight="SemiBold"/>
                             <TextBlock x:Name="HeaderSubtitle"
                                        Text="Choose a tool to get started"
-                                       Foreground="#718696" FontSize="12" Margin="0,3,0,0"/>
+                                       Foreground="#3C5669" FontSize="12" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -762,14 +772,14 @@ function Global:Update-PTSStyles {
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
                               CanContentScroll="False"
-                              Background="#F3F7FA">
+                              Background="#F2F5F7">
                     <ContentControl x:Name="ContentHost" Margin="28,24,28,24"/>
                 </ScrollViewer>
             </Grid>
         </Grid>
 
         <!-- Footer -->
-        <Border x:Name="FooterBorder" Grid.Row="2" Background="#FFFFFF" BorderBrush="#DDE7ED" BorderThickness="0,1,0,0">
+        <Border x:Name="FooterBorder" Grid.Row="2" Background="#FFFFFF" BorderBrush="#8CA6B7" BorderThickness="0,1,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="260"/>
@@ -778,19 +788,19 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v2.0.3  |  Administrator"
-                           Foreground="#3F5868" FontSize="11" FontWeight="SemiBold"
+                           Text="v2.1  |  Administrator"
+                           Foreground="#3C5669" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
                 <TextBlock x:Name="FooterMid" Grid.Column="1"
                            Text="WindowsAcolyte  |  ReAlNoMo"
-                           Foreground="#9AAEBB" FontSize="11"
+                           Foreground="#3C5669" FontSize="11"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
                 <TextBlock x:Name="FooterStatus"
                            Grid.Column="2"
                            Text="Ready"
-                           Foreground="#718696" FontSize="11"
+                           Foreground="#3C5669" FontSize="11"
                            VerticalAlignment="Center" Margin="0,10,20,10"/>
             </Grid>
         </Border>
@@ -1060,7 +1070,7 @@ function Global:Build-PTSSidebar {
                 $child.Background = $Global:PTS_Brush["SidebarActive"]
                 if ($child.Tag.Label)     { $child.Tag.Label.Foreground = $Global:PTS_Brush["SidebarTextActive"]; $child.Tag.Label.FontWeight = "SemiBold" }
                 if ($child.Tag.Badge)     { $child.Tag.Badge.Background = $Global:PTS_Brush["SidebarBadgeBgActive"] }
-                if ($child.Tag.CountText) { $child.Tag.CountText.Foreground = $Global:PTS_Brush["SidebarTextActive"] }
+                if ($child.Tag.CountText) { $child.Tag.CountText.Foreground = $Global:PTS_Brush["AccentText"] }
                 break
             }
         }
@@ -1147,7 +1157,7 @@ function Global:Show-PTSCategoryView {
 
         $badgeText            = New-Object System.Windows.Controls.TextBlock
         $badgeText.Text       = $DisplayName.ToUpper()
-        $badgeText.Foreground = $Global:PTS_Brush["SidebarTextActive"]
+        $badgeText.Foreground = $Global:PTS_Brush["PrimaryText"]
         $badgeText.FontSize   = 9
         $badgeText.FontWeight = "Bold"
         $catBadge.Child       = $badgeText

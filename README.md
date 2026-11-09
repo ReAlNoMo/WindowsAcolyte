@@ -43,7 +43,7 @@ Online mode creates a verified temporary app directory, waits for the elevated a
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v2.0.3`
+**Current version:** `v2.1`
 
 ---
 
@@ -733,7 +733,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.0.3 (Current) - 2026-11-09
+## v2.1 (Current) - 2026-11-09
+- Align Light and Dark themes and the hardware report with the navy and gold logo, with accessible contrast and clearly labeled status colors.
+- Keep open views and selections when switching themes.
+
+## v2.0.3 (Previous) - 2026-11-09
 - Rename shortcut sources to GitHub and Website for clearer desktop labels.
 
 ## v2.0.2 (Previous) - 2026-11-09
@@ -835,7 +839,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.0.3 • November 2026
+Version 2.1 • November 2026
 
 ---
 

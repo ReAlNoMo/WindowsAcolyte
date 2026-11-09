@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.0.3` (2026-11-09).
+Current version: `v2.1` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -25,7 +25,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Shortcut Arrow Visibility | Windows Tools | Overlay precheck, typed original-state backup, transparent ICO and restore |
 | Recommended Tools | Gaming Performance | Thirteen entries grouped into GPU/drivers, CPU/RAM, monitor/mouse, diagnostics, audio and Windows utilities; Equalizer APO + Peace has separate official project links |
 
-The shell supports Light/Dark themes, category tiles, JSONL exception logging and an active-operation guard for downloads/hash/report work during theme changes, navigation and app close. Documentation screenshots may show an earlier version.
+The shell uses logo-aligned navy/gold Light and Dark themes with tonal backgrounds and labeled green/red status colors. Switching themes preserves the open view and selections; the hardware HTML report follows the same palette. The shell also supports category tiles, JSONL exception logging and an active-operation guard for downloads/hash/report work during theme changes, navigation and app close. Documentation screenshots may show an earlier version.
 
 ## Tech stack and architecture
 
@@ -56,7 +56,7 @@ Start-WindowsAcolyte.ps1        Online update gate and local startup
 README.md                      User guide and version history
 docs/README.md                 This architecture/operator overview
 modules/                       Twelve PowerShell modules, 01 through 12
-tests/                         Ten standalone PowerShell test scripts
+tests/                         Eleven standalone PowerShell test scripts
 logo/                          Logo and app/shortcut ICO assets
 screenshots/                   README illustrations, not installed
 .github/ISSUE_TEMPLATE/        GitHub issue templates
@@ -139,6 +139,7 @@ pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerInput.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ShortcutArrowVisibility.ps1
 pwsh -NoProfile -STA -File .\tests\Test-RecommendedTools.ps1
+pwsh -NoProfile -STA -File .\tests\Test-ThemeColors.ps1
 pwsh -NoProfile -STA -File .\tests\Test-DesktopShortcutCreator.ps1
 pwsh -NoProfile -File .\tests\Test-OnlineRun.ps1
 pwsh -NoProfile -File .\tests\Test-LocalUpdater.ps1
