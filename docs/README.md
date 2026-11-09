@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v1.9.2` (2026-11-09).
+Current version: `v2.0` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -56,7 +56,7 @@ Start-WindowsAcolyte.ps1        Online update gate and local startup
 README.md                      User guide and version history
 docs/README.md                 This architecture/operator overview
 modules/                       Twelve PowerShell modules, 01 through 12
-tests/                         Nine standalone PowerShell test scripts
+tests/                         Ten standalone PowerShell test scripts
 logo/                          Logo and app/shortcut ICO assets
 screenshots/                   README illustrations, not installed
 .github/ISSUE_TEMPLATE/        GitHub issue templates
@@ -85,13 +85,22 @@ From the repository root, install/update and launch the local installation:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\Start-WindowsAcolyte.ps1
 ```
 
+Start a verified temporary session from either source:
+
+```powershell
+& ([scriptblock]::Create((irm https://windowsacolyte.de))) -OnlineRun
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
+```
+
+The starter waits for the elevated app process before deleting its unique temporary directory. UAC approval may be required. Profiles, backups and logs use persistent locations. A cleanup failure or detected reparse point retains the temporary directory and emits a warning. Abruptly terminating the starter can also leave the temporary directory behind.
+
 Perform the identical online check/update without launching the app:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "$env:LOCALAPPDATA\WindowsAcolyte\Start-WindowsAcolyte.ps1" -UpdateOnly
 ```
 
-`-OnlineInstaller` is retained for existing online-installer links; it uses the same update-and-start path. There is no offline bypass option. `-UpdateOnly` reports the revision and changed/removed file counts; it exits with an error if the check fails.
+`-OnlineInstaller` is retained for existing links and uses the permanent update-and-start path. `-OnlineRun` starts a verified temporary session and waits for the elevated app to exit before cleanup. There is no offline bypass option. `-UpdateOnly` reports the revision and changed/removed file counts; it exits with an error if the check fails.
 
 Developer launch of the checkout, without overwriting it with remote application files:
 
@@ -99,7 +108,7 @@ Developer launch of the checkout, without overwriting it with remote application
 pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1
 ```
 
-Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. The two domain variants download the same checked starter via windowsacolyte.de. The local/GitHub variants use the installed starter and check GitHub. WA means WindowsAcolyte. The creator uses short names WA Local Start, WA Local Installer, WA Online Start and WA Online Installer. Previously created links remain usable.
+Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. WA means WindowsAcolyte. WA Install Git and WA Install .de update the permanent installation. WA Online Git and WA Online .de use a verified temporary copy. The domain currently redirects to the GitHub starter; both entry sources check GitHub and retrieve commit-pinned files. The elevated app is awaited before cleanup. Profiles and backups stay in their existing persistent locations; online-session logs are written to the persistent WindowsAcolyte logs directory. Previously created links keep their original behavior.
 
 ## Configuration and persistence
 
@@ -131,6 +140,7 @@ pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ShortcutArrowVisibility.ps1
 pwsh -NoProfile -STA -File .\tests\Test-RecommendedTools.ps1
 pwsh -NoProfile -STA -File .\tests\Test-DesktopShortcutCreator.ps1
+pwsh -NoProfile -File .\tests\Test-OnlineRun.ps1
 pwsh -NoProfile -File .\tests\Test-LocalUpdater.ps1
 powershell.exe -NoProfile -File .\tests\Test-LocalUpdater.ps1
 ```

@@ -7,8 +7,10 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 1.9.2
+    Version : 2.0
 #>
+
+param([string]$LogRoot)
 
 # ===========================================================================
 # POWERSHELL 7 CHECK
@@ -74,6 +76,7 @@ function Resolve-PTSLauncherPowerShell7 {
 if (-not (Test-IsAdmin)) {
     $self    = $MyInvocation.MyCommand.Path
     $argList = '-NoProfile', '-ExecutionPolicy', 'Bypass', '-STA', '-File', "`"$self`""
+    if ($LogRoot) { $argList += '-LogRoot', "`"$LogRoot`"" }
     $pwshPath = Resolve-PTSLauncherPowerShell7
     Start-Process -FilePath $pwshPath -ArgumentList $argList -Verb RunAs
     exit 0
@@ -89,7 +92,7 @@ Add-Type -AssemblyName System.Windows.Forms
 
 $Global:PTS_RootPath    = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Global:PTS_ModulesPath = Join-Path $Global:PTS_RootPath "modules"
-$Global:PTS_LogRootPath = Join-Path $Global:PTS_RootPath "logs"
+$Global:PTS_LogRootPath = if ($LogRoot) { $LogRoot } else { Join-Path $Global:PTS_RootPath "logs" }
 $Global:PTS_LogSessionId = [guid]::NewGuid().ToString()
 $Global:PTS_ErrorLogPath = Join-Path $Global:PTS_LogRootPath ("errors-{0}.jsonl" -f (Get-Date -Format "yyyy-MM-dd"))
 $Global:PTS_LogLock = New-Object object
@@ -794,7 +797,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v1.9.2  |  Administrator"
+                           Text="v2.0  |  Administrator"
                            Foreground="#3F5868" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 

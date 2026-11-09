@@ -24,7 +24,7 @@ Register-PowerToolsModule `
             <TextBlock Text="DESKTOP SHORTCUTS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                       Text="WA means WindowsAcolyte. Local shortcuts use the installed starter and check GitHub for updates. Online shortcuts download the starter from windowsacolyte.de. Start and Installer currently run the same update-and-start flow within each source."/>
+                       Text="Install downloads and updates the permanent local app. Online runs a verified temporary copy and removes it after the app closes. Choose GitHub or windowsacolyte.de as the starter source. Profiles, backups and logs are retained."/>
         </StackPanel>
     </Border>
 
@@ -33,13 +33,13 @@ Register-PowerToolsModule `
         <StackPanel>
             <TextBlock Text="SHORTCUTS TO CREATE" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,10"/>
-            <CheckBox x:Name="LocalShortcutCheck" Content="WA Local Start"
+            <CheckBox x:Name="LocalShortcutCheck" Content="WA Install Git"
                       FontSize="13" IsChecked="True" Margin="0,0,0,10"/>
-            <CheckBox x:Name="InstallerShortcutCheck" Content="WA Local Installer"
+            <CheckBox x:Name="InstallerShortcutCheck" Content="WA Install .de"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
-            <CheckBox x:Name="DomainStartCheck" Content="WA Online Start"
+            <CheckBox x:Name="DomainStartCheck" Content="WA Online Git"
                       FontSize="13" IsChecked="False" Margin="0,0,0,10"/>
-            <CheckBox x:Name="DomainInstallerCheck" Content="WA Online Installer"
+            <CheckBox x:Name="DomainInstallerCheck" Content="WA Online .de"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
             <TextBlock x:Name="DesktopPathText" FontSize="12" TextWrapping="Wrap"/>
             <TextBlock x:Name="IconInfoText" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
@@ -162,7 +162,7 @@ Register-PowerToolsModule `
 
     function Global:DSC-GetIconLocation {
         $candidates = @()
-        if (-not [string]::IsNullOrWhiteSpace($Global:PTS_RootPath)) {
+        if (-not [string]::IsNullOrWhiteSpace($Global:PTS_RootPath) -and [IO.Path]::GetFileName($Global:PTS_RootPath) -notmatch '^WindowsAcolyte-Online-[0-9a-f]{32}$') {
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon_v4.ico")
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon_v3.ico")
             $candidates += (Join-Path $Global:PTS_RootPath "logo\Windows_Acolyte_Shortcut_Icon_v2.ico")
@@ -231,53 +231,26 @@ Register-PowerToolsModule `
             }
 
             $desktop = DSC-GetDesktopPath
-            $installPath = Join-Path $env:LOCALAPPDATA "WindowsAcolyte"
-            $launcherPath = Join-Path $installPath "WindowsAcolyte.ps1"
             $shortcutHostPath = DSC-GetShortcutHostPath
-            $bootstrapPath = DSC-EnsurePowerShell7Bootstrap -InstallPath $installPath
             $iconLocation = DSC-GetIconLocation
-
-            DSC-AddLog "Desktop target: $desktop"
-            DSC-AddLog "Stable shortcut host: $shortcutHostPath"
-            DSC-AddLog "PowerShell 7 bootstrap: $bootstrapPath"
-            DSC-AddLog "Icon resource: $iconLocation"
-
-            if ($createLocal) {
-                if (-not (Test-Path -LiteralPath $launcherPath)) {
-                    DSC-AddLog "Local app script not found yet: $launcherPath" "WARN"
+            $github = 'https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1'
+            $domain = 'https://windowsacolyte.de'
+            $choices = @(
+                @{Selected=$createLocal; Name='WA Install Git'; Uri=$github; Online=$false}
+                @{Selected=$createInstaller; Name='WA Install .de'; Uri=$domain; Online=$false}
+                @{Selected=$createDomainStart; Name='WA Online Git'; Uri=$github; Online=$true}
+                @{Selected=$createDomainInstaller; Name='WA Online .de'; Uri=$domain; Online=$true}
+            )
+            foreach ($choice in $choices | Where-Object Selected) {
+                $command = if ($choice.Online) {
+                    '& ([scriptblock]::Create((irm ' + $choice.Uri + '))) -OnlineRun'
+                } else {
+                    'irm ' + $choice.Uri + ' | iex'
                 }
-
-                $path = DSC-NewShortcut `
-                    -Name "WA Local Start" `
-                    -TargetPath $shortcutHostPath `
-                    -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}"' -f $bootstrapPath) `
-                    -WorkingDirectory $installPath `
-                    -Description "Check GitHub, update local files and start WindowsAcolyte. Startup is blocked if the check fails." `
-                    -IconLocation $iconLocation
-                DSC-AddLog "Created: $path" "OK"
-            }
-
-            if ($createInstaller) {
-                $path = DSC-NewShortcut `
-                    -Name "WA Local Installer" `
-                    -TargetPath $shortcutHostPath `
-                    -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}" -OnlineInstaller' -f $bootstrapPath) `
-                    -WorkingDirectory $installPath `
-                    -Description "Install or update WindowsAcolyte from GitHub via a version-safe PowerShell 7 bootstrap." `
-                    -IconLocation $iconLocation
-                DSC-AddLog "Created: $path" "OK"
-            }
-            $domainArguments = '-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -Command "irm https://windowsacolyte.de | iex"'
-            if ($createDomainStart) {
-                $path = DSC-NewShortcut -Name 'WA Online Start' `
-                    -TargetPath $shortcutHostPath -Arguments $domainArguments -WorkingDirectory $installPath `
-                    -Description 'Download and run the WindowsAcolyte starter from windowsacolyte.de.' -IconLocation $iconLocation
-                DSC-AddLog "Created: $path" 'OK'
-            }
-            if ($createDomainInstaller) {
-                $path = DSC-NewShortcut -Name 'WA Online Installer' `
-                    -TargetPath $shortcutHostPath -Arguments $domainArguments -WorkingDirectory $installPath `
-                    -Description 'Download and run the WindowsAcolyte starter from windowsacolyte.de.' -IconLocation $iconLocation
+                $arguments = '-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -Command "' + $command + '"'
+                $description = if ($choice.Online) { 'Run a verified temporary WindowsAcolyte session.' } else { 'Install or update WindowsAcolyte locally and launch it.' }
+                $path = DSC-NewShortcut -Name $choice.Name -TargetPath $shortcutHostPath -Arguments $arguments `
+                    -WorkingDirectory $desktop -Description $description -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" 'OK'
             }
         } catch {

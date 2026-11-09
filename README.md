@@ -21,6 +21,20 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 
 ---
 
+### Run a temporary online session
+
+```powershell
+# windowsacolyte.de
+& ([scriptblock]::Create((irm https://windowsacolyte.de))) -OnlineRun
+
+# GitHub
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
+```
+
+Online mode creates a verified temporary app directory, waits for the elevated app to close and then removes that directory. Profiles, backups and logs remain in their persistent locations. If cleanup fails or detects a reparse point, the temporary directory is retained and a warning is emitted. UAC approval may be required.
+
+---
+
 ## ⚙️ Requirements
 
 | Requirement | Details |
@@ -29,7 +43,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.9.2`
+**Current version:** `v2.0`
 
 ---
 
@@ -543,13 +557,13 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
-- WA stands for WindowsAcolyte. Local shortcuts use the installed starter and check GitHub. Online shortcuts load the starter from windowsacolyte.de.
+- WA stands for WindowsAcolyte. Install shortcuts create or update the permanent local installation. Online shortcuts run a verified temporary copy. Git and .de specify the starter URL.
 - Uses English shortcut names:
-  - `WA Local Start.lnk`
-  - `WA Local Installer.lnk`
-  - `WA Online Start.lnk`
-  - `WA Online Installer.lnk`
-- The two .de links both run `irm https://windowsacolyte.de | iex` and fetch the same update-and-start script. The local/GitHub links use the installed starter and GitHub update check.
+  - `WA Install Git.lnk`
+  - `WA Install .de.lnk`
+  - `WA Online Git.lnk`
+  - `WA Online .de.lnk`
+- Git and .de each offer an Install and an Online shortcut. The domain currently redirects to the GitHub starter; both sources use GitHub for the version check and pinned application files. Online sessions wait for the elevated app to exit before cleanup; logs, profiles and backups are retained.
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
 - Downloads are staged and checked for integrity and PowerShell 7 syntax before application (the starter also remains compatible with its Windows PowerShell host). Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
@@ -719,7 +733,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.9.2 (Current) - 2026-11-09
+## v2.0 (Current) - 2026-11-09
+- Add distinct permanent installation and verified temporary online sessions through GitHub or windowsacolyte.de.
+- Wait for the elevated app to exit before cleaning the temporary session; preserve profiles, backups and logs.
+
+## v1.9.2 (Previous) - 2026-11-09
 - Shorten the four desktop shortcut names to WA Local Start, WA Local Installer, WA Online Start and WA Online Installer. WA stands for WindowsAcolyte.
 
 ## v1.9.1 (Previous) - 2026-11-09
@@ -808,7 +826,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.9.2 • November 2026
+Version 2.0 • November 2026
 
 ---
 

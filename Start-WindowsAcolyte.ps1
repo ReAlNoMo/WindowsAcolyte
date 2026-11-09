@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-param([switch]$OnlineInstaller, [switch]$UpdateOnly)
+param([switch]$OnlineInstaller, [switch]$UpdateOnly, [switch]$OnlineRun)
 
 # The desktop link uses Windows PowerShell so Store updates cannot break its target.
 # Dot sourcing exposes the updater for tests without installing or launching anything.
@@ -222,6 +222,36 @@ function Invoke-WAULocalStart {
     if ($LASTEXITCODE -ne 0) { throw "WindowsAcolyte exited with code $LASTEXITCODE." }
 }
 
+function Invoke-WAUOnlineRun {
+    # The unique directory is held until the elevated application itself exits.
+    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar)
+    $session = Join-Path $tempRoot ('WindowsAcolyte-Online-' + [guid]::NewGuid().ToString('N'))
+    try {
+        $null = Sync-WAUInstallation -InstallPath $session
+        $pwsh = Find-WAUPowerShell7
+        $appPath = Join-Path $session 'WindowsAcolyte.ps1'
+        $logRoot = Join-Path $env:LOCALAPPDATA 'WindowsAcolyte\logs'
+        if ($script:WAUForm) { $script:WAUForm.Hide() }
+        $arguments = @('-NoProfile','-ExecutionPolicy','Bypass','-STA','-File',('"{0}"' -f $appPath),'-LogRoot',('"{0}"' -f $logRoot))
+        $process = Start-Process -FilePath $pwsh -ArgumentList $arguments -Verb RunAs -Wait -PassThru -ErrorAction Stop
+        if ($process.ExitCode -ne 0) { throw "WindowsAcolyte exited with code $($process.ExitCode)." }
+    } finally {
+        $fullSession = [IO.Path]::GetFullPath($session)
+        $safePrefix = $tempRoot + [IO.Path]::DirectorySeparatorChar
+        if ($fullSession.StartsWith($safePrefix, [StringComparison]::OrdinalIgnoreCase) -and
+            [IO.Path]::GetFileName($fullSession) -match '^WindowsAcolyte-Online-[0-9a-f]{32}$' -and
+            (Test-Path -LiteralPath $fullSession -PathType Container)) {
+            $links = @(Get-Item -LiteralPath $fullSession -Force) + @(Get-ChildItem -LiteralPath $fullSession -Recurse -Force -ErrorAction Stop)
+            if (@($links | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count) {
+                Write-Warning "Temporary directory retained because it contains a reparse point: $fullSession"
+            } else {
+                try { Remove-Item -LiteralPath $fullSession -Recurse -Force -ErrorAction Stop }
+                catch { Write-Warning "Temporary directory could not be removed: $fullSession" }
+            }
+        }
+    }
+}
+
 if ($MyInvocation.InvocationName -ne '.') {
     $ErrorActionPreference = 'Stop'
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -244,7 +274,9 @@ if ($MyInvocation.InvocationName -ne '.') {
             $script:WAUForm.Show()
         }
         # -OnlineInstaller is retained for existing links and uses the same checked update flow.
-        Invoke-WAULocalStart -InstallPath (Join-Path $env:LOCALAPPDATA 'WindowsAcolyte') -OnlyUpdate:$UpdateOnly
+        if ($OnlineRun -and ($UpdateOnly -or $OnlineInstaller)) { throw 'OnlineRun cannot be combined with installation/update switches.' }
+        if ($OnlineRun) { Invoke-WAUOnlineRun }
+        else { Invoke-WAULocalStart -InstallPath (Join-Path $env:LOCALAPPDATA 'WindowsAcolyte') -OnlyUpdate:$UpdateOnly }
     } catch {
         if ($UpdateOnly) { Write-Error $_; exit 1 }
         [System.Windows.Forms.MessageBox]::Show("Online check or update failed. WindowsAcolyte was not started.`n`n$($_.Exception.Message)`n`nCheck your internet connection and try again.", 'WindowsAcolyte - Start blocked', 'OK', 'Error') | Out-Null
