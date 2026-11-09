@@ -7,10 +7,10 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 2.1.1
+    Version : 2.1.2
 #>
 
-param([string]$LogRoot)
+param([string]$LogRoot, [switch]$Development)
 
 # ===========================================================================
 # POWERSHELL 7 CHECK
@@ -29,7 +29,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
 }
 
 # ===========================================================================
-# ADMIN SELF-ELEVATION
+# PROTECTED START
 # ===========================================================================
 function Test-IsAdmin {
     $id = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -37,49 +37,15 @@ function Test-IsAdmin {
     return $pr.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Resolve-PTSLauncherPowerShell7 {
-    $windowsAppsAlias = Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\pwsh.exe"
-    $candidates = @()
-
-    try {
-        $currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
-        if ($currentPath) { $candidates += $currentPath }
-    } catch {}
-
-    if (-not [string]::IsNullOrWhiteSpace($env:ProgramFiles)) {
-        $candidates += (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe")
-        $candidates += (Join-Path $env:ProgramFiles "PowerShell\7-preview\pwsh.exe")
-    }
-
-    $programFilesX86 = [Environment]::GetEnvironmentVariable("ProgramFiles(x86)")
-    if (-not [string]::IsNullOrWhiteSpace($programFilesX86)) {
-        $candidates += (Join-Path $programFilesX86 "PowerShell\7\pwsh.exe")
-    }
-
-    $cmds = Get-Command "pwsh.exe" -All -ErrorAction SilentlyContinue
-    foreach ($cmd in $cmds) {
-        if ($cmd.Source) { $candidates += $cmd.Source }
-    }
-
-    foreach ($candidate in $candidates | Where-Object { $_ } | Select-Object -Unique) {
-        if ((Test-Path -LiteralPath $candidate) -and
-            ([System.IO.Path]::GetFileName($candidate) -ieq "pwsh.exe") -and
-            ($candidate -ine $windowsAppsAlias) -and
-            ($candidate -notlike "*\Microsoft\WindowsApps\pwsh.exe")) {
-            return $candidate
-        }
-    }
-
-    return "pwsh.exe"
-}
-
-if (-not (Test-IsAdmin)) {
-    $self    = $MyInvocation.MyCommand.Path
-    $argList = '-NoProfile', '-ExecutionPolicy', 'Bypass', '-STA', '-File', "`"$self`""
-    if ($LogRoot) { $argList += '-LogRoot', "`"$LogRoot`"" }
-    $pwshPath = Resolve-PTSLauncherPowerShell7
-    Start-Process -FilePath $pwshPath -ArgumentList $argList -Verb RunAs
-    exit 0
+$runtimeRoot = Split-Path -Parent $PSCommandPath
+$protectedRuntime = (Split-Path -Parent $runtimeRoot) -eq [Environment]::GetFolderPath('ProgramFiles') -and
+    (Split-Path -Leaf $runtimeRoot) -match '\AWindowsAcolyte-Run-[0-9a-f]{32}\z'
+if (-not (Test-IsAdmin) -or (-not $protectedRuntime -and -not $Development)) {
+    Add-Type -AssemblyName System.Windows.Forms
+    [void][System.Windows.Forms.MessageBox]::Show(
+        'Start WindowsAcolyte with Start-WindowsAcolyte.ps1 or a current desktop shortcut. For checkout development, open an administrator PowerShell 7 session and pass -Development.',
+        'WindowsAcolyte - Protected start required', 'OK', 'Warning')
+    exit 1
 }
 
 # ===========================================================================
@@ -788,7 +754,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v2.1.1  |  Administrator"
+                           Text="v2.1.2  |  Administrator"
                            Foreground="#3C5669" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 

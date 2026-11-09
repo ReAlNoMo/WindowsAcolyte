@@ -1,12 +1,12 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.1.1` (2026-11-09).
+Current version: `v2.1.2` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
 ## Overview
 
-WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administration, diagnostics, controlled system tuning and downloads. The shell dynamically loads twelve modules from `modules/*.ps1`. The application self-elevates; individual module metadata still describes which operations need administrator rights.
+WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administration, diagnostics, controlled system tuning and downloads. The shell loads twelve release modules. The starter requests administrator approval before it runs the verified app copy. Module metadata describes which operations require administrator rights.
 
 ## Features and modules
 
@@ -37,16 +37,15 @@ The shell uses logo-aligned navy/gold Light and Dark themes with tonal backgroun
 - System integration: Registry APIs/providers, CIM/WMI, native input APIs and `powercfg`.
 - No package-manager dependencies, `.env`, database, web server or separate build step are required.
 
-Shortcut startup sequence:
+Checked startup sequence
 
-1. Stable Windows PowerShell host runs the installed `Start-WindowsAcolyte.ps1`.
-2. Acquire the per-installation update lock; resolve the current GitHub `main` commit and its complete tree.
-3. Compare local managed-file Git blob hashes. Stage missing/changed files from that immutable commit and verify hashes and syntax with the PowerShell 7 app runtime; also validate the starter against its current host.
-4. Back up destinations, apply the update, verify copied files and write `.installed-release.json`. Failed application rolls back earlier writes; incomplete recovery retains backup files and blocks launch.
-5. Only after a successful online check, resolve PowerShell 7 and start the app. Offline/API/download/update failures block startup with a visible message.
-6. App checks PowerShell 7, elevates if needed, loads WPF assemblies/themes/modules, then renders category navigation.
+1. All four current desktop shortcuts retrieve the starter from GitHub or the Website. The installed starter is a separate entry point.
+2. Install mode resolves GitHub `main`, validates and updates the per-user cache, and records the commit in `.installed-release.json`. The cache lock and rollback cover this update. Update-only stops here.
+3. The starter requests elevation for a Windows PowerShell runner held in memory. Online mode resolves GitHub `main` in the runner and skips the cache update.
+4. The runner creates a temporary directory under Program Files with access limited to Administrators and SYSTEM. It accepts cached content only after verifying the copied bytes against the pinned tree. It downloads other managed files from that commit and checks their hashes and PowerShell syntax.
+5. The runner starts the verified app with a system-wide PowerShell 7 installation or the official Store package. The app loads release modules from the protected copy. The runner waits for the app before cleanup.
 
-Directly running `WindowsAcolyte.ps1` is a developer path and bypasses the shortcut's update gate. Use the starter or desktop link for the checked user launch.
+The checked startup path requires internet access. Direct checkout execution requires an administrator PowerShell 7 session and `-Development`.
 
 Each module calls `Register-PowerToolsModule` with an ID, name, description, category, administrator metadata and a `-Show` scriptblock returning the WPF view. Module source filenames are discovered automatically; no static module list needs editing.
 
@@ -72,7 +71,7 @@ The installer name used in older documentation, `install.ps1`, is no longer pres
 
 ## Installation and CLI
 
-Install PowerShell 7 separately if missing; the starter does not download the runtime.
+Install PowerShell 7 with the system-wide Microsoft MSI or the official Store package. Run installation and update-only commands from a regular PowerShell window.
 
 ```powershell
 irm https://windowsacolyte.de | iex
@@ -81,13 +80,13 @@ irm https://windowsacolyte.de | iex
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
-From the repository root, run the checked starter to install/update and launch the permanent installation:
+From the repository root, run the checked starter to install or update and launch the verified app.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\Start-WindowsAcolyte.ps1
 ```
 
-To start an **existing local installation**, run its installed starter. This is a local entry point, but it still checks GitHub online and updates the permanent copy before opening it:
+To start an **existing local installation**, run its installed starter. It checks GitHub, updates the per-user cache and starts a protected copy.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "$env:LOCALAPPDATA\WindowsAcolyte\Start-WindowsAcolyte.ps1"
@@ -100,7 +99,7 @@ Start a verified temporary session from either source:
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
 ```
 
-The temporary session is separate from the permanent installation and does not update it. The starter waits for the elevated app process before deleting its unique temporary directory. UAC approval may be required. Profiles, backups and logs use persistent locations. A cleanup failure or detected reparse point retains the temporary directory and emits a warning. Abruptly terminating the starter can also leave the temporary directory behind.
+The temporary session uses a protected directory under Program Files and leaves the per-user installation intact. The runner waits for the elevated app before cleanup. Profiles, backups and logs use persistent locations. A cleanup failure, detected reparse point or abrupt termination can leave the directory behind.
 
 Perform the identical online check/update without launching the app:
 
@@ -110,10 +109,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "$env:LOCALAPPDATA\
 
 `-OnlineInstaller` is retained for existing links and uses the permanent update-and-start path. `-OnlineRun` starts a verified temporary session and waits for the elevated app to exit before cleanup. There is no offline bypass option. `-UpdateOnly` reports the revision and changed/removed file counts; it exits with an error if the check fails.
 
-Developer launch of the checkout, without overwriting it with remote application files:
+Developer launch of the checkout from an administrator PowerShell 7 session
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1 -Development
 ```
 
 Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. WA means WindowsAcolyte. WA Install GitHub and WA Install Website update the permanent installation. WA Online GitHub and WA Online Website use a verified temporary copy. All four new shortcuts retrieve their selected starter URL on every launch; they do not invoke the installed local starter. The domain currently redirects to the GitHub starter; both entry sources check GitHub and retrieve commit-pinned files. The elevated app is awaited before cleanup. Profiles and backups stay in their existing persistent locations; online-session logs are written to the persistent WindowsAcolyte logs directory. Previously created links keep their original behavior.
@@ -125,17 +124,18 @@ Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Cr
 | `%LOCALAPPDATA%\WindowsAcolyte` | Installed app, modules, logos and both READMEs |
 | `.installed-release.json` inside installation | Last verified GitHub revision, UTC check time and managed-file list |
 | `.update.lock` / `.updates` inside installation | Update serialization and staging/rollback workspace |
-| `logs/errors-YYYY-MM-dd.jsonl` inside app directory | Structured exception logs |
+| `%LOCALAPPDATA%\WindowsAcolyte\logs` | Structured exception logs for checked launches |
+| `%ProgramFiles%\WindowsAcolyte-Run-*` | Temporary runtime with access limited to Administrators and SYSTEM |
 | `%LOCALAPPDATA%\WindowsAcolyte\GamingOptimizer` | Gaming optimizer profile JSON files |
 | `%ProgramData%\WindowsAcolyte\GamingOptimizer` | Saved original optional input/USB settings, including user-SID-scoped input backups |
 | `%ProgramData%\WindowsAcolyte\ShortcutArrowOverlay` | Protected transparent ICO and original typed overlay value |
 | `%USERPROFILE%` and Desktop/Downloads folders | Default report and downloader destinations |
 
-There are no application API keys or secrets to configure. The updater uses public GitHub HTTPS endpoints (`api.github.com` and `raw.githubusercontent.com`). The managed-file allowlist covers the app, starter, both READMEs, module scripts and logo PNG/ICO/SVG assets. Profiles, logs, backups and untracked custom modules are retained. Previously tracked managed files removed from GitHub are removed locally. Other policy/developer documents remain available in the repository rather than being installed.
+The updater uses public GitHub HTTPS endpoints (`api.github.com` and `raw.githubusercontent.com`). The managed-file allowlist covers the app, starter, both READMEs, module scripts and logo PNG/ICO/SVG assets. Profiles, logs, backups and untracked custom modules are retained in their persistent locations. Checked launches exclude custom modules from the protected runtime. Previously tracked managed files removed from GitHub are removed from the cache. Other policy and developer documents remain available in the repository.
 
 ## Development and testing
 
-Edit the checkout and launch it directly for development. Preserve control names/event wiring, module registration and Light/Dark resources. Add modules through the existing registry contract. Use isolated test storage and mocked system-write APIs where possible; do not assume registry readback proves runtime performance.
+Edit the checkout and use the developer command above. Preserve control names/event wiring, module registration and Light/Dark resources. Add modules through the existing registry contract. Use isolated test storage and mocked system-write APIs where possible; do not assume registry readback proves runtime performance.
 
 From the repository root:
 
@@ -164,6 +164,7 @@ Before declaring work finished, review the app/UI version and current-version te
 
 ## Troubleshooting and recovery
 
+- **First launch after updating from 2.1.1 or earlier** An older local starter can update the installation before it learns the new launch path. Rerun the updated starter or use a current online shortcut.
 - **Startup blocked:** check connectivity to GitHub, proxy/firewall and API rate limits, then retry. A failed online check deliberately does not start an older app silently.
 - **PowerShell 7 missing:** install it from [Microsoft](https://aka.ms/powershell), then retry the same desktop link.
 - **Module missing:** check the installed module file, last verified revision, registration and JSONL error log. Modules are loaded when the app starts; close and reopen an already running app after synchronization.

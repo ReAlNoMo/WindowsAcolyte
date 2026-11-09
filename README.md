@@ -10,7 +10,7 @@
 
 ### ⚡ Install / Update
 
-> Requires internet access, PowerShell 7 and Windows administrator approval.
+> Use a regular PowerShell window. Install PowerShell 7 with the system-wide Microsoft MSI or the official Microsoft Store package. The app requests Windows administrator approval.
 
 ```powershell
 irm https://windowsacolyte.de | iex
@@ -31,7 +31,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
 ```
 
-Online mode creates a verified temporary app directory, waits for the elevated app to close and then removes that directory. Profiles, backups and logs remain in their persistent locations. If cleanup fails or detects a reparse point, the temporary directory is retained and a warning is emitted. UAC approval may be required.
+Online mode verifies the release in a temporary administrator-protected directory under Program Files. The runner waits for the app to close before cleanup. Profiles, backups and logs use their persistent locations. A cleanup failure or detected reparse point leaves the directory in place and shows a warning.
 
 ---
 
@@ -39,9 +39,9 @@ Online mode creates a verified temporary app directory, waits for the elevated a
 
 | Choice | What happens | Internet required? |
 |---|---|---|
-| **Install** | Installs or updates `%LOCALAPPDATA%\WindowsAcolyte`, then opens the permanent copy. | Yes |
-| **Local starter** | Runs the installed starter, checks GitHub for updates, then opens the permanent copy. | Yes |
-| **Online** | Downloads a checked copy into a unique temporary folder, runs it and normally removes the folder after the elevated app closes. The permanent installation is not updated. | Yes |
+| **Install** | Installs or updates `%LOCALAPPDATA%\WindowsAcolyte`, then runs a verified copy from a protected temporary directory. | Yes |
+| **Local starter** | Starts from the installed starter, updates the per-user cache and runs a protected copy. | Yes |
+| **Online** | Downloads and runs a protected copy for this session. The per-user installation is left intact. | Yes |
 
 **GitHub** and **Website** select where the starter is retrieved. The Website currently redirects to the GitHub starter; both modes use GitHub for the version check and application files. All four newly created desktop shortcuts download their starter from the selected source every time. The separately installed local starter is a local entry point, but still requires an online update check:
 
@@ -49,7 +49,7 @@ Online mode creates a verified temporary app directory, waits for the elevated a
 powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "$env:LOCALAPPDATA\WindowsAcolyte\Start-WindowsAcolyte.ps1"
 ```
 
-Each checked start resolves a GitHub commit, compares managed files, downloads missing or changed files from that commit and validates hashes and PowerShell syntax before applying them. If the online check, download or update fails, startup is blocked; there is no offline fallback. Git hashes verify downloaded content against the selected GitHub commit, not an independently signed release. The app requests administrator approval when opening.
+Each checked start selects a GitHub commit. Install mode updates the per-user cache. After administrator approval, the runner verifies files in a protected directory and runs the release copy. It downloads files from the pinned commit when cached bytes are missing or differ. Download, verification and update failures block startup. Git hashes verify content against the selected commit.
 
 Online sessions retain profiles, backups and logs in their persistent locations. Temporary cleanup can be incomplete after forced termination, a cleanup error or a detected reparse point. See the [project overview](docs/README.md#installation-and-cli) for update-only and developer commands.
 
@@ -59,11 +59,11 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 
 | Requirement | Details |
 |------------|--------|
-| 🟦 PowerShell | 7.0+ for the app; install separately if missing. Starter also supports Windows PowerShell 5.1. |
+| 🟦 PowerShell | System-wide PowerShell 7 MSI or official Microsoft Store package. The starter also supports Windows PowerShell 5.1. |
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1.1`
+**Current version:** `v2.1.2`
 
 ---
 
@@ -133,7 +133,7 @@ The application requests administrator privileges at startup. Module labels belo
 - Disable Folder Type Discovery with `FolderType = NotSpecified`
 - Apply to all folder types (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)
 - Clear Shell Bags, BagMRU, Desktop/Defaults Streams, and common Open/Save dialog view caches
-- Optionally restart Explorer after applying settings
+- Optionally restart the current user's desktop Explorer shell after applying settings
 - Apply now supports **apply + revert**: unchecked options are reverted when possible
 - Automatic recheck runs immediately after apply so new states are shown without manual refresh
 
@@ -420,7 +420,7 @@ Command semantics: [Microsoft fsutil behavior](https://learn.microsoft.com/en-us
 
 A gold warning panel labeled **EXTERNAL LINKS - LIABILITY NOTICE** appears above all recommendations in both Light and Dark modes. It explains that linked websites/downloads are third-party content, describes the limits of warranty/liability to the extent legally permitted, reminds users of destination-site privacy/usage terms and retains statutory liability and review/removal obligations. **Report a problematic link (GitHub Issues)** opens the project issue page without submitting anything automatically. Sensitive security reports should follow `SECURITY.md` instead of public issues.
 
-Research reviewed on 2026-10-26: [Handelskammer Hamburg - link liability](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590), [BGH I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). A notice alone does not automatically exclude liability; the implementation avoids promising this. See also `DISCLAIMER.md`.
+Research reviewed on 2026-10-26: [Handelskammer Hamburg - link liability](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590), [BGH I ZR 74/14, full judgment (PDF)](https://medien-internet-und-recht.de/pdf/VT-MIR-2016-Dok-002.pdf). A notice alone does not automatically exclude liability; the implementation avoids promising this. See also `DISCLAIMER.md`.
 A separate page in Gaming Performance, replacing the Gaming Optimizer's former Recommended Tools popup. Thirteen recommendation entries are grouped into six categories:
 
 | Category | Tools |
@@ -602,7 +602,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
 - Downloads are staged and checked for integrity and PowerShell 7 syntax before application (the starter also remains compatible with its Windows PowerShell host). Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
 - Offline, API-rate-limit, integrity or update errors show a visible error and **block app startup**. There is no silent offline fallback. Internet access is required for shortcut launch.
-- Both `README.md` and `docs/README.md` are managed application documentation. Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
+- Both `README.md` and `docs/README.md` are managed application documentation. Successful cache updates record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles and backups are kept. Untracked custom modules stay in the cache and are excluded from the protected runtime. Previously tracked application files removed upstream are removed locally.
 - A per-installation file lock blocks overlapping updates. `Start-WindowsAcolyte.ps1 -UpdateOnly` performs the same online update without launching the app. Existing `-OnlineInstaller` links use this same update flow.
 - Uses the dedicated transparent shortcut icon with a thin white outline from `logo/Windows_Acolyte_Shortcut_Icon_v6.ico`
 - Logs created shortcut paths; if no custom icon is found, a Windows icon is used.
@@ -622,7 +622,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 ### ✔ What it does
 - Downloads current rescue, partitioning, cloning, malware cleanup, RAM test, wipe, and boot repair images
 - Keeps stable local filenames like `systemrescue-latest-amd64.iso`
-- Replaces older matching files in the destination folder after a successful download
+- Removes older matching files after the new ISO is in place
 - Supports parallel downloads with one progress row per selected tool
 - Extracts ISO files from upstream ZIP packages where required (`Memtest86+`, `Super Grub2 Disk`)
 - Uses official project pages, GitHub Releases, SourceForge project pages, and vendor latest URLs
@@ -647,7 +647,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 C:\Users\[CurrentUser]\Downloads\RescueISOs
 ```
 
-> ℹ️ Existing older matching ISO files are removed only after the new download has completed successfully.
+> ℹ️ If placing the new ISO fails, existing matching ISOs are kept.
 
 ---
 
@@ -766,7 +766,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1.1 (Current) - 2026-11-09
+## v2.1.2 (Current) - 2026-11-09
+- Launch elevated from a protected, commit-verified copy. Keep local installation files as a per-user cache.
+- Preserve older rescue ISOs when replacement fails, verify power-plan activation, quote Sandboxie browser paths, and restart only the current user's Explorer shell.
+
+## v2.1.1 (Previous) - 2026-11-09
 - Correct downloader verification claims and the Linux downloader description; checksum and signature verification remains a separate user action.
 - Clarify module elevation and Explorer restart behavior.
 
@@ -876,7 +880,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1.1 • November 2026
+Version 2.1.2 • November 2026
 
 ---
 

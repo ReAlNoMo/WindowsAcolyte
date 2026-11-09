@@ -231,30 +231,32 @@ Register-PowerToolsModule `
         $script:UPP_logScroller.ScrollToEnd()
     }
 
+    function Global:UPP-InvokePowerCfg {
+        param([string[]]$Arguments)
+        $output = & (Join-Path ([Environment]::SystemDirectory) 'powercfg.exe') @Arguments 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "powercfg failed (exit $LASTEXITCODE): $($output -join ' ')"
+        }
+        return $output
+    }
+
     function Global:UPP-ParseSchemes {
-        $schemes = @()
-        foreach ($line in (powercfg /list)) {
-            if ($line -match 'Power Scheme GUID:\s*([0-9a-fA-F-]{36})\s*\((.*?)\)\s*(\*)?') {
-                $schemes += [pscustomobject]@{
-                    Guid   = $matches[1]
-                    Name   = $matches[2]
-                    Active = [bool]$matches[3]
-                }
+        param([string[]]$Lines)
+        foreach ($line in $Lines) {
+            if ($line -match '(?i)([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\s*\((.*)\)\s*\*?\s*$') {
+                [pscustomobject]@{ Guid=$matches[1]; Name=$matches[2] }
             }
         }
-        return $schemes
     }
 
     function Global:UPP-GetActiveScheme {
-        $text = powercfg /getactivescheme
-        if (($text -join "`n") -match 'Power Scheme GUID:\s*([0-9a-fA-F-]{36})\s*\((.*?)\)') {
-            return [pscustomobject]@{ Guid=$matches[1]; Name=$matches[2] }
-        }
-        return $null
+        $active = @(UPP-ParseSchemes (UPP-InvokePowerCfg @('/getactivescheme')))
+        if ($active.Count -ne 1) { throw 'The active power plan could not be identified.' }
+        return $active[0]
     }
 
     function Global:UPP-GetManagedPlan {
-        $schemes = UPP-ParseSchemes
+        $schemes = UPP-ParseSchemes (UPP-InvokePowerCfg @('/list'))
         return $schemes | Where-Object { $_.Name -eq $script:UPP_planName } | Select-Object -First 1
     }
 
@@ -266,7 +268,7 @@ Register-PowerToolsModule `
         }
 
         UPP-AddLog "Creating dedicated plan from Ultimate Performance template..."
-        $dup = powercfg -duplicatescheme $script:UPP_ultimateTemplateGuid 2>&1
+        $dup = UPP-InvokePowerCfg @('-duplicatescheme',$script:UPP_ultimateTemplateGuid)
         $newGuid = $null
         if (($dup -join "`n") -match '([0-9a-fA-F-]{36})') {
             $newGuid = $matches[1]
@@ -276,7 +278,7 @@ Register-PowerToolsModule `
             throw "Could not create Ultimate Performance plan. Output: $($dup -join ' ')"
         }
 
-        powercfg -changename $newGuid $script:UPP_planName $script:UPP_planDescription | Out-Null
+        UPP-InvokePowerCfg @('-changename',$newGuid,$script:UPP_planName,$script:UPP_planDescription) | Out-Null
         UPP-AddLog "Created plan: $newGuid" "OK"
         return $newGuid
     }
@@ -309,30 +311,23 @@ Register-PowerToolsModule `
     }
 
     function Global:UPP-QuerySettingIndex {
-        param(
-            [Parameter(Mandatory)][string]$SchemeGuid,
-            [Parameter(Mandatory)][string]$SettingName
-        )
-
-        $q = powercfg /query $SchemeGuid
-        $inSetting = $false
-        $ac = $null
-        $dc = $null
-        foreach ($line in $q) {
-            if ($line -match '^\s*Power Setting GUID:\s*[0-9a-fA-F-]{36}\s*\((.*?)\)') {
-                $inSetting = ($matches[1] -eq $SettingName)
-                continue
-            }
-            if ($inSetting -and $line -match '^\s*Current AC Power Setting Index:\s*(0x[0-9a-fA-F]+)') {
-                $ac = [Convert]::ToInt64($matches[1], 16)
-                continue
-            }
-            if ($inSetting -and $line -match '^\s*Current DC Power Setting Index:\s*(0x[0-9a-fA-F]+)') {
-                $dc = [Convert]::ToInt64($matches[1], 16)
-                break
-            }
+        param([string]$SchemeGuid)
+        $output = UPP-InvokePowerCfg @('/query',$SchemeGuid,'SUB_VIDEO','VIDEOIDLE')
+        # VIDEOIDLE ends with the AC/DC indexes after its minimum, maximum and increment.
+        $indexes = [regex]::Matches(($output -join [Environment]::NewLine),'(?im)^.*:\s*0x([0-9a-f]+)[ \t\r]*$')
+        if ($indexes.Count -ne 5) { return $null }
+        return [pscustomobject]@{
+            AC=[Convert]::ToUInt32($indexes[3].Groups[1].Value,16)
+            DC=[Convert]::ToUInt32($indexes[4].Groups[1].Value,16)
         }
-        return [pscustomobject]@{ AC=$ac; DC=$dc }
+    }
+
+    function Global:UPP-ActivatePlan {
+        param([string]$SchemeGuid)
+        UPP-InvokePowerCfg @('-setactive',$SchemeGuid) | Out-Null
+        if ((UPP-GetActiveScheme).Guid -ne $SchemeGuid) {
+            throw "Windows did not activate the requested plan: $SchemeGuid"
+        }
     }
 
     function Global:UPP-Recheck {
@@ -348,8 +343,11 @@ Register-PowerToolsModule `
 
             if ($plan) {
                 $script:UPP_managedText.Text = "$($plan.Name)`n$($plan.Guid)"
-                $display = UPP-QuerySettingIndex -SchemeGuid $plan.Guid -SettingName "Turn off display after"
-                if ($display.AC -eq 0 -and $display.DC -eq 0) {
+                $display = UPP-QuerySettingIndex -SchemeGuid $plan.Guid
+                if (-not $display) {
+                    $script:UPP_monitorText.Text = "Unknown"
+                    $script:UPP_monitorText.Foreground = $Global:PTS_Brush["Warning"]
+                } elseif ($display.AC -eq 0 -and $display.DC -eq 0) {
                     $script:UPP_monitorText.Text = "Disabled`nAC=Never, DC=Never"
                     $script:UPP_monitorText.Foreground = $Global:PTS_Brush["Success"]
                 } else {
@@ -387,7 +385,7 @@ Register-PowerToolsModule `
                 if (UPP-SetPowerValue -SchemeGuid $guid -Setting $setting) { $ok++ } else { $warn++ }
             }
 
-            powercfg -setactive $guid | Out-Null
+            UPP-ActivatePlan $guid
             UPP-AddLog "Activated plan: $guid" "OK"
             UPP-AddLog "Applied settings: $ok ok, $warn skipped." $(if ($warn -gt 0) { "WARN" } else { "OK" })
             UPP-Recheck
@@ -401,7 +399,7 @@ Register-PowerToolsModule `
 
     function Global:UPP-SetBalanced {
         try {
-            powercfg -setactive SCHEME_BALANCED | Out-Null
+            UPP-ActivatePlan '381b4222-f694-41f0-9685-ff5bb260df2e'
             UPP-AddLog "Balanced plan activated." "OK"
             UPP-Recheck
         } catch {

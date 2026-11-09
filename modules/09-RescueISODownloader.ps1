@@ -755,29 +755,37 @@ Register-PowerToolsModule `
 
         function Complete-DownloadedFile {
             param([string]$TempPath, [hashtable]$Job)
-            if ($Job.ExtractIso) {
-                Add-Type -AssemblyName System.IO.Compression.FileSystem
-                $extractDir = Join-Path (Split-Path -Parent $Job.OutFile) ("_extract_" + $Job.JobKey)
-                if (Test-Path -LiteralPath $extractDir) { Remove-Item -LiteralPath $extractDir -Recurse -Force -ErrorAction SilentlyContinue }
-                New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
-                [System.IO.Compression.ZipFile]::ExtractToDirectory($TempPath, $extractDir)
-                $iso = Get-ChildItem -LiteralPath $extractDir -Filter $Job.ExtractPattern -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-                if (-not $iso) {
-                    $iso = Get-ChildItem -LiteralPath $extractDir -Filter "*.iso" -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            $directory = [IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($Job.OutFile))
+            $extractDir = $null
+            try {
+                $replacement = $TempPath
+                if ($Job.ExtractIso) {
+                    $extractDir = Join-Path $directory ('_extract_' + [guid]::NewGuid().ToString('N'))
+                    [void][IO.Directory]::CreateDirectory($extractDir)
+                    [IO.Compression.ZipFile]::ExtractToDirectory($TempPath, $extractDir)
+                    $iso = Get-ChildItem -LiteralPath $extractDir -Filter $Job.ExtractPattern -File -Recurse -EA Stop | Select-Object -First 1
+                    if (-not $iso) {
+                        $iso = Get-ChildItem -LiteralPath $extractDir -Filter '*.iso' -File -Recurse -EA Stop | Select-Object -First 1
+                    }
+                    if (-not $iso) { throw 'No ISO found inside archive.' }
+                    $replacement = $iso.FullName
                 }
-                if (-not $iso) { throw "No ISO found inside archive." }
+                if ([IO.FileInfo]::new($replacement).Length -eq 0) { throw 'The downloaded ISO is empty.' }
+
+                # The replacement is already on the destination volume. Rename it into place
+                # without copying into the existing ISO, then retire other matching ISOs.
+                [IO.File]::Move($replacement, $Job.OutFile, $true)
                 Remove-OldMatchingFiles -OutFile $Job.OutFile -Patterns $Job.CleanupPatterns
-                Copy-Item -LiteralPath $iso.FullName -Destination $Job.OutFile -Force
-                Remove-Item -LiteralPath $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-                Remove-Item -LiteralPath $TempPath -Force -ErrorAction SilentlyContinue
-            } else {
-                Remove-OldMatchingFiles -OutFile $Job.OutFile -Patterns $Job.CleanupPatterns
-                Move-Item -LiteralPath $TempPath -Destination $Job.OutFile -Force
+            } finally {
+                if ($extractDir -and [IO.Path]::GetDirectoryName($extractDir) -eq $directory) {
+                    Remove-Item -LiteralPath $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+                    Remove-Item -LiteralPath $TempPath -Force -ErrorAction SilentlyContinue
+                }
             }
         }
 
         $result = [PSCustomObject]@{ Success=$false; IsoName=$Job.IsoName; Message="" }
-        $tmp = "$($Job.OutFile).tmp"
+        $tmp = "$($Job.OutFile).$($Job.JobKey).tmp"
         $fs = $null
         $stream = $null
         $resp = $null

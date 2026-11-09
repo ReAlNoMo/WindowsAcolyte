@@ -1,6 +1,7 @@
 # PowerShell 7 -STA. Creates test links only inside a temporary directory.
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
 $root=Split-Path $PSScriptRoot -Parent
 $testDirectory=Join-Path ([IO.Path]::GetTempPath()) ('WindowsAcolyte-ShortcutTest-'+[guid]::NewGuid().ToString('N'))
 [void][IO.Directory]::CreateDirectory($testDirectory)

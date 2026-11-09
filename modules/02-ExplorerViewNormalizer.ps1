@@ -494,9 +494,9 @@ Register-PowerToolsModule `
     }
 
     function Global:EVN-RestartExplorer {
-        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 1
-        Start-Process explorer
+        # Share the desktop-shell, session and owner checks with Shortcut Arrow Visibility.
+        $shellId = SAV-RestartExplorer
+        EVN-AddLog "Explorer restarted in the current session (PID $shellId)." "OK"
     }
 
     function Global:EVN-TestRestartExplorer {
@@ -777,9 +777,7 @@ Register-PowerToolsModule `
                 }
             }
 
-            if ($selectedSet.ContainsKey("restart_explorer")) {
-                EVN-AddLog "Explorer restarted. Global settings should now be active." "OK"
-            } else {
+            if (-not $selectedSet.ContainsKey("restart_explorer")) {
                 EVN-AddLog "Explorer was not restarted. Some changes may require reopening Explorer windows." "WARN"
             }
 

@@ -175,7 +175,7 @@ Before applying advanced or high-risk changes, users are strongly encouraged to:
 ---
 
 **WindowsAcolyte**
-Version 2.1.1 • ReAlNoMo
+Version 2.1.2 • ReAlNoMo
 
 ## External links in Recommended Tools
 
@@ -183,4 +183,4 @@ The linked websites and downloads are supplied by external providers, who are re
 
 This notice does not exclude statutory liability across the board. Mandatory liability and legal duties to review and remove links remain unaffected. Specific legal violations can be reported through the project issues; reports will be reviewed and unlawful links removed. Confidential security reports should use the private reporting route described in SECURITY.md.
 
-Research reviewed on 2026-10-26: [Handelskammer Hamburg](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590) and [BGH, judgment of 2015-06-18, I ZR 74/14](https://juris.bundesgerichtshof.de/cgi-bin/rechtsprechung/document.py?Gericht=bgh&Art=en&nr=73259). This is not a guarantee of exemption from legal liability.
+Research reviewed on 2026-10-26: [Handelskammer Hamburg](https://www.handelskammer-hamburg.de/recht-steuern/wirtschaftssrecht/datenschutz-it-medien/linkhaftung-6683590) and [BGH, judgment of 2015-06-18, I ZR 74/14 (PDF)](https://medien-internet-und-recht.de/pdf/VT-MIR-2016-Dok-002.pdf). This is not a guarantee of exemption from legal liability.

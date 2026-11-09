@@ -288,8 +288,8 @@ Register-PowerToolsModule `
         $sbxExe   = [string]$script:SBX_sandboxieExe
         $arg      = [string]$browser.Arg
 
-        if ([string]::IsNullOrEmpty($sandbox)) {
-            [System.Windows.MessageBox]::Show("Please enter a sandbox name.", "Input Required",
+        if ($sandbox -notmatch '\A[A-Za-z0-9_]+\z') {
+            [System.Windows.MessageBox]::Show("Enter a sandbox name using letters, numbers or underscores.", "Invalid Sandbox Name",
                 [System.Windows.MessageBoxButton]::OK,
                 [System.Windows.MessageBoxImage]::Warning) | Out-Null
             return
@@ -301,10 +301,11 @@ Register-PowerToolsModule `
             SBX-AddLog "Sandboxie-Plus not found." "FAIL"; return
         }
         try {
-            Start-Process -FilePath $sbxExe -ArgumentList "/box:$sandbox", $exePath, $arg
-            $script:SBX_statusText.Text       = "$($browser.Name) started in [$sandbox]"
-            $script:SBX_statusText.Foreground = $Global:PTS_Brush["Success"]
-            SBX-AddLog "$($browser.Name) launched in sandbox [$sandbox]" "OK"
+            $arguments = '/box:{0} "{1}" {2}' -f $sandbox, $exePath, $arg
+            Start-Process -FilePath $sbxExe -ArgumentList $arguments -ErrorAction Stop
+            $script:SBX_statusText.Text       = "Launch requested for $($browser.Name) in [$sandbox]"
+            $script:SBX_statusText.Foreground = $Global:PTS_Brush["TextMid"]
+            SBX-AddLog "Launch request sent to Sandboxie for $($browser.Name) in [$sandbox]." "INFO"
             SBX-AddLog "Path: $exePath" "INFO"
         } catch {
             SBX-AddLog "Launch failed: $_" "FAIL"

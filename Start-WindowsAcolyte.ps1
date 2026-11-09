@@ -16,7 +16,7 @@ function Save-WAUDownload {
 function Test-WAUManagedPath {
     param([string]$Path)
     # Only application files, never profiles, logs, backups or arbitrary remote paths.
-    return $Path -cmatch '^(WindowsAcolyte\.ps1|Start-WindowsAcolyte\.ps1|README\.md|docs/README\.md|modules/[A-Za-z0-9_-]+\.ps1|logo/[A-Za-z0-9_-]+\.(png|ico|svg))$'
+    return $Path -cmatch '\A(WindowsAcolyte\.ps1|Start-WindowsAcolyte\.ps1|README\.md|docs/README\.md|modules/[A-Za-z0-9_-]+\.ps1|logo/[A-Za-z0-9_-]+\.(png|ico|svg))\z'
 }
 
 function Get-WAUBlobHash {
@@ -32,10 +32,11 @@ function Get-WAUBlobHash {
 }
 
 function Get-WAURelease {
+    param([string]$Revision)
     $api = 'https://api.github.com/repos/ReAlNoMo/WindowsAcolyte'
-    $commit = Get-WAUJson "$api/commits/main"
-    if ($commit.sha -notmatch '^[0-9a-f]{40}$') { throw 'GitHub returned an invalid commit ID.' }
-    $tree = Get-WAUJson "$api/git/trees/$($commit.sha)?recursive=1"
+    if (-not $Revision) { $Revision = (Get-WAUJson "$api/commits/main").sha }
+    if ($Revision -notmatch '\A[0-9a-f]{40}\z') { throw 'Invalid release commit ID.' }
+    $tree = Get-WAUJson "$api/git/trees/$($Revision)?recursive=1"
     if ($tree.truncated -ne $false -or -not $tree.tree) { throw 'GitHub returned an incomplete file list.' }
     $files = @($tree.tree | Where-Object { Test-WAUManagedPath $_.path })
     $seen = @{}
@@ -48,7 +49,7 @@ function Get-WAURelease {
     foreach ($required in @('WindowsAcolyte.ps1','Start-WindowsAcolyte.ps1','README.md','modules/08-DesktopShortcutCreator.ps1')) {
         if (-not $seen.ContainsKey($required)) { throw "Release is missing required file: $required" }
     }
-    return @{Revision=$commit.sha; Files=$files}
+    return @{Revision=$Revision; Files=$files}
 }
 
 function Set-WAUStatus {
@@ -60,14 +61,14 @@ function Set-WAUStatus {
 }
 
 function Test-WAUStagedScripts {
-    param([string]$Directory)
+    param([string]$Directory, [string]$ParserHost)
     if (-not (Test-Path -LiteralPath $Directory)) { return }
     $files = @(Get-ChildItem -LiteralPath $Directory -Recurse -File -Filter '*.ps1')
     if (-not $files.Count) { return }
     # The app uses PS7 syntax (including null-conditional access). Validate with
     # its actual runtime, not the PS5.1 parser hosting the desktop bootstrap.
     if ($PSVersionTable.PSVersion.Major -lt 7) {
-        $parserHost = Find-WAUPowerShell7
+        if (-not $ParserHost) { $ParserHost = Find-WAUPowerShell7 }
         $safeDirectory = $Directory.Replace("'", "''")
         $validation = @'
 $ErrorActionPreference = 'Stop'
@@ -211,45 +212,162 @@ function Find-WAUPowerShell7 {
     throw 'PowerShell 7 was not found. Install it from https://aka.ms/powershell.'
 }
 
+function Test-WAUAdministrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Find-WAUProtectedPowerShell7 {
+    $programFiles = [Environment]::GetFolderPath('ProgramFiles')
+    $msi = Join-Path $programFiles 'PowerShell\7\pwsh.exe'
+    if ([IO.File]::Exists($msi)) { return $msi }
+
+    $package = Get-AppxPackage -Name Microsoft.PowerShell -ErrorAction SilentlyContinue |
+        Where-Object { $_.PublisherId -eq '8wekyb3d8bbwe' -and $_.InstallLocation } |
+        Sort-Object Version -Descending | Select-Object -First 1
+    if ($package) {
+        $exe = Join-Path $package.InstallLocation 'pwsh.exe'
+        if ([IO.File]::Exists($exe)) { return $exe }
+    }
+    throw 'Install PowerShell 7 for all users with the Microsoft MSI, or install the official Microsoft Store package for the account approving elevation.'
+}
+
+function New-WAUProtectedSession {
+    $parent = [Environment]::GetFolderPath('ProgramFiles')
+    if (-not [IO.Path]::IsPathRooted($parent) -or -not [IO.Directory]::Exists($parent)) {
+        throw 'Windows did not provide a Program Files directory for the protected runtime.'
+    }
+    $session = Join-Path $parent ('WindowsAcolyte-Run-' + [guid]::NewGuid().ToString('N'))
+    $security = [Security.AccessControl.DirectorySecurity]::new()
+    $security.SetAccessRuleProtection($true, $false)
+    $security.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))
+    foreach ($sid in @('S-1-5-18','S-1-5-32-544')) {
+        $identity = [Security.Principal.SecurityIdentifier]::new($sid)
+        $rule = [Security.AccessControl.FileSystemAccessRule]::new($identity, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+        $security.AddAccessRule($rule)
+    }
+    # Windows PowerShell 5.1 applies the DACL at directory creation.
+    [void][IO.Directory]::CreateDirectory($session, $security)
+    return $session
+}
+
+function Remove-WAUProtectedSession {
+    param([string]$Session)
+    $parent = [Environment]::GetFolderPath('ProgramFiles')
+    $fullPath = [IO.Path]::GetFullPath($Session)
+    if ([IO.Path]::GetDirectoryName($fullPath) -ne $parent -or
+        [IO.Path]::GetFileName($fullPath) -notmatch '\AWindowsAcolyte-Run-[0-9a-f]{32}\z') {
+        throw 'Invalid protected runtime cleanup path.'
+    }
+    try {
+        $entries = @(Get-Item -LiteralPath $fullPath -Force -ErrorAction Stop)
+        if (-not ($entries[0].Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            $entries += @(Get-ChildItem -LiteralPath $fullPath -Force -Recurse -ErrorAction Stop)
+        }
+        if ($entries | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }) {
+            throw 'Runtime directory contains a reparse point.'
+        }
+        [IO.Directory]::Delete($fullPath, $true)
+    } catch {
+        Add-Type -AssemblyName System.Windows.Forms
+        [void][System.Windows.Forms.MessageBox]::Show("Could not remove the protected runtime directory:$([Environment]::NewLine)$fullPath", 'WindowsAcolyte - Cleanup')
+    }
+}
+
+function Invoke-WAUProtectedSession {
+    param([string]$Revision, [string]$CachePath)
+    if (-not (Test-WAUAdministrator)) { throw 'The protected app requires administrator approval.' }
+    $pwsh = Find-WAUProtectedPowerShell7
+    $release = Get-WAURelease -Revision $Revision
+    $session = New-WAUProtectedSession
+    try {
+        foreach ($file in $release.Files) {
+            $destination = Join-Path $session $file.path
+            [void][IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))
+            if ($CachePath) {
+                try {
+                    $cached = [IO.FileInfo]::new((Join-Path $CachePath $file.path))
+                    if ($cached.Exists -and $cached.Length -eq $file.size -and -not ($cached.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                        $read = [IO.File]::Open($cached.FullName, 'Open', 'Read', 'Read')
+                        try {
+                            if ($read.Length -eq $file.size) {
+                                $write = [IO.File]::Open($destination, 'CreateNew', 'Write', 'None')
+                                try { $read.CopyTo($write) } finally { $write.Dispose() }
+                            }
+                        } finally { $read.Dispose() }
+                    }
+                } catch [IO.IOException] {} catch [UnauthorizedAccessException] {}
+            }
+            if (-not [IO.File]::Exists($destination) -or (Get-WAUBlobHash $destination) -ne $file.sha) {
+                Save-WAUDownload "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/$($release.Revision)/$($file.path)" $destination
+                if ((Get-WAUBlobHash $destination) -ne $file.sha) { throw "Release file failed integrity check: $($file.path)" }
+            }
+        }
+        Test-WAUStagedScripts -Directory $session -ParserHost $pwsh
+        $logRoot = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WindowsAcolyte\logs'
+        Push-Location -LiteralPath $session
+        try {
+            & $pwsh -NoProfile -ExecutionPolicy Bypass -STA -File (Join-Path $session 'WindowsAcolyte.ps1') -LogRoot $logRoot
+            if ($LASTEXITCODE -ne 0) { throw "WindowsAcolyte exited with code $LASTEXITCODE." }
+        } finally { Pop-Location }
+    } finally {
+        Remove-WAUProtectedSession $session
+    }
+}
+
+function Invoke-WAUProtectedStart {
+    param([string]$Revision, [string]$CachePath)
+    if ($Revision -and $Revision -notmatch '\A[0-9a-f]{40}\z') { throw 'Invalid release commit ID.' }
+    # Pass the loaded runner across UAC without elevating a user-writable script path.
+    $names = @('Get-WAUJson','Save-WAUDownload','Test-WAUManagedPath','Get-WAUBlobHash','Get-WAURelease',
+        'Test-WAUStagedScripts','Test-WAUAdministrator','Find-WAUProtectedPowerShell7',
+        'New-WAUProtectedSession','Remove-WAUProtectedSession','Invoke-WAUProtectedSession')
+    $definitions = foreach ($name in $names) {
+        "function $name {" + (Get-Command $name -CommandType Function).Definition + [Environment]::NewLine + '}'
+    }
+    $command = @'
+$ErrorActionPreference = 'Stop'
+$systemDirectory = [Environment]::SystemDirectory
+$env:Path = $systemDirectory + ';' + [Environment]::GetFolderPath('Windows')
+$env:PSModulePath = [IO.Path]::Combine($PSHOME,'Modules')
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+'@
+    $command += [Environment]::NewLine + ($definitions -join [Environment]::NewLine) + [Environment]::NewLine
+    $cacheArgument = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($CachePath))
+    $command += "try { Invoke-WAUProtectedSession -Revision '$Revision' -CachePath ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('$cacheArgument'))) }"
+    $command += @'
+ catch {
+    Add-Type -AssemblyName System.Windows.Forms
+    [void][System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'WindowsAcolyte - Start blocked', 'OK', 'Error')
+    exit 71
+}
+'@
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
+    $systemDirectory = [Environment]::SystemDirectory
+    if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+        $systemDirectory = Join-Path ([Environment]::GetFolderPath('Windows')) 'Sysnative'
+    }
+    $hostPath = Join-Path $systemDirectory 'WindowsPowerShell\v1.0\powershell.exe'
+    if ($script:WAUForm) { $script:WAUForm.Hide() }
+    $arguments = @('-NoProfile','-NonInteractive','-STA','-EncodedCommand',$encoded)
+    $process = Start-Process -FilePath $hostPath -WorkingDirectory ([Environment]::GetFolderPath('Windows')) -Verb RunAs -WindowStyle Hidden -ArgumentList $arguments -Wait -PassThru -ErrorAction Stop
+    if ($process.ExitCode -eq 71) { exit 1 }
+    if ($process.ExitCode -ne 0) { throw "WindowsAcolyte exited with code $($process.ExitCode)." }
+}
+
 function Invoke-WAULocalStart {
     param([string]$InstallPath, [switch]$OnlyUpdate)
-    # Any check/download/apply failure propagates before the launch statement.
+    if (Test-WAUAdministrator) {
+        throw 'Run installation or update-only from a regular PowerShell window. The app requests elevation separately.'
+    }
     $result = Sync-WAUInstallation -InstallPath $InstallPath
     if ($OnlyUpdate) { return $result }
-    $pwsh = Find-WAUPowerShell7
-    if ($script:WAUForm) { $script:WAUForm.Hide() }
-    & $pwsh -NoProfile -ExecutionPolicy Bypass -STA -File (Join-Path $InstallPath 'WindowsAcolyte.ps1')
-    if ($LASTEXITCODE -ne 0) { throw "WindowsAcolyte exited with code $LASTEXITCODE." }
+    Invoke-WAUProtectedStart -Revision $result.Revision -CachePath $InstallPath
 }
 
 function Invoke-WAUOnlineRun {
-    # The unique directory is held until the elevated application itself exits.
-    $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd([IO.Path]::DirectorySeparatorChar)
-    $session = Join-Path $tempRoot ('WindowsAcolyte-Online-' + [guid]::NewGuid().ToString('N'))
-    try {
-        $null = Sync-WAUInstallation -InstallPath $session
-        $pwsh = Find-WAUPowerShell7
-        $appPath = Join-Path $session 'WindowsAcolyte.ps1'
-        $logRoot = Join-Path $env:LOCALAPPDATA 'WindowsAcolyte\logs'
-        if ($script:WAUForm) { $script:WAUForm.Hide() }
-        $arguments = @('-NoProfile','-ExecutionPolicy','Bypass','-STA','-File',('"{0}"' -f $appPath),'-LogRoot',('"{0}"' -f $logRoot))
-        $process = Start-Process -FilePath $pwsh -ArgumentList $arguments -Verb RunAs -Wait -PassThru -ErrorAction Stop
-        if ($process.ExitCode -ne 0) { throw "WindowsAcolyte exited with code $($process.ExitCode)." }
-    } finally {
-        $fullSession = [IO.Path]::GetFullPath($session)
-        $safePrefix = $tempRoot + [IO.Path]::DirectorySeparatorChar
-        if ($fullSession.StartsWith($safePrefix, [StringComparison]::OrdinalIgnoreCase) -and
-            [IO.Path]::GetFileName($fullSession) -match '^WindowsAcolyte-Online-[0-9a-f]{32}$' -and
-            (Test-Path -LiteralPath $fullSession -PathType Container)) {
-            $links = @(Get-Item -LiteralPath $fullSession -Force) + @(Get-ChildItem -LiteralPath $fullSession -Recurse -Force -ErrorAction Stop)
-            if (@($links | Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }).Count) {
-                Write-Warning "Temporary directory retained because it contains a reparse point: $fullSession"
-            } else {
-                try { Remove-Item -LiteralPath $fullSession -Recurse -Force -ErrorAction Stop }
-                catch { Write-Warning "Temporary directory could not be removed: $fullSession" }
-            }
-        }
-    }
+    Invoke-WAUProtectedStart
 }
 
 if ($MyInvocation.InvocationName -ne '.') {
