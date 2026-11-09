@@ -43,7 +43,7 @@ Online mode creates a verified temporary app directory, waits for the elevated a
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v2.0.2`
+**Current version:** `v2.0.3`
 
 ---
 
@@ -559,10 +559,10 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
 - WA stands for WindowsAcolyte. Install shortcuts create or update the permanent local installation. Online shortcuts run a verified temporary copy. Git and .de specify the starter URL.
 - Uses English shortcut names:
-  - `WA Install Git.lnk`
-  - `WA Install .de.lnk`
-  - `WA Online Git.lnk`
-  - `WA Online .de.lnk`
+  - `WA Install GitHub.lnk`
+  - `WA Install Website.lnk`
+  - `WA Online GitHub.lnk`
+  - `WA Online Website.lnk`
 - Git and .de each offer an Install and an Online shortcut. The domain currently redirects to the GitHub starter; both sources use GitHub for the version check and pinned application files. Online sessions wait for the elevated app to exit before cleanup; logs, profiles and backups are retained.
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
@@ -733,7 +733,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.0.2 (Current) - 2026-11-09
+## v2.0.3 (Current) - 2026-11-09
+- Rename shortcut sources to GitHub and Website for clearer desktop labels.
+
+## v2.0.2 (Previous) - 2026-11-09
 - Give the desktop icon a transparent exterior and a thin white edge for visibility on dark or light wallpaper.
 
 ## v2.0.1 (Previous) - 2026-11-09
@@ -832,7 +835,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.0.2 • November 2026
+Version 2.0.3 • November 2026
 
 ---
 

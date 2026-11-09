@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.0.2` (2026-11-09).
+Current version: `v2.0.3` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -108,7 +108,7 @@ Developer launch of the checkout, without overwriting it with remote application
 pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1
 ```
 
-Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. WA means WindowsAcolyte. WA Install Git and WA Install .de update the permanent installation. WA Online Git and WA Online .de use a verified temporary copy. The domain currently redirects to the GitHub starter; both entry sources check GitHub and retrieve commit-pinned files. The elevated app is awaited before cleanup. Profiles and backups stay in their existing persistent locations; online-session logs are written to the persistent WindowsAcolyte logs directory. Previously created links keep their original behavior.
+Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. WA means WindowsAcolyte. WA Install GitHub and WA Install Website update the permanent installation. WA Online GitHub and WA Online Website use a verified temporary copy. The domain currently redirects to the GitHub starter; both entry sources check GitHub and retrieve commit-pinned files. The elevated app is awaited before cleanup. Profiles and backups stay in their existing persistent locations; online-session logs are written to the persistent WindowsAcolyte logs directory. Previously created links keep their original behavior.
 
 ## Configuration and persistence
 

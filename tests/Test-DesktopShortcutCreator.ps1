@@ -26,10 +26,10 @@ try {
     if($links.Count -ne 4){throw 'Expected four shortcuts'}
     $shell=New-Object -ComObject WScript.Shell
     $expected=@{
-        'WA Install Git'=@{Uri='raw.githubusercontent.com';Online=$false}
-        'WA Install .de'=@{Uri='https://windowsacolyte.de';Online=$false}
-        'WA Online Git'=@{Uri='raw.githubusercontent.com';Online=$true}
-        'WA Online .de'=@{Uri='https://windowsacolyte.de';Online=$true}
+        'WA Install GitHub'=@{Uri='raw.githubusercontent.com';Online=$false}
+        'WA Install Website'=@{Uri='https://windowsacolyte.de';Online=$false}
+        'WA Online GitHub'=@{Uri='raw.githubusercontent.com';Online=$true}
+        'WA Online Website'=@{Uri='https://windowsacolyte.de';Online=$true}
     }
     foreach($name in $expected.Keys){
         $path=Join-Path $testDirectory ($name+'.lnk')

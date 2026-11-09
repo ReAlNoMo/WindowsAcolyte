@@ -33,13 +33,13 @@ Register-PowerToolsModule `
         <StackPanel>
             <TextBlock Text="SHORTCUTS TO CREATE" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,10"/>
-            <CheckBox x:Name="LocalShortcutCheck" Content="WA Install Git"
+            <CheckBox x:Name="LocalShortcutCheck" Content="WA Install GitHub"
                       FontSize="13" IsChecked="True" Margin="0,0,0,10"/>
-            <CheckBox x:Name="InstallerShortcutCheck" Content="WA Install .de"
+            <CheckBox x:Name="InstallerShortcutCheck" Content="WA Install Website"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
-            <CheckBox x:Name="DomainStartCheck" Content="WA Online Git"
+            <CheckBox x:Name="DomainStartCheck" Content="WA Online GitHub"
                       FontSize="13" IsChecked="False" Margin="0,0,0,10"/>
-            <CheckBox x:Name="DomainInstallerCheck" Content="WA Online .de"
+            <CheckBox x:Name="DomainInstallerCheck" Content="WA Online Website"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
             <TextBlock x:Name="DesktopPathText" FontSize="12" TextWrapping="Wrap"/>
             <TextBlock x:Name="IconInfoText" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
@@ -240,10 +240,10 @@ $candidates += (Join-Path $env:LOCALAPPDATA "WindowsAcolyte\logo\Windows_Acolyte
             $github = 'https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1'
             $domain = 'https://windowsacolyte.de'
             $choices = @(
-                @{Selected=$createLocal; Name='WA Install Git'; Uri=$github; Online=$false}
-                @{Selected=$createInstaller; Name='WA Install .de'; Uri=$domain; Online=$false}
-                @{Selected=$createDomainStart; Name='WA Online Git'; Uri=$github; Online=$true}
-                @{Selected=$createDomainInstaller; Name='WA Online .de'; Uri=$domain; Online=$true}
+                @{Selected=$createLocal; Name='WA Install GitHub'; Uri=$github; Online=$false}
+                @{Selected=$createInstaller; Name='WA Install Website'; Uri=$domain; Online=$false}
+                @{Selected=$createDomainStart; Name='WA Online GitHub'; Uri=$github; Online=$true}
+                @{Selected=$createDomainInstaller; Name='WA Online Website'; Uri=$domain; Online=$true}
             )
             foreach ($choice in $choices | Where-Object Selected) {
                 $command = if ($choice.Online) {
