@@ -29,6 +29,9 @@ Please provide a clear and concise description of the changes.
 * [ ] AV Scanner Downloader
 * [ ] Desktop Shortcut Creator
 * [ ] Rescue ISO Downloader
+* [ ] Ultimate Performance Power Plan
+* [ ] Shortcut Arrow Visibility
+* [ ] Recommended Tools
 * [ ] Core Framework
 * [ ] Custom Module
 
@@ -80,7 +83,7 @@ Attach screenshots here if applicable.
 
 * [ ] README updated
 * [ ] Module documentation updated
-* [ ] CHANGELOG updated if required
+* [ ] README version history updated if required
 
 ---
 

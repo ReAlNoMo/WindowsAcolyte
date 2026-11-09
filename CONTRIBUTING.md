@@ -1,8 +1,8 @@
-# 🤝 Contributing to PowerTools Suite
+# 🤝 Contributing to WindowsAcolyte
 
-First off — thank you for your interest in contributing to **PowerTools Suite**.
+First off — thank you for your interest in contributing to **WindowsAcolyte**.
 
-PowerTools Suite is a unified WPF-based PowerShell utility platform focused on:
+WindowsAcolyte is a unified WPF-based PowerShell utility platform focused on:
 
 * Windows utilities
 * Security tools
@@ -253,7 +253,7 @@ Primary communication channels:
 
 # 🙏 Final Notes
 
-PowerTools Suite prioritizes:
+WindowsAcolyte prioritizes:
 
 * User safety
 * Transparency
@@ -272,7 +272,7 @@ We appreciate contributions that align with these principles.
 ---
 
 **ReAlNoMo**
-PowerTools Suite • CONTRIBUTING Guide
+WindowsAcolyte • CONTRIBUTING Guide
 
 ## Completion checks for every change
 

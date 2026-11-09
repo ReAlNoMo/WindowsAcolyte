@@ -24,15 +24,14 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+ - Windows version and build:
+ - WindowsAcolyte version and, if available, installed GitHub revision:
+ - PowerShell version:
+ - Start method: installed starter, Install shortcut, Online shortcut, or direct developer launch:
+ - Affected module:
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+**Privacy and security**
+Issues are public. Remove personal information from logs and screenshots. Report security vulnerabilities through the private route in SECURITY.md rather than including details here.
 
 **Additional context**
 Add any other context about the problem here.

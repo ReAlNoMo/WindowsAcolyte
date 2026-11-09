@@ -40,15 +40,11 @@ If you discover a security vulnerability, privilege escalation issue, unsafe scr
 
 ### 📩 Preferred Reporting Method
 
-Please open a **private security advisory** via GitHub Security Advisories if available.
+Please use a [private GitHub security advisory](https://github.com/ReAlNoMo/WindowsAcolyte/security/advisories/new) if private reporting is available for this repository.
 
-### Alternative:
+### If private advisories are unavailable
 
-If private advisories are unavailable, open a GitHub issue labeled:
-
-```txt
-[SECURITY]
-```
+Do not post exploit details, proof-of-concept code, credentials or sensitive information in a public issue. A public issue may ask the maintainer for a private reporting channel without disclosing the vulnerability. No separate private contact address is currently documented; a private fallback is therefore not guaranteed.
 
 ---
 

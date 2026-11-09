@@ -19,7 +19,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Windows 11 Gaming Optimizer | Gaming Performance | 35 selectable settings with status-first cards, plain-English + technical summaries/details, separate risk/effect/restart labels, profiles, backup/reset and optional input/USB controls |
 | Linux ISO Downloader | Downloader | Distro variants, desktop/server presets, per-ISO progress, parallel downloads and fallback |
 | AV Scanner Downloader | Downloader | Portable scanner downloads, source checks and progress |
-| WindowsAcolyte Desktop Shortcut Creator | Windows Tools | Select local/GitHub or windowsacolyte.de Start/Installer shortcuts |
+| WindowsAcolyte Desktop Shortcut Creator | Windows Tools | Create Install or Online shortcuts using either the GitHub or Website starter |
 | Rescue ISO Downloader | Downloader | Recovery, partitioning, cloning, malware, memory-test, wiping and boot-repair images |
 | Ultimate Performance Power Plan | Gaming Performance | Dedicated plan and explicit AC/DC processor, display and device settings |
 | Shortcut Arrow Visibility | Windows Tools | Overlay precheck, typed original-state backup, transparent ICO and restore |
@@ -79,10 +79,16 @@ irm https://windowsacolyte.de | iex
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
-From the repository root, install/update and launch the local installation:
+From the repository root, run the checked starter to install/update and launch the permanent installation:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\Start-WindowsAcolyte.ps1
+```
+
+To start an **existing local installation**, run its installed starter. This is a local entry point, but it still checks GitHub online and updates the permanent copy before opening it:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "$env:LOCALAPPDATA\WindowsAcolyte\Start-WindowsAcolyte.ps1"
 ```
 
 Start a verified temporary session from either source:
@@ -92,7 +98,7 @@ Start a verified temporary session from either source:
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
 ```
 
-The starter waits for the elevated app process before deleting its unique temporary directory. UAC approval may be required. Profiles, backups and logs use persistent locations. A cleanup failure or detected reparse point retains the temporary directory and emits a warning. Abruptly terminating the starter can also leave the temporary directory behind.
+The temporary session is separate from the permanent installation and does not update it. The starter waits for the elevated app process before deleting its unique temporary directory. UAC approval may be required. Profiles, backups and logs use persistent locations. A cleanup failure or detected reparse point retains the temporary directory and emits a warning. Abruptly terminating the starter can also leave the temporary directory behind.
 
 Perform the identical online check/update without launching the app:
 
@@ -108,7 +114,7 @@ Developer launch of the checkout, without overwriting it with remote application
 pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1
 ```
 
-Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. WA means WindowsAcolyte. WA Install GitHub and WA Install Website update the permanent installation. WA Online GitHub and WA Online Website use a verified temporary copy. The domain currently redirects to the GitHub starter; both entry sources check GitHub and retrieve commit-pinned files. The elevated app is awaited before cleanup. Profiles and backups stay in their existing persistent locations; online-session logs are written to the persistent WindowsAcolyte logs directory. Previously created links keep their original behavior.
+Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. WA means WindowsAcolyte. WA Install GitHub and WA Install Website update the permanent installation. WA Online GitHub and WA Online Website use a verified temporary copy. All four new shortcuts retrieve their selected starter URL on every launch; they do not invoke the installed local starter. The domain currently redirects to the GitHub starter; both entry sources check GitHub and retrieve commit-pinned files. The elevated app is awaited before cleanup. Profiles and backups stay in their existing persistent locations; online-session logs are written to the persistent WindowsAcolyte logs directory. Previously created links keep their original behavior.
 
 ## Configuration and persistence
 

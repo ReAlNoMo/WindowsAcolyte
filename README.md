@@ -10,7 +10,7 @@
 
 ### ⚡ Install / Update
 
-> ✅ Fast • Trusted • No setup
+> Requires internet access, PowerShell 7 and Windows administrator approval.
 
 ```powershell
 irm https://windowsacolyte.de | iex
@@ -35,13 +35,33 @@ Online mode creates a verified temporary app directory, waits for the elevated a
 
 ---
 
+### Choose how to start WindowsAcolyte
+
+| Choice | What happens | Internet required? |
+|---|---|---|
+| **Install** | Installs or updates `%LOCALAPPDATA%\WindowsAcolyte`, then opens the permanent copy. | Yes |
+| **Local starter** | Runs the installed starter, checks GitHub for updates, then opens the permanent copy. | Yes |
+| **Online** | Downloads a checked copy into a unique temporary folder, runs it and normally removes the folder after the elevated app closes. The permanent installation is not updated. | Yes |
+
+**GitHub** and **Website** select where the starter is retrieved. The Website currently redirects to the GitHub starter; both modes use GitHub for the version check and application files. All four newly created desktop shortcuts download their starter from the selected source every time. The separately installed local starter is a local entry point, but still requires an online update check:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "$env:LOCALAPPDATA\WindowsAcolyte\Start-WindowsAcolyte.ps1"
+```
+
+Each checked start resolves a GitHub commit, compares managed files, downloads missing or changed files from that commit and validates hashes and PowerShell syntax before applying them. If the online check, download or update fails, startup is blocked; there is no offline fallback. Git hashes verify downloaded content against the selected GitHub commit, not an independently signed release. The app requests administrator approval when opening.
+
+Online sessions retain profiles, backups and logs in their persistent locations. Temporary cleanup can be incomplete after forced termination, a cleanup error or a detected reparse point. See the [project overview](docs/README.md#installation-and-cli) for update-only and developer commands.
+
+---
+
 ## ⚙️ Requirements
 
 | Requirement | Details |
 |------------|--------|
 | 🟦 PowerShell | 7.0+ for the app; install separately if missing. Starter also supports Windows PowerShell 5.1. |
 | 🪟 Windows | 10 / 11 (WPF required) |
-| 🔐 Admin | Required for some modules |
+| 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
 **Current version:** `v2.1`
 
@@ -557,21 +577,21 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
-- WA stands for WindowsAcolyte. Install shortcuts create or update the permanent local installation. Online shortcuts run a verified temporary copy. Git and .de specify the starter URL.
+- WA stands for WindowsAcolyte. Install shortcuts create or update the permanent local installation. Online shortcuts run a verified temporary copy. GitHub and Website identify the starter source.
 - Uses English shortcut names:
   - `WA Install GitHub.lnk`
   - `WA Install Website.lnk`
   - `WA Online GitHub.lnk`
   - `WA Online Website.lnk`
-- Git and .de each offer an Install and an Online shortcut. The domain currently redirects to the GitHub starter; both sources use GitHub for the version check and pinned application files. Online sessions wait for the elevated app to exit before cleanup; logs, profiles and backups are retained.
-- Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
+- GitHub and Website each offer an Install and an Online shortcut. The domain currently redirects to the GitHub starter; both sources use GitHub for the version check and pinned application files. Online sessions wait for the elevated app to exit before cleanup; logs, profiles and backups are retained.
+- Uses the stable Windows PowerShell host. Each new shortcut downloads and executes its selected online starter, which resolves PowerShell 7 (`pwsh.exe`) at launch; the shortcut does not depend on a versioned Store executable path.
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
 - Downloads are staged and checked for integrity and PowerShell 7 syntax before application (the starter also remains compatible with its Windows PowerShell host). Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
 - Offline, API-rate-limit, integrity or update errors show a visible error and **block app startup**. There is no silent offline fallback. Internet access is required for shortcut launch.
 - Both `README.md` and `docs/README.md` are managed application documentation. Successful checks record the exact commit and UTC check time in `%LOCALAPPDATA%\WindowsAcolyte\.installed-release.json`. Logs, gaming profiles, backups and untracked custom modules remain untouched; previously tracked application files removed upstream are removed locally.
 - A per-installation file lock blocks overlapping updates. `Start-WindowsAcolyte.ps1 -UpdateOnly` performs the same online update without launching the app. Existing `-OnlineInstaller` links use this same update flow.
 - Uses the dedicated transparent shortcut icon with a thin white outline from `logo/Windows_Acolyte_Shortcut_Icon_v6.ico`
-- Logs created shortcut paths and missing local install warnings
+- Logs created shortcut paths; if no custom icon is found, a Windows icon is used.
 
 💡 **Use case**
 > Recreate WindowsAcolyte Desktop launch shortcuts directly from the app.
@@ -647,8 +667,7 @@ Tests use a temporary HKCU key and temporary files, verify typed backup/restore 
 # 🛠️ Installation (Manual)
 
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-.\Start-WindowsAcolyte.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File .\Start-WindowsAcolyte.ps1
 ```
 
 📁 Install location:
@@ -668,10 +687,7 @@ If optional Gaming Optimizer input/USB settings were changed through the app, us
 Remove-Item "$env:LOCALAPPDATA\WindowsAcolyte" -Recurse -Force
 ```
 
-Remove from PowerShell profile:
-```
-$PROFILE
-```
+Remove the WindowsAcolyte desktop shortcuts you created, if no longer needed. The current installer does not add an entry to `$PROFILE`; inspect your profile only if you previously added one yourself. Profiles, logs, backups and protected ProgramData recovery files are not all removed by deleting the app directory.
 
 ---
 
@@ -710,7 +726,7 @@ Register-PowerToolsModule `
 |--------|---------|
 | PowerShell 7 missing | Install from aka.ms/powershell |
 | Command not found | Restart terminal |
-| ExecutionPolicy error | Set RemoteSigned |
+| ExecutionPolicy error | Use the documented per-process `-ExecutionPolicy Bypass` starter command; check organizational policy if it still fails. |
 | Modules missing | Check `/modules` folder |
 | Gaming tweaks missing | Run as Admin |
 | Logo color wrong | Toggle dark mode |

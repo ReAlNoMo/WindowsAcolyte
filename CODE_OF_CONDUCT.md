@@ -59,9 +59,7 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-.
-All complaints will be reviewed and investigated promptly and fairly.
+reported to the project maintainers through [GitHub Issues](https://github.com/ReAlNoMo/WindowsAcolyte/issues). Issues are public: do not include sensitive personal details. No private conduct-reporting contact is currently documented; request a private channel in an issue without posting those details. Maintainers should review reports promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
 reporter of any incident.
