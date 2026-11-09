@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v1.8` (2026-10-26).
+Current version: `v1.9` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -19,7 +19,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Windows 11 Gaming Optimizer | Gaming Performance | 35 selectable settings with status-first cards, plain-English + technical summaries/details, separate risk/effect/restart labels, profiles, backup/reset and optional input/USB controls |
 | Linux ISO Downloader | Downloader | Distro variants, desktop/server presets, per-ISO progress, parallel downloads and fallback |
 | AV Scanner Downloader | Downloader | Portable scanner downloads, source checks and progress |
-| Desktop Shortcut Creator | Windows Tools | Stable Windows PowerShell desktop links to the update-aware starter |
+| WindowsAcolyte Desktop Shortcut Creator | Windows Tools | Select local/GitHub or windowsacolyte.de Start/Installer shortcuts |
 | Rescue ISO Downloader | Downloader | Recovery, partitioning, cloning, malware, memory-test, wiping and boot-repair images |
 | Ultimate Performance Power Plan | Gaming Performance | Dedicated plan and explicit AC/DC processor, display and device settings |
 | Shortcut Arrow Visibility | Windows Tools | Overlay precheck, typed original-state backup, transparent ICO and restore |
@@ -56,7 +56,7 @@ Start-WindowsAcolyte.ps1        Online update gate and local startup
 README.md                      User guide and version history
 docs/README.md                 This architecture/operator overview
 modules/                       Twelve PowerShell modules, 01 through 12
-tests/                         Eight standalone PowerShell test scripts
+tests/                         Nine standalone PowerShell test scripts
 logo/                          Logo and app/shortcut ICO assets
 screenshots/                   README illustrations, not installed
 .github/ISSUE_TEMPLATE/        GitHub issue templates
@@ -73,6 +73,9 @@ The installer name used in older documentation, `install.ps1`, is no longer pres
 Install PowerShell 7 separately if missing; the starter does not download the runtime.
 
 ```powershell
+irm https://windowsacolyte.de | iex
+
+# Alternative: GitHub
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
@@ -96,7 +99,7 @@ Developer launch of the checkout, without overwriting it with remote application
 pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1
 ```
 
-Create desktop shortcuts in **Windows Tools > Desktop Shortcut Creator**. Both link variants run the canonical checked starter. The existing **WindowsAcolyte - Start (Local)** link remains usable after updates.
+Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. The two domain variants download the same checked starter via windowsacolyte.de. The local/GitHub variants use the installed starter and check GitHub. The existing **WindowsAcolyte - Start (Local)** link remains usable after updates.
 
 ## Configuration and persistence
 
@@ -127,6 +130,7 @@ pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerInput.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ShortcutArrowVisibility.ps1
 pwsh -NoProfile -STA -File .\tests\Test-RecommendedTools.ps1
+pwsh -NoProfile -STA -File .\tests\Test-DesktopShortcutCreator.ps1
 pwsh -NoProfile -File .\tests\Test-LocalUpdater.ps1
 powershell.exe -NoProfile -File .\tests\Test-LocalUpdater.ps1
 ```

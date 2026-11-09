@@ -3,7 +3,7 @@
 
 Register-PowerToolsModule `
     -Id          "desktop-shortcut-creator" `
-    -Name        "Desktop Shortcut Creator" `
+    -Name        "WindowsAcolyte Desktop Shortcut Creator" `
     -Description "Create WindowsAcolyte shortcuts with a mandatory online update check." `
     -Category    "Windows Tweaks" `
     -Show        {
@@ -24,7 +24,7 @@ Register-PowerToolsModule `
             <TextBlock Text="DESKTOP SHORTCUTS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                       Text="Create WindowsAcolyte shortcuts on your Desktop. Both shortcuts check GitHub and update the local app before starting. If the online check or update fails, startup is blocked."/>
+                       Text="Choose WindowsAcolyte desktop shortcuts. Local/GitHub shortcuts use the installed starter. The .de shortcuts download the starter from windowsacolyte.de. The two .de shortcuts currently run the same update-and-start flow."/>
         </StackPanel>
     </Border>
 
@@ -33,9 +33,13 @@ Register-PowerToolsModule `
         <StackPanel>
             <TextBlock Text="SHORTCUTS TO CREATE" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,10"/>
-            <CheckBox x:Name="LocalShortcutCheck" Content="WindowsAcolyte - Start (Local)"
+            <CheckBox x:Name="LocalShortcutCheck" Content="WindowsAcolyte - Start (Local starter, GitHub update)"
                       FontSize="13" IsChecked="True" Margin="0,0,0,10"/>
-            <CheckBox x:Name="InstallerShortcutCheck" Content="WindowsAcolyte - Installer (Online)"
+            <CheckBox x:Name="InstallerShortcutCheck" Content="WindowsAcolyte - Installer (Local starter, GitHub update)"
+                      FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
+            <CheckBox x:Name="DomainStartCheck" Content="WindowsAcolyte - Start (windowsacolyte.de)"
+                      FontSize="13" IsChecked="False" Margin="0,0,0,10"/>
+            <CheckBox x:Name="DomainInstallerCheck" Content="WindowsAcolyte - Installer (windowsacolyte.de)"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
             <TextBlock x:Name="DesktopPathText" FontSize="12" TextWrapping="Wrap"/>
             <TextBlock x:Name="IconInfoText" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
@@ -86,6 +90,8 @@ Register-PowerToolsModule `
     $Global:DSC_optionsBorder   = $view.FindName("OptionsBorder")
     $Global:DSC_localCheck      = $view.FindName("LocalShortcutCheck")
     $Global:DSC_installerCheck  = $view.FindName("InstallerShortcutCheck")
+    $Global:DSC_domainStartCheck = $view.FindName("DomainStartCheck")
+    $Global:DSC_domainInstallerCheck = $view.FindName("DomainInstallerCheck")
     $Global:DSC_desktopPathText = $view.FindName("DesktopPathText")
     $Global:DSC_iconInfoText    = $view.FindName("IconInfoText")
     $Global:DSC_createBtn       = $view.FindName("CreateBtn")
@@ -102,6 +108,8 @@ Register-PowerToolsModule `
     $Global:DSC_optionsBorder.BorderBrush  = $Global:PTS_Brush["Border"]
     $Global:DSC_localCheck.Foreground      = $Global:PTS_Brush["TextDark"]
     $Global:DSC_installerCheck.Foreground  = $Global:PTS_Brush["TextDark"]
+    $Global:DSC_domainStartCheck.Foreground = $Global:PTS_Brush["TextDark"]
+    $Global:DSC_domainInstallerCheck.Foreground = $Global:PTS_Brush["TextDark"]
     $Global:DSC_desktopPathText.Foreground = $Global:PTS_Brush["TextMuted"]
     $Global:DSC_iconInfoText.Foreground    = $Global:PTS_Brush["TextMuted"]
     $Global:DSC_logBorder.Background       = $Global:PTS_Brush["LogBg"]
@@ -214,8 +222,10 @@ Register-PowerToolsModule `
         try {
             $createLocal = [bool]$Global:DSC_localCheck.IsChecked
             $createInstaller = [bool]$Global:DSC_installerCheck.IsChecked
+            $createDomainStart = [bool]$Global:DSC_domainStartCheck.IsChecked
+            $createDomainInstaller = [bool]$Global:DSC_domainInstallerCheck.IsChecked
 
-            if (-not $createLocal -and -not $createInstaller) {
+            if (-not ($createLocal -or $createInstaller -or $createDomainStart -or $createDomainInstaller)) {
                 DSC-AddLog "No shortcut selected." "WARN"
                 return
             }
@@ -256,6 +266,19 @@ Register-PowerToolsModule `
                     -Description "Install or update WindowsAcolyte from GitHub via a version-safe PowerShell 7 bootstrap." `
                     -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" "OK"
+            }
+            $domainArguments = '-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -Command "irm https://windowsacolyte.de | iex"'
+            if ($createDomainStart) {
+                $path = DSC-NewShortcut -Name 'WindowsAcolyte - Start (windowsacolyte.de)' `
+                    -TargetPath $shortcutHostPath -Arguments $domainArguments -WorkingDirectory $installPath `
+                    -Description 'Download and run the WindowsAcolyte starter from windowsacolyte.de.' -IconLocation $iconLocation
+                DSC-AddLog "Created: $path" 'OK'
+            }
+            if ($createDomainInstaller) {
+                $path = DSC-NewShortcut -Name 'WindowsAcolyte - Installer (windowsacolyte.de)' `
+                    -TargetPath $shortcutHostPath -Arguments $domainArguments -WorkingDirectory $installPath `
+                    -Description 'Download and run the WindowsAcolyte starter from windowsacolyte.de.' -IconLocation $iconLocation
+                DSC-AddLog "Created: $path" 'OK'
             }
         } catch {
             DSC-AddLog $_.Exception.Message "FAIL"

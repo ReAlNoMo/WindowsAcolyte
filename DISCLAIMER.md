@@ -175,7 +175,7 @@ Before applying advanced or high-risk changes, users are strongly encouraged to:
 ---
 
 **WindowsAcolyte**
-Version 1.8 • ReAlNoMo
+Version 1.9 • ReAlNoMo
 
 ## External links in Recommended Tools
 

@@ -13,6 +13,9 @@
 > ✅ Fast • Trusted • No setup
 
 ```powershell
+irm https://windowsacolyte.de | iex
+
+# Alternative: GitHub
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
@@ -26,7 +29,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.8`
+**Current version:** `v1.9`
 
 ---
 
@@ -532,7 +535,7 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ---
 
-## 🖥️ 9. Desktop Shortcut Creator
+## 🖥️ 9. WindowsAcolyte Desktop Shortcut Creator
 > **Category:** Windows Tools
 > **Admin:** ❌ No
 
@@ -540,10 +543,13 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
-- Supports **Local Start** and **Online Installer** shortcut variants
+- Supports local/GitHub and windowsacolyte.de Start/Installer shortcut variants
 - Uses English shortcut names:
   - `WindowsAcolyte - Start (Local).lnk`
   - `WindowsAcolyte - Installer (Online).lnk`
+  - `WindowsAcolyte - Start (windowsacolyte.de).lnk`
+  - `WindowsAcolyte - Installer (windowsacolyte.de).lnk`
+- The two .de links both run `irm https://windowsacolyte.de | iex` and fetch the same update-and-start script. The local/GitHub links use the installed starter and GitHub update check.
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
 - Downloads are staged and checked for integrity and PowerShell 7 syntax before application (the starter also remains compatible with its Windows PowerShell host). Apply failures roll back earlier writes; incomplete rollback blocks startup and retains recovery files.
@@ -713,7 +719,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.8 (Current) - 2026-10-26
+## v1.9 (Current) - 2026-11-09
+- Add selectable windowsacolyte.de Start and Installer desktop shortcuts and document domain and GitHub PowerShell entry points.
+- Rename the shortcut module to WindowsAcolyte Desktop Shortcut Creator.
+
+## v1.8 (Previous) - 2026-10-26
 - Gaming Optimizer: status-first cards for all 35 options, plain-English and technical summaries/details, separate risk/effect/restart labels and wrapping selection controls.
 - Replace speculative FPS totals with a factual selection overview; retain all configuration operations, presets, optional controls and saved-state restore rules.
 - Add isolated layout/detail tests at narrow/wide widths in both themes; expand the pointer-speed and local-update explanations.
@@ -792,7 +802,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.8 • October 2026
+Version 1.9 • November 2026
 
 ---
 
