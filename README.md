@@ -63,11 +63,13 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1`
+**Current version:** `v2.1.1`
 
 ---
 
 # 🧰 Modules (12 Total)
+
+The application requests administrator privileges at startup. Module labels below indicate whether the module's operations themselves require elevation; they do not indicate that the app runs without elevation.
 
 ---
 
@@ -89,7 +91,7 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 
 ## 🔒 1. Hash Verifier
 > **Category:** Security
-> **Admin:** ❌ No
+> **Module operations:** No additional administrator requirement; the app runs elevated.
 
 <img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/01-hash-verifier.png" alt="Hash Verifier module" width="720">
 
@@ -110,7 +112,6 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 > **Category:** Windows Tools
 > **Admin:** ⚠️ Yes
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/02-explorer-view-normalizer.png" alt="Explorer View Normalizer module" width="720">
 
 ### ✔ What it does
 - Lets you compose global Explorer defaults using checkbox fields
@@ -130,7 +131,7 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 - Disable Folder Type Discovery with `FolderType = NotSpecified`
 - Apply to all folder types (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)
 - Clear Shell Bags, BagMRU, Desktop/Defaults Streams, and common Open/Save dialog view caches
-- Restart Explorer automatically
+- Optionally restart Explorer after applying settings
 - Apply now supports **apply + revert**: unchecked options are reverted when possible
 - Automatic recheck runs immediately after apply so new states are shown without manual refresh
 
@@ -164,7 +165,6 @@ HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
 > **Category:** Diagnostics
 > **Admin:** ⚠️ Yes
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/03-hardware-inventory.png" alt="Hardware Inventory module" width="720">
 
 ### ✔ What it does
 - System / Mainboard info (manufacturer, model, BIOS version and date)
@@ -174,7 +174,7 @@ HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
 - Storage drives and logical partitions (size, free space, file system)
 - Network adapters (MAC, driver, IP address)
 - Audio devices with driver info
-- Full PnP driver list (sortable by class and device name)
+- PnP driver list sorted by class and device name when the report is generated
 - Styled **HTML report** saved to the Desktop
 - Background processing with progress bar
 
@@ -185,7 +185,7 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ### ✨ Features
 - Dark-themed HTML report
-- Sortable tables
+- Static tables; the driver list is sorted when generated
 - Activity log with timestamps
 - Re-open last report button
 - Concurrent background processing
@@ -196,9 +196,8 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ## 🧱 4. Sandboxie Browser Launcher
 > **Category:** Security
-> **Admin:** ❌ No
+> **Module operations:** No additional administrator requirement; the app runs elevated.
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/04-sandboxie-browser-launcher.png" alt="Sandboxie Browser Launcher module" width="720">
 
 ### ✔ What it does
 - Launch browsers sandboxed via Sandboxie-Plus
@@ -239,7 +238,6 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 > **Category:** Gaming Performance
 > **Admin:** ⚠️ Yes
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/05-gaming-optimizer.png" alt="Windows 11 Gaming Optimizer module" width="720">
 
 > 🚀 **35 selectable options**: 29 existing tweaks + 6 optional input/USB settings, with verified configuration readback. Additional controls offer custom desktop pointer speed and local Windows Update status.
 
@@ -407,8 +405,10 @@ Command semantics: [Microsoft fsutil behavior](https://learn.microsoft.com/en-us
 ---
 
 ## 🔧 Recommended Tools
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/11-recommended-tools.png" alt="Recommended Tools module" width="720">
 > **Category:** Gaming Performance
-> **Admin:** No (individual external tools may require elevation)
+> **Module operations:** Opens external pages; the app runs elevated and individual external tools may require elevation.
 
 A gold warning panel labeled **EXTERNAL LINKS - LIABILITY NOTICE** appears above all recommendations in both Light and Dark modes. It explains that linked websites/downloads are third-party content, describes the limits of warranty/liability to the extent legally permitted, reminds users of destination-site privacy/usage terms and retains statutory liability and review/removal obligations. **Report a problematic link (GitHub Issues)** opens the project issue page without submitting anything automatically. Sensitive security reports should follow `SECURITY.md` instead of public issues.
 
@@ -441,7 +441,6 @@ Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/af
 > **Category:** Gaming Performance
 > **Admin:** ⚠️ Yes
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/10-ultimate-performance-power-plan.png" alt="Ultimate Performance Power Plan module" width="720">
 
 ### ✔ What it does
 - Creates a dedicated **WindowsAcolyte Ultimate Performance** power plan from the Windows Ultimate Performance template
@@ -463,9 +462,8 @@ Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/af
 
 ## 🐧 7. Linux ISO Downloader
 > **Category:** Downloader
-> **Admin:** ❌ No
+> **Module operations:** No additional administrator requirement; the app runs elevated.
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/06-linux-iso-downloader.png" alt="Linux ISO Downloader module" width="720">
 
 ### ✔ What it does
 - Download latest ISOs from official sources
@@ -473,9 +471,9 @@ Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/af
 - Parent/child distro selection (main distro = all variants, sub-option = single variant)
 - Preset buttons for All, Only Server, and Only Desktop selections
 - Separate live progress row for every selected ISO
-- SHA256 verification (where available)
+- No automatic checksum verification; compare the downloaded ISO with a checksum from the distribution's official source using Hash Verifier
 - Auto mirror fallback
-- Resume / skip existing files
+- A new attempt starts a fresh download; interrupted downloads are not resumed
 - Background processing via ConcurrentQueue + DispatcherTimer
 
 ---
@@ -500,7 +498,7 @@ Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/af
 - Speed indicator (MB/s) and ETA
 - Queued/running/done/failed/cancelled state per ISO
 - Activity log dynamically resizes under the progress area
-- Resume / skip existing files
+- Retries and mirror fallback start a fresh download
 - Activity log
 - Mirror failover
 - Parallel download control
@@ -516,28 +514,29 @@ C:\Users\[CurrentUser]\Downloads\ISOs
 
 ## 🦠 8. AV Scanner Downloader
 > **Category:** Downloader
-> **Admin:** ❌ No
+> **Module operations:** No additional administrator requirement; the app runs elevated.
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/07-av-scanner-downloader.png" alt="AV Scanner Downloader module" width="720">
 
 ### ✔ What it does
 - Download portable AV scanner tools from official vendor servers
 - Parallel downloads (1–4 concurrent)
 - Background processing via RunspacePool
 - Per-file progress tracking with speed and ETA
-- MD5/SHA256 verification (where available)
+- Checks minimum file size and the executable MZ header; it does not verify checksums or digital signatures
 - Live queue-based UI updates
 
 ---
 
 ### 📦 Supported Scanners
 
-| Scanner | Vendor | Portable | Verification |
-|---------|--------|----------|--------------|
-| EEK | Emsisoft | ✅ | ✅ MD5 |
-| KVRT | Kaspersky | ✅ | ✅ SHA256 |
-| AdwCleaner | Malwarebytes | ✅ | ❌ |
-| HouseCall | Trend Micro | ✅ | ✅ SHA256 |
+| Scanner | Vendor | Automatic checksum or signature verification |
+|---------|--------|-----------------------------------------------|
+| EEK | Emsisoft | No |
+| KVRT | Kaspersky | No |
+| AdwCleaner | Malwarebytes | No |
+| HouseCall | Trend Micro | No |
+
+Verify each download against an official publisher checksum or a trusted publisher signature before running it. The MZ header and file-size checks alone do not establish authenticity or integrity.
 
 ---
 
@@ -571,9 +570,8 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ## 🖥️ 9. WindowsAcolyte Desktop Shortcut Creator
 > **Category:** Windows Tools
-> **Admin:** ❌ No
+> **Module operations:** No additional administrator requirement; the app runs elevated.
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/08-desktop-shortcut-creator.png" alt="Desktop Shortcut Creator module" width="720">
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
@@ -600,9 +598,8 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ## 🧯 10. Rescue ISO Downloader
 > **Category:** Downloader
-> **Admin:** ❌ No
+> **Module operations:** No additional administrator requirement; the app runs elevated.
 
-<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/09-rescue-iso-downloader.png" alt="Rescue ISO Downloader module" width="720">
 
 ### ✔ What it does
 - Downloads current rescue, partitioning, cloning, malware cleanup, RAM test, wipe, and boot repair images
@@ -749,7 +746,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1 (Current) - 2026-11-09
+## v2.1.1 (Current) - 2026-11-09
+- Correct downloader verification claims and the Linux downloader description; checksum and signature verification remains a separate user action.
+- Clarify module elevation and Explorer restart behavior.
+
+## v2.1 (Previous) - 2026-11-09
 - Align Light and Dark themes and the hardware report with the navy and gold logo, with accessible contrast and clearly labeled status colors.
 - Keep open views and selections when switching themes.
 
@@ -855,7 +856,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1 • November 2026
+Version 2.1.1 • November 2026
 
 ---
 

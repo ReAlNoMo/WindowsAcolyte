@@ -5,7 +5,7 @@
 Register-PowerToolsModule `
     -Id          "linux-iso-downloader" `
     -Name        "Linux ISO Downloader" `
-    -Description "Download the latest Ubuntu, Debian, Fedora, Arch, CachyOS, and Pop!_OS ISOs with hash verification." `
+    -Description "Download Ubuntu, Debian, Fedora, Arch, CachyOS, and Pop!_OS ISOs. Verify checksums separately." `
     -Category    "Downloads" `
     -Show        {
 

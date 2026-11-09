@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.1` (2026-11-09).
+Current version: `v2.1.1` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -24,6 +24,8 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Ultimate Performance Power Plan | Gaming Performance | Dedicated plan and explicit AC/DC processor, display and device settings |
 | Shortcut Arrow Visibility | Windows Tools | Overlay precheck, typed original-state backup, transparent ICO and restore |
 | Recommended Tools | Gaming Performance | Thirteen entries grouped into GPU/drivers, CPU/RAM, monitor/mouse, diagnostics, audio and Windows utilities; Equalizer APO + Peace has separate official project links |
+
+The Linux ISO downloader does not verify checksums or resume interrupted downloads. The AV scanner downloader checks the file size and MZ executable header, not a checksum or publisher signature. Verify downloads independently using official publisher checksums or signatures before use.
 
 The shell uses logo-aligned navy/gold Light and Dark themes with tonal backgrounds and labeled green/red status colors. Switching themes preserves the open view and selections; the hardware HTML report follows the same palette. The shell also supports category tiles, JSONL exception logging and an active-operation guard for downloads/hash/report work during theme changes, navigation and app close. Documentation screenshots may show an earlier version.
 
