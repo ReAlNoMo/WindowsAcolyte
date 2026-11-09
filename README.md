@@ -29,7 +29,7 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | Required for some modules |
 
-**Current version:** `v1.9.1`
+**Current version:** `v1.9.2`
 
 ---
 
@@ -543,12 +543,12 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
-- Supports local/GitHub and windowsacolyte.de Start/Installer shortcut variants
+- WA stands for WindowsAcolyte. Local shortcuts use the installed starter and check GitHub. Online shortcuts load the starter from windowsacolyte.de.
 - Uses English shortcut names:
-  - `WindowsAcolyte - Local Start (GitHub Update).lnk`
-  - `WindowsAcolyte - Local Installer (GitHub Update).lnk`
-  - `WindowsAcolyte - Online Start (windowsacolyte.de).lnk`
-  - `WindowsAcolyte - Online Installer (windowsacolyte.de).lnk`
+  - `WA Local Start.lnk`
+  - `WA Local Installer.lnk`
+  - `WA Online Start.lnk`
+  - `WA Online Installer.lnk`
 - The two .de links both run `irm https://windowsacolyte.de | iex` and fetch the same update-and-start script. The local/GitHub links use the installed starter and GitHub update check.
 - Uses a stable Windows PowerShell shortcut host plus a local bootstrap that resolves PowerShell 7 (`pwsh.exe`) at launch time; Store version updates cannot invalidate the shortcut target
 - **Mandatory online check on every shortcut launch:** resolve GitHub `main`, verify all managed local files against the commit's Git blob hashes, and download only missing/changed files from that same immutable commit.
@@ -719,7 +719,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v1.9.1 (Current) - 2026-11-09
+## v1.9.2 (Current) - 2026-11-09
+- Shorten the four desktop shortcut names to WA Local Start, WA Local Installer, WA Online Start and WA Online Installer. WA stands for WindowsAcolyte.
+
+## v1.9.1 (Previous) - 2026-11-09
 - Clarify Local/GitHub and Online/windowsacolyte.de in all four shortcut labels and generated filenames. Existing shortcuts remain valid.
 
 ## v1.9 (Previous) - 2026-11-09
@@ -805,7 +808,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 1.9.1 • November 2026
+Version 1.9.2 • November 2026
 
 ---
 

@@ -31,13 +31,13 @@ try {
         if($link.Arguments -notmatch 'irm https://windowsacolyte\.de \| iex'){throw 'Domain command missing'}
         "PASS: $($linkFile.Name) targets windowsacolyte.de"
     }
-    if(-not (Test-Path -LiteralPath (Join-Path $testDirectory 'WindowsAcolyte - Online Start (windowsacolyte.de).lnk')) -or -not (Test-Path -LiteralPath (Join-Path $testDirectory 'WindowsAcolyte - Online Installer (windowsacolyte.de).lnk'))){throw 'Expected domain names missing'}
+    if(-not (Test-Path -LiteralPath (Join-Path $testDirectory 'WA Online Start.lnk')) -or -not (Test-Path -LiteralPath (Join-Path $testDirectory 'WA Online Installer.lnk'))){throw 'Expected domain names missing'}
     $Global:DSC_domainStartCheck.IsChecked=$false
     $Global:DSC_domainInstallerCheck.IsChecked=$false
     $Global:DSC_localCheck.IsChecked=$true
     $Global:DSC_installerCheck.IsChecked=$true
     DSC-CreateSelectedShortcuts
-    foreach($name in @('WindowsAcolyte - Local Start (GitHub Update)','WindowsAcolyte - Local Installer (GitHub Update)')) {
+    foreach($name in @('WA Local Start','WA Local Installer')) {
         $path=Join-Path $testDirectory ($name+'.lnk')
         if(-not (Test-Path -LiteralPath $path)){throw "Missing local shortcut: $name"}
         $local=$shell.CreateShortcut($path)

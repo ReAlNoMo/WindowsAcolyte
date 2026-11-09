@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v1.9.1` (2026-11-09).
+Current version: `v1.9.2` (2026-11-09).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -99,7 +99,7 @@ Developer launch of the checkout, without overwriting it with remote application
 pwsh -NoProfile -ExecutionPolicy Bypass -STA -File .\WindowsAcolyte.ps1
 ```
 
-Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. The two domain variants download the same checked starter via windowsacolyte.de. The local/GitHub variants use the installed starter and check GitHub. The creator uses clearly labeled Local/GitHub and Online/windowsacolyte.de names. Previously created links remain usable.
+Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Creator**. The two domain variants download the same checked starter via windowsacolyte.de. The local/GitHub variants use the installed starter and check GitHub. WA means WindowsAcolyte. The creator uses short names WA Local Start, WA Local Installer, WA Online Start and WA Online Installer. Previously created links remain usable.
 
 ## Configuration and persistence
 

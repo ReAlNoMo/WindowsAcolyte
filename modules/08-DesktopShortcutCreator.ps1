@@ -24,7 +24,7 @@ Register-PowerToolsModule `
             <TextBlock Text="DESKTOP SHORTCUTS" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                       Text="Choose WindowsAcolyte desktop shortcuts. Local shortcuts use the installed starter and check GitHub for updates. Online shortcuts download the starter from windowsacolyte.de. Start and Installer currently run the same update-and-start flow within each source."/>
+                       Text="WA means WindowsAcolyte. Local shortcuts use the installed starter and check GitHub for updates. Online shortcuts download the starter from windowsacolyte.de. Start and Installer currently run the same update-and-start flow within each source."/>
         </StackPanel>
     </Border>
 
@@ -33,13 +33,13 @@ Register-PowerToolsModule `
         <StackPanel>
             <TextBlock Text="SHORTCUTS TO CREATE" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,10"/>
-            <CheckBox x:Name="LocalShortcutCheck" Content="WindowsAcolyte - Local Start (GitHub Update)"
+            <CheckBox x:Name="LocalShortcutCheck" Content="WA Local Start"
                       FontSize="13" IsChecked="True" Margin="0,0,0,10"/>
-            <CheckBox x:Name="InstallerShortcutCheck" Content="WindowsAcolyte - Local Installer (GitHub Update)"
+            <CheckBox x:Name="InstallerShortcutCheck" Content="WA Local Installer"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
-            <CheckBox x:Name="DomainStartCheck" Content="WindowsAcolyte - Online Start (windowsacolyte.de)"
+            <CheckBox x:Name="DomainStartCheck" Content="WA Online Start"
                       FontSize="13" IsChecked="False" Margin="0,0,0,10"/>
-            <CheckBox x:Name="DomainInstallerCheck" Content="WindowsAcolyte - Online Installer (windowsacolyte.de)"
+            <CheckBox x:Name="DomainInstallerCheck" Content="WA Online Installer"
                       FontSize="13" IsChecked="False" Margin="0,0,0,12"/>
             <TextBlock x:Name="DesktopPathText" FontSize="12" TextWrapping="Wrap"/>
             <TextBlock x:Name="IconInfoText" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"/>
@@ -248,7 +248,7 @@ Register-PowerToolsModule `
                 }
 
                 $path = DSC-NewShortcut `
-                    -Name "WindowsAcolyte - Local Start (GitHub Update)" `
+                    -Name "WA Local Start" `
                     -TargetPath $shortcutHostPath `
                     -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}"' -f $bootstrapPath) `
                     -WorkingDirectory $installPath `
@@ -259,7 +259,7 @@ Register-PowerToolsModule `
 
             if ($createInstaller) {
                 $path = DSC-NewShortcut `
-                    -Name "WindowsAcolyte - Local Installer (GitHub Update)" `
+                    -Name "WA Local Installer" `
                     -TargetPath $shortcutHostPath `
                     -Arguments ('-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File "{0}" -OnlineInstaller' -f $bootstrapPath) `
                     -WorkingDirectory $installPath `
@@ -269,13 +269,13 @@ Register-PowerToolsModule `
             }
             $domainArguments = '-NoLogo -NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -Command "irm https://windowsacolyte.de | iex"'
             if ($createDomainStart) {
-                $path = DSC-NewShortcut -Name 'WindowsAcolyte - Online Start (windowsacolyte.de)' `
+                $path = DSC-NewShortcut -Name 'WA Online Start' `
                     -TargetPath $shortcutHostPath -Arguments $domainArguments -WorkingDirectory $installPath `
                     -Description 'Download and run the WindowsAcolyte starter from windowsacolyte.de.' -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" 'OK'
             }
             if ($createDomainInstaller) {
-                $path = DSC-NewShortcut -Name 'WindowsAcolyte - Online Installer (windowsacolyte.de)' `
+                $path = DSC-NewShortcut -Name 'WA Online Installer' `
                     -TargetPath $shortcutHostPath -Arguments $domainArguments -WorkingDirectory $installPath `
                     -Description 'Download and run the WindowsAcolyte starter from windowsacolyte.de.' -IconLocation $iconLocation
                 DSC-AddLog "Created: $path" 'OK'
