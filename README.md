@@ -112,6 +112,8 @@ The application requests administrator privileges at startup. Module labels belo
 > **Category:** Windows Tools
 > **Admin:** ⚠️ Yes
 
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/02-explorer-view-normalizer.png" alt="02-explorer-view-normalizer" width="720">
+
 
 ### ✔ What it does
 - Lets you compose global Explorer defaults using checkbox fields
@@ -165,6 +167,8 @@ HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
 > **Category:** Diagnostics
 > **Admin:** ⚠️ Yes
 
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/03-hardware-inventory.png" alt="03-hardware-inventory" width="720">
+
 
 ### ✔ What it does
 - System / Mainboard info (manufacturer, model, BIOS version and date)
@@ -197,6 +201,8 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 ## 🧱 4. Sandboxie Browser Launcher
 > **Category:** Security
 > **Module operations:** No additional administrator requirement; the app runs elevated.
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/04-sandboxie-browser-launcher.png" alt="04-sandboxie-browser-launcher" width="720">
 
 
 ### ✔ What it does
@@ -237,6 +243,8 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 ## 🎮 5. Windows 11 Gaming Optimizer
 > **Category:** Gaming Performance
 > **Admin:** ⚠️ Yes
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/05-gaming-optimizer.png" alt="05-gaming-optimizer" width="720">
 
 
 > 🚀 **35 selectable options**: 29 existing tweaks + 6 optional input/USB settings, with verified configuration readback. Additional controls offer custom desktop pointer speed and local Windows Update status.
@@ -441,6 +449,8 @@ Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/af
 > **Category:** Gaming Performance
 > **Admin:** ⚠️ Yes
 
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/10-ultimate-performance-power-plan.png" alt="10-ultimate-performance-power-plan" width="720">
+
 
 ### ✔ What it does
 - Creates a dedicated **WindowsAcolyte Ultimate Performance** power plan from the Windows Ultimate Performance template
@@ -463,6 +473,8 @@ Sources reviewed on 2026-10-26: [MSI](https://www.msi.com/Landing/afterburner/af
 ## 🐧 7. Linux ISO Downloader
 > **Category:** Downloader
 > **Module operations:** No additional administrator requirement; the app runs elevated.
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/06-linux-iso-downloader.png" alt="06-linux-iso-downloader" width="720">
 
 
 ### ✔ What it does
@@ -515,6 +527,8 @@ C:\Users\[CurrentUser]\Downloads\ISOs
 ## 🦠 8. AV Scanner Downloader
 > **Category:** Downloader
 > **Module operations:** No additional administrator requirement; the app runs elevated.
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/07-av-scanner-downloader.png" alt="07-av-scanner-downloader" width="720">
 
 
 ### ✔ What it does
@@ -572,6 +586,8 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 > **Category:** Windows Tools
 > **Module operations:** No additional administrator requirement; the app runs elevated.
 
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/08-desktop-shortcut-creator.png" alt="08-desktop-shortcut-creator" width="720">
+
 
 ### ✔ What it does
 - Creates WindowsAcolyte shortcuts on the current user's Desktop
@@ -599,6 +615,8 @@ C:\Users\[CurrentUser]\Downloads\AVScanners
 ## 🧯 10. Rescue ISO Downloader
 > **Category:** Downloader
 > **Module operations:** No additional administrator requirement; the app runs elevated.
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/09-rescue-iso-downloader.png" alt="09-rescue-iso-downloader" width="720">
 
 
 ### ✔ What it does
@@ -636,6 +654,8 @@ C:\Users\[CurrentUser]\Downloads\RescueISOs
 ## 🔗 11. Shortcut Arrow Visibility
 > **Category:** Windows Tools
 > **Admin:** Required
+
+<img src="https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/screenshots/12-shortcut-arrow-visibility.png" alt="12-shortcut-arrow-visibility" width="720">
 
 Hides the small shortcut-arrow overlay while retaining each shortcut's icon, target and `.lnk` behavior.
 
@@ -865,4 +885,4 @@ https://github.com/ReAlNoMo/WindowsAcolyte
 
 ## Developer and operator reference
 
-See [the detailed project overview](docs/README.md) for architecture, all twelve modules, CLI options, persistence paths, automated test commands and release verification. Screenshots illustrate the UI and may show an earlier version; the source and current-version text define the shipped version.
+See [the detailed project overview](docs/README.md) for architecture, all twelve modules, CLI options, persistence paths, automated test commands and release verification. Screenshots illustrate the UI, may show an earlier version and have device-specific details obscured; the source and current-version text define the shipped version.
