@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.1.2` (2026-11-09).
+Current version: `v2.1.3` (2026-11-18).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -13,7 +13,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Module | Category | Purpose |
 |---|---|---|
 | Hash Verifier | Security | File hashes and expected-hash comparison |
-| Explorer View Normalizer | Windows Tools | Compose Explorer settings, grouped state readback, apply/revert, optional small desktop icons |
+| Explorer View Normalizer | Windows Tools | Discover folder templates, repair saved Explorer/dialog grouping, conflict readback, selected-only apply, view backups/restore, optional small desktop icons |
 | Hardware Inventory | Diagnostics | CIM/WMI inventory and desktop HTML report |
 | Sandboxie Browser Launcher | Security | Detect browsers and Sandboxie, start supported browsers sandboxed |
 | Windows 11 Gaming Optimizer | Gaming Performance | 35 selectable settings with status-first cards, plain-English + technical summaries/details, separate risk/effect/restart labels, profiles, backup/reset and optional input/USB controls |
@@ -57,7 +57,7 @@ Start-WindowsAcolyte.ps1        Online update gate and local startup
 README.md                      User guide and version history
 docs/README.md                 This architecture/operator overview
 modules/                       Twelve PowerShell modules, 01 through 12
-tests/                         Eleven standalone PowerShell test scripts
+tests/                         Twelve standalone PowerShell test scripts
 logo/                          Logo and app/shortcut ICO assets
 screenshots/                   README illustrations, not installed
 .github/ISSUE_TEMPLATE/        GitHub issue templates
@@ -125,6 +125,7 @@ Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Cr
 | `.installed-release.json` inside installation | Last verified GitHub revision, UTC check time and managed-file list |
 | `.update.lock` / `.updates` inside installation | Update serialization and staging/rollback workspace |
 | `%LOCALAPPDATA%\WindowsAcolyte\logs` | Structured exception logs for checked launches |
+| `%LOCALAPPDATA%\WindowsAcolyte\ExplorerViewBackups` | Typed current-user folder-view/template/history snapshots; keep private |
 | `%ProgramFiles%\WindowsAcolyte-Run-*` | Temporary runtime with access limited to Administrators and SYSTEM |
 | `%LOCALAPPDATA%\WindowsAcolyte\GamingOptimizer` | Gaming optimizer profile JSON files |
 | `%ProgramData%\WindowsAcolyte\GamingOptimizer` | Saved original optional input/USB settings, including user-SID-scoped input backups |
@@ -132,6 +133,8 @@ Create desktop shortcuts in **Windows Tools > WindowsAcolyte Desktop Shortcut Cr
 | `%USERPROFILE%` and Desktop/Downloads folders | Default report and downloader destinations |
 
 The updater uses public GitHub HTTPS endpoints (`api.github.com` and `raw.githubusercontent.com`). The managed-file allowlist covers the app, starter, both READMEs, module scripts and logo PNG/ICO/SVG assets. Profiles, logs, backups and untracked custom modules are retained in their persistent locations. Checked launches exclude custom modules from the protected runtime. Previously tracked managed files removed from GitHub are removed from the cache. Other policy and developer documents remain available in the repository.
+
+Explorer View Normalizer discovers the installed folder-type catalog, sets current-user `FolderTypes\...\TopViews` grouping defaults, and repairs existing `Shell`, `ComDlg` and `ComDlgLegacy` view entries. Disabling grouping preserves saved columns but clears legacy binary `Streams\Defaults` overrides. Resetting saved views is a separate action that also removes layouts/history. Apply touches selected options only, saves a typed view snapshot first, and stops on errors. Restore selects a snapshot and replaces its captured view keys after confirmation, with a pre-restore rescue snapshot; unrelated Explorer options are outside that restore. Operations run in a background worker with the shell's active-operation warning. Status is registry readback, not proof of live window behavior. Close/reopen Explorer and applications with file dialogs. Special views/custom dialogs and major Windows upgrades remain limitations; no universal grouping lock is claimed. See the [module guide](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md) for details.
 
 ## Development and testing
 
@@ -146,6 +149,7 @@ pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerAudit.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerInput.ps1
 pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ShortcutArrowVisibility.ps1
+pwsh -NoProfile -STA -File .\tests\Test-ExplorerViewNormalizer.ps1
 pwsh -NoProfile -STA -File .\tests\Test-RecommendedTools.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ThemeColors.ps1
 pwsh -NoProfile -STA -File .\tests\Test-DesktopShortcutCreator.ps1

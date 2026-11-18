@@ -1,3 +1,235 @@
+# Current-user Explorer view state only. No HKLM writes, imports, or shell restarts.
+function Global:Get-EVNPaths {
+    $shell = 'Software\Classes\Local Settings\Software\Microsoft\Windows\Shell'
+    $explorer = 'Software\Microsoft\Windows\CurrentVersion\Explorer'
+    [pscustomobject]@{
+        MachineTypes = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderTypes'
+        UserTypes = "HKCU:\$explorer\FolderTypes"
+        BackupDirectory = Join-Path $env:LOCALAPPDATA 'WindowsAcolyte\ExplorerViewBackups'
+        Scopes = [ordered]@{
+            Bags = "$shell\Bags"; BagMRU = "$shell\BagMRU"
+            LegacyBags = 'Software\Microsoft\Windows\Shell\Bags'
+            LegacyBagMRU = 'Software\Microsoft\Windows\Shell\BagMRU'
+            DesktopStream = "$explorer\Streams\Desktop"
+            DefaultStreams = "$explorer\Streams\Defaults"
+            DialogSize = "$explorer\ComDlg32\CIDSizeMRU"
+            FirstFolder = "$explorer\ComDlg32\FirstFolder"
+            LastVisited = "$explorer\ComDlg32\LastVisitedPidlMRU"
+            OpenSave = "$explorer\ComDlg32\OpenSavePidlMRU"
+            FolderTypes = "$explorer\FolderTypes"
+        }
+    }
+}
+
+function Global:Get-EVNFolderTypes {
+    $paths = Get-EVNPaths
+    $types = @(Get-ChildItem -LiteralPath $paths.MachineTypes -ErrorAction Stop | Where-Object {
+        Test-Path -LiteralPath (Join-Path $_.PSPath 'TopViews')
+    })
+    if ($types.Count -eq 0) { throw 'No Windows folder view templates found. No changes made.' }
+    $types
+}
+
+function Global:Get-EVNViewPaths {
+    $paths = Get-EVNPaths
+    foreach ($scope in @('Bags', 'LegacyBags')) {
+        $base = "HKCU:\$($paths.Scopes[$scope])"
+        if (Test-Path -LiteralPath $base) {
+            Get-ChildItem -LiteralPath $base -Recurse -ErrorAction Stop | Where-Object {
+                $_.Name -match '\\(?:Shell|ComDlg|ComDlgLegacy)(?:\\\{[0-9a-f-]{36}\})?$'
+            } | Select-Object -ExpandProperty PSPath
+        }
+    }
+}
+
+function Global:Get-EVNTreeSnapshot {
+    param([Microsoft.Win32.RegistryKey]$Root, [string]$SubKey)
+    $key = $Root.OpenSubKey($SubKey)
+    if ($null -eq $key) { return }
+    try {
+        $values = @(foreach ($name in $key.GetValueNames()) {
+            [pscustomobject]@{ Name=$name; Kind=$key.GetValueKind($name).ToString()
+                Data=$key.GetValue($name, $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
+        })
+        [pscustomobject]@{ Path=$SubKey; Values=$values }
+        foreach ($child in $key.GetSubKeyNames()) { Get-EVNTreeSnapshot -Root $Root -SubKey "$SubKey\$child" }
+    } finally { $key.Dispose() }
+}
+
+function Global:Save-EVNViewBackup {
+    $paths = Get-EVNPaths
+    $root = [Microsoft.Win32.Registry]::CurrentUser
+    $scopes = @(foreach ($id in $paths.Scopes.Keys) {
+        $subKey = $paths.Scopes[$id]
+        $nodes = @(Get-EVNTreeSnapshot -Root $root -SubKey $subKey)
+        foreach ($node in $nodes) { $node.Path = $node.Path.Substring($subKey.Length).TrimStart('\') }
+        [pscustomobject]@{ Id=$id; Nodes=$nodes }
+    })
+    $backup = [pscustomobject]@{ Version=1; CreatedUtc=[DateTime]::UtcNow.ToString('o'); Scopes=$scopes }
+    [IO.Directory]::CreateDirectory($paths.BackupDirectory) | Out-Null
+    $file = Join-Path $paths.BackupDirectory ("views-{0}-{1}.json" -f [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmssfffffff'), [guid]::NewGuid().ToString('N'))
+    # CreateNew: never overwrite an earlier snapshot. No executable .reg import is used.
+    $stream = [IO.File]::Open($file, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try {
+        $bytes = [Text.Encoding]::UTF8.GetBytes(($backup | ConvertTo-Json -Depth 12))
+        $stream.Write($bytes, 0, $bytes.Length)
+    } finally { $stream.Dispose() }
+    $file
+}
+
+function Global:Get-EVNLatestBackup {
+    $directory = (Get-EVNPaths).BackupDirectory
+    if (Test-Path -LiteralPath $directory) {
+        Get-ChildItem -LiteralPath $directory -Filter 'views-*.json' -File -ErrorAction Stop |
+            Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
+    }
+}
+
+function Global:Convert-EVNBackupValue {
+    param($Value)
+    switch -Exact ($Value.Kind) {
+        'String'       { return [string]$Value.Data }
+        'ExpandString' { return [string]$Value.Data }
+        'MultiString'  { return ,([string[]]$Value.Data) }
+        'Binary'       { return ,([byte[]]$Value.Data) }
+        'None'         { return ,([byte[]]$Value.Data) }
+        'DWord'        { return [int]$Value.Data }
+        'QWord'        { return [long]$Value.Data }
+        default       { throw 'Unsupported registry value type in view backup.' }
+    }
+}
+
+function Global:Restore-EVNViewBackup {
+    param([Parameter(Mandatory)][string]$File)
+    $paths = Get-EVNPaths
+    $backup = Get-Content -LiteralPath $File -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+    if ($backup.Version -ne 1 -or @($backup.Scopes).Count -ne $paths.Scopes.Count) { throw 'Invalid view backup.' }
+    $ids = @{}
+    # Validate the ENTIRE snapshot before deleting anything. Scope paths come from code,
+    # never from the backup. This cannot import HKLM or arbitrary user registry roots.
+    foreach ($scope in $backup.Scopes) {
+        if (-not $paths.Scopes.Contains($scope.Id) -or $ids.ContainsKey($scope.Id)) { throw 'Invalid backup scope.' }
+        $ids[$scope.Id] = $true
+        $nodes = @{}
+        foreach ($node in $scope.Nodes) {
+            if ($node.Path -isnot [string] -or $node.Path.Contains([char]0) -or
+                $node.Path -match '(^\\|\\$|\\\\|(^|\\)\.\.?($|\\))' -or
+                @($node.Path.Split('\') | Where-Object Length -gt 255).Count -gt 0 -or $nodes.ContainsKey($node.Path)) {
+                throw 'Invalid backup node.'
+            }
+            $nodes[$node.Path] = $true
+            $names = @{}
+            foreach ($value in $node.Values) {
+                if ($value.Name -isnot [string] -or $value.Name.Contains([char]0) -or $value.Name.Length -gt 16383 -or $names.ContainsKey($value.Name)) { throw 'Invalid backup value.' }
+                $names[$value.Name] = $true
+                $null = Convert-EVNBackupValue $value
+            }
+        }
+        if (@($scope.Nodes).Count -gt 0 -and -not $nodes.ContainsKey('')) { throw 'Missing backup root.' }
+    }
+    # A fresh rescue snapshot keeps the pre-restore state recoverable if restore fails.
+    $rescue = Save-EVNViewBackup
+    $root = [Microsoft.Win32.Registry]::CurrentUser
+    foreach ($scope in $backup.Scopes) {
+        $subKey = $paths.Scopes[$scope.Id]
+        $root.DeleteSubKeyTree($subKey, $false)
+        foreach ($node in $scope.Nodes) {
+            $target = $subKey
+            if ($node.Path -ne '') { $target += '\' + $node.Path }
+            $key = $root.CreateSubKey($target)
+            try {
+                foreach ($value in $node.Values) {
+                    $key.SetValue($value.Name, (Convert-EVNBackupValue $value), [Microsoft.Win32.RegistryValueKind]$value.Kind)
+                }
+            } finally { $key.Dispose() }
+        }
+    }
+    $rescue
+}
+
+function Global:Set-EVNNoGrouping {
+    $paths = Get-EVNPaths
+    $types = @(Get-EVNFolderTypes)
+    if (-not (Test-Path -LiteralPath $paths.UserTypes)) { New-Item -Path $paths.UserTypes -Force -ErrorAction Stop | Out-Null }
+    # Keep the complete type catalog, including types without editable TopViews.
+    foreach ($type in Get-ChildItem -LiteralPath $paths.MachineTypes -ErrorAction Stop) {
+        $target = Join-Path $paths.UserTypes $type.PSChildName
+        # Merge missing machine defaults without replacing existing user customizations.
+        $machine = $type.PSPath
+        foreach ($key in @($type) + @(Get-ChildItem -LiteralPath $machine -Recurse -ErrorAction Stop)) {
+            $relative = $key.Name.Substring($type.Name.Length).TrimStart('\')
+            $destination = $target
+            if ($relative) { $destination = Join-Path $target $relative }
+            if (-not (Test-Path -LiteralPath $destination)) {
+                New-Item -Path $destination -Force -ErrorAction Stop | Out-Null
+            }
+            $copy = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey((Get-Item -LiteralPath $destination -ErrorAction Stop).Name.Substring(18), $true)
+            try {
+                $existingNames = $copy.GetValueNames()
+                foreach ($name in $key.GetValueNames()) {
+                    if ($name -notin $existingNames) {
+                        $copy.SetValue($name, $key.GetValue($name, $null, 'DoNotExpandEnvironmentNames'), $key.GetValueKind($name))
+                    }
+                }
+            } finally { $copy.Dispose() }
+        }
+    }
+    foreach ($type in $types) {
+        $target = Join-Path $paths.UserTypes $type.PSChildName
+        foreach ($view in Get-ChildItem -LiteralPath (Join-Path $target 'TopViews') -ErrorAction Stop) {
+            New-ItemProperty -LiteralPath $view.PSPath -Name GroupBy -Value '' -PropertyType String -Force -ErrorAction Stop | Out-Null
+            New-ItemProperty -LiteralPath $view.PSPath -Name GroupAscending -Value 1 -PropertyType DWord -Force -ErrorAction Stop | Out-Null
+        }
+    }
+    foreach ($hostName in @('Shell', 'ComDlg', 'ComDlgLegacy')) {
+        $base = "HKCU:\$($paths.Scopes.Bags)\AllFolders\$hostName"
+        if (-not (Test-Path -LiteralPath $base)) { New-Item -Path $base -Force -ErrorAction Stop | Out-Null }
+        foreach ($type in $types) {
+            $target = Join-Path $base $type.PSChildName
+            if (-not (Test-Path -LiteralPath $target)) { New-Item -Path $target -Force -ErrorAction Stop | Out-Null }
+        }
+    }
+    foreach ($view in Get-EVNViewPaths) {
+        foreach ($value in @(
+            @('GroupView', 0, 'DWord'), @('GroupBy', '', 'String'),
+            @('GroupByKey:FMTID', '{00000000-0000-0000-0000-000000000000}', 'String'),
+            @('GroupByKey:PID', 0, 'DWord'), @('GroupByDirection', 1, 'DWord')
+        )) {
+            New-ItemProperty -LiteralPath $view -Name $value[0] -Value $value[1] -PropertyType $value[2] -Force -ErrorAction Stop | Out-Null
+        }
+    }
+    # Legacy Apply-to-Folders binary defaults can override FolderTypes.
+    $defaults = "HKCU:\$($paths.Scopes.DefaultStreams)"
+    if (Test-Path -LiteralPath $defaults) { Remove-Item -LiteralPath $defaults -Recurse -Force -ErrorAction Stop }
+}
+
+function Global:Get-EVNGroupingState {
+    $paths = Get-EVNPaths
+    $missing = 0; $conflicts = 0; $saved = 0
+    foreach ($type in Get-EVNFolderTypes) {
+        $top = Join-Path $paths.UserTypes ($type.PSChildName + '\TopViews')
+        foreach ($machineView in Get-ChildItem -LiteralPath (Join-Path $type.PSPath 'TopViews') -ErrorAction Stop) {
+            if (-not (Test-Path -LiteralPath (Join-Path $top $machineView.PSChildName))) { $missing++ }
+        }
+        if (-not (Test-Path -LiteralPath $top)) { continue }
+        foreach ($view in Get-ChildItem -LiteralPath $top -ErrorAction Stop) {
+            if (-not ($view.GetValueNames() -contains 'GroupBy') -or $view.GetValueKind('GroupBy') -ne 'String' -or $view.GetValue('GroupBy') -ne '') { $conflicts++ }
+        }
+    }
+    foreach ($view in Get-EVNViewPaths) {
+        $saved++
+        $p = Get-ItemProperty -LiteralPath $view -ErrorAction Stop
+        if (($null -ne $p.GroupView -and $p.GroupView -ne 0) -or
+            ($null -ne $p.'GroupByKey:PID' -and $p.'GroupByKey:PID' -ne 0) -or
+            ($p.GroupBy -and $p.GroupBy -ne '') -or
+            ($p.'GroupByKey:FMTID' -and $p.'GroupByKey:FMTID' -ne '{00000000-0000-0000-0000-000000000000}')) { $conflicts++ }
+    }
+    $legacy = Test-Path -LiteralPath "HKCU:\$($paths.Scopes.DefaultStreams)"
+    [pscustomobject]@{ Configured=($missing -eq 0 -and $conflicts -eq 0 -and -not $legacy)
+        MissingTemplates=$missing; Conflicts=$conflicts; SavedViews=$saved; LegacyDefaults=$legacy }
+}
+
+
 # Module: Explorer View Normalizer
 # Lets users compose global Explorer defaults via checkbox options.
 # Checks current state on load and applies selected settings across all folder templates.
@@ -5,9 +237,11 @@
 Register-PowerToolsModule `
     -Id          "explorer-details" `
     -Name        "Explorer View Normalizer" `
-    -Description "Compose and enforce global Explorer defaults across all folder templates." `
+    -Description "Set Explorer defaults and repair saved grouping for the current user." `
     -Category    "Windows Tweaks" `
     -Show        {
+
+    if ($script:EVN_job) { return $script:EVN_view }
 
     [xml]$viewXaml = @"
 <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -27,7 +261,7 @@ Register-PowerToolsModule `
             <TextBlock Text="GLOBAL EXPLORER NORMALIZER" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                        FontWeight="Bold" Margin="0,0,0,8"/>
             <TextBlock x:Name="InfoText" FontSize="13" TextWrapping="Wrap" LineHeight="20"
-                Text="Select exactly which defaults should be enforced globally. On module load, each option is checked and marked as ALREADY SET or NOT SET. Selected options apply to all known Explorer folder templates (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)."/>
+                Text="Selected options apply; unchecked options stay unchanged. Disable grouping repairs Windows folder-type defaults and saved Explorer/Open/Save views. Close Explorer windows and file dialogs first. View changes are backed up. Special views and custom app dialogs may differ; Windows upgrades may reset defaults."/>
         </StackPanel>
     </Border>
 
@@ -76,6 +310,8 @@ Register-PowerToolsModule `
         </Grid.ColumnDefinitions>
         <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="10"
                    FontWeight="Bold" VerticalAlignment="Center"/>
+        <Button x:Name="RestoreViewsBtn" Grid.Column="0" Content="Restore View Backup"
+                HorizontalAlignment="Center" Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>
         <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear Log"
                 Style="{DynamicResource SecondaryButton}" Padding="12,6" FontSize="11"/>
     </Grid>
@@ -103,6 +339,7 @@ Register-PowerToolsModule `
     $script:EVN_apply        = $view.FindName("ApplyBtn")
     $script:EVN_recheck      = $view.FindName("RecheckBtn")
     $script:EVN_clearLog     = $view.FindName("ClearLogBtn")
+    $script:EVN_restore      = $view.FindName("RestoreViewsBtn")
     $script:EVN_selAll       = $view.FindName("SelectAllBtn")
     $script:EVN_selNone      = $view.FindName("SelectNoneBtn")
     $script:EVN_statusText   = $view.FindName("StatusText")
@@ -118,6 +355,7 @@ Register-PowerToolsModule `
     $script:EVN_optionControls = @{}
     $script:EVN_optionState = @{}
     $script:EVN_selectionInitialized = $false
+    $script:EVN_groupingState = $null
 
     # Apply theme-aware colors
     $script:EVN_infoBorder.Background     = $Global:PTS_Brush["Surface"]
@@ -132,18 +370,9 @@ Register-PowerToolsModule `
     $script:EVN_logBorder.BorderBrush     = $Global:PTS_Brush["LogBorder"]
     $script:EVN_logBox.Foreground         = $Global:PTS_Brush["TextMuted"]
 
-    $script:EVN_folderTypes = [ordered]@{
-        "Generic"   = "{00000000-0000-0000-0000-000000000000}"
-        "Downloads" = "{885A186E-A440-4ADA-812B-DB871B942259}"
-        "Documents" = "{14D5E4A5-8001-4B35-99D0-32E4FFC3B1BD}"
-        "Pictures"  = "{B3690E58-E961-423B-B687-386C4AD7D8B2}"
-        "Music"     = "{94D6DDCC-4A68-4175-A374-BD584A510B78}"
-        "Videos"    = "{5FA96407-7E77-483C-AC93-691D05850DE8}"
-        "UserFiles" = "{CD0FC69B-71E2-46E5-9690-5BCD9F57AAB3}"
-        "Searches"  = "{7FDE1A1E-8B31-49A5-93B8-6BE14CFA4943}"
-    }
-
-    $script:EVN_basePath = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell"
+    $script:EVN_folderTypes = [ordered]@{}
+    foreach ($type in Get-EVNFolderTypes) { $script:EVN_folderTypes[$type.PSChildName] = $type.PSChildName }
+    $script:EVN_basePath = "HKCU:\$((Get-EVNPaths).Scopes.Bags)\AllFolders\Shell"
 
     $script:EVN_sortByNameAscending = [byte[]]@(
         0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -166,18 +395,8 @@ Register-PowerToolsModule `
     $script:EVN_detailsPaneState = [byte[]]@(0x02,0x00,0x00,0x00,0x02,0x00,0x00,0x00)
     $script:EVN_detailsPaneSizer = [byte[]]@(0x15,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x5B,0x04,0x00,0x00)
 
-    $script:EVN_clearPaths = @(
-        "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags",
-        "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU",
-        "HKCU:\Software\Microsoft\Windows\Shell\Bags",
-        "HKCU:\Software\Microsoft\Windows\Shell\BagMRU",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams\Desktop",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Streams\Defaults",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\CIDSizeMRU",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\FirstFolder",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU",
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU"
-    )
+    $script:EVN_clearPaths = @((Get-EVNPaths).Scopes.GetEnumerator() |
+        Where-Object Key -ne 'FolderTypes' | ForEach-Object { "HKCU:\$($_.Value)" })
 
     function Global:EVN-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
@@ -250,17 +469,14 @@ Register-PowerToolsModule `
     function Global:EVN-ApplyClearSavedViews {
         foreach ($p in $script:EVN_clearPaths) {
             if (Test-Path $p) {
-                Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue
+                Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Stop
                 EVN-AddLog "Cleared: $p" "INFO"
             }
         }
     }
 
     function Global:EVN-TestClearSavedViews {
-        foreach ($p in $script:EVN_clearPaths) {
-            if (Test-Path $p) { return $false }
-        }
-        return $true
+        return $null # One-time action, never a persistent setting.
     }
 
     function Global:EVN-ApplyDetailsView {
@@ -286,31 +502,15 @@ Register-PowerToolsModule `
     }
 
     function Global:EVN-ApplyDisableGrouping {
-        EVN-EnsureTemplatePaths
-        foreach ($path in (EVN-GetTemplatePaths)) {
-            EVN-SetRegValue -Path $path -Name "GroupBy" -Value "" -Kind String
-            EVN-SetRegValue -Path $path -Name "GroupByKey:FMTID" -Value "{00000000-0000-0000-0000-000000000000}" -Kind String
-            EVN-SetRegValue -Path $path -Name "GroupByKey:PID" -Value 0 -Kind DWord
-            EVN-SetRegValue -Path $path -Name "GroupByDirection" -Value 1 -Kind DWord
-            EVN-SetRegValue -Path $path -Name "GroupView" -Value 0 -Kind DWord
-        }
-    }
-
-    function Global:EVN-RevertDisableGrouping {
-        foreach ($path in (EVN-GetTemplatePaths)) {
-            EVN-RemoveRegValue -Path $path -Name "GroupBy"
-            EVN-RemoveRegValue -Path $path -Name "GroupByKey:FMTID"
-            EVN-RemoveRegValue -Path $path -Name "GroupByKey:PID"
-            EVN-RemoveRegValue -Path $path -Name "GroupByDirection"
-            EVN-RemoveRegValue -Path $path -Name "GroupView"
-        }
+        Set-EVNNoGrouping
+        $state = Get-EVNGroupingState
+        if (-not $state.Configured) { throw "Grouping verification failed: $($state.Conflicts) conflicts, $($state.MissingTemplates) missing templates." }
+        EVN-AddLog "Grouping defaults verified; $($state.SavedViews) saved Explorer/dialog view keys checked. Reopen file dialogs after applying." "OK"
     }
 
     function Global:EVN-TestDisableGrouping {
-        return (EVN-TestAllTemplates {
-            param($p)
-            ($p.GroupView -eq 0 -and $p.GroupBy -eq "" -and $p."GroupByKey:PID" -eq 0)
-        })
+        $script:EVN_groupingState = Get-EVNGroupingState
+        return $script:EVN_groupingState.Configured
     }
 
     function Global:EVN-ApplySortNameAsc {
@@ -520,10 +720,10 @@ Register-PowerToolsModule `
             DefaultChecked = $true
         }
         disable_grouping = [ordered]@{
-            Label = "Disable Grouping globally (GroupView=0, no GroupBy)"
+            Label = "Disable grouping (folder defaults + saved Explorer/Open/Save views)"
             Test  = { EVN-TestDisableGrouping }
             Apply = { EVN-ApplyDisableGrouping }
-            Revert = { EVN-RevertDisableGrouping }
+            Revert = $null
             DefaultChecked = $true
         }
         sort_name_asc = [ordered]@{
@@ -576,7 +776,7 @@ Register-PowerToolsModule `
             DefaultChecked = $true
         }
         disable_auto_grouping = [ordered]@{
-            Label = "Disable Auto Grouping"
+            Label = "Legacy UseAutoGrouping=0 hint (not a grouping lock)"
             Test  = { EVN-TestDisableAutoGrouping }
             Apply = { EVN-ApplyDisableAutoGrouping }
             Revert = { EVN-RevertDisableAutoGrouping }
@@ -636,7 +836,7 @@ Register-PowerToolsModule `
         $hdr.Text = $Text
         $hdr.FontSize = 11
         $hdr.FontWeight = "Bold"
-        $hdr.Foreground = $Global:PTS_Brush["Primary"]
+        $hdr.SetResourceReference([Windows.Controls.TextBlock]::ForegroundProperty, 'DynTextDark')
         $hdr.Margin = "0,10,0,8"
         $script:EVN_optionsPanel.Children.Add($hdr) | Out-Null
     }
@@ -722,7 +922,12 @@ Register-PowerToolsModule `
         $script:EVN_selectionInitialized = $true
         EVN-RebuildOptionSections
 
-        $script:EVN_statusText.Text = "Checked options: $setCount already set, $unsetCount not set. List is grouped into 'Already Set' and 'Not Selected'."
+        $script:EVN_statusText.Text = "Checked: $setCount already set, $unsetCount not set. Unchecked options stay unchanged."
+        if ($script:EVN_groupingState) {
+            $g = $script:EVN_groupingState
+            $script:EVN_statusText.Text += " Grouping: $($g.Conflicts) stored conflicts, $($g.MissingTemplates) missing templates; legacy defaults: $($g.LegacyDefaults). Registry readback is not a live window check."
+        }
+        $script:EVN_restore.IsEnabled = [bool](Get-EVNLatestBackup)
         $script:EVN_statusText.Foreground = if ($unsetCount -eq 0) { $Global:PTS_Brush["Success"] } else { $Global:PTS_Brush["Warning"] }
     }
 
@@ -739,55 +944,104 @@ Register-PowerToolsModule `
     EVN-BuildOptionList
     EVN-RecheckOptionStates
 
-    $script:EVN_apply.Add_Click({
+    function Global:EVN-StartWork {
+        param([string[]]$Selected = @(), [string]$RestoreFile)
+        if ($script:EVN_job) { return }
+        $definitions = @(Get-Command -CommandType Function | Where-Object {
+            $_.Name -match '^(EVN-|(?:Get|Set|Save|Restore|Convert)-EVN)'
+        } | ForEach-Object { "function Global:$($_.Name) { $($_.Definition) }" })
+        $state = @{}
+        foreach ($name in @('folderTypes','basePath','sortByNameAscending','detailsColumns','detailsPaneState','detailsPaneSizer','clearPaths')) {
+            $state["EVN_$name"] = Get-Variable -Name "EVN_$name" -Scope Script -ValueOnly
+        }
+        $actions = @(foreach ($id in $script:EVN_options.Keys) {
+            if ($id -in $Selected -and $id -ne 'restart_explorer') {
+                [pscustomobject]@{ Label=$script:EVN_options[$id].Label; Code=$script:EVN_options[$id].Apply.ToString() }
+            }
+        })
+        $queue = [Collections.Concurrent.ConcurrentQueue[object]]::new()
+        $worker = [PowerShell]::Create()
+        $null = $worker.AddScript({
+            param($Definitions, $State, $Actions, $Queue, $RestoreFile)
+            $ErrorActionPreference = 'Stop'
+            foreach ($definition in $Definitions) { . ([scriptblock]::Create($definition)) }
+            foreach ($name in $State.Keys) { Set-Variable -Name $name -Value $State[$name] -Scope Script }
+            $script:EVN_queue = $Queue
+            function Global:EVN-AddLog {
+                param([string]$Msg, [string]$Type='INFO')
+                $script:EVN_queue.Enqueue([pscustomobject]@{Message=$Msg;Type=$Type})
+            }
+            if ($RestoreFile) {
+                $rescue = Restore-EVNViewBackup -File $RestoreFile
+                EVN-AddLog "View backup restored. Pre-restore rescue backup: $rescue" 'OK'
+            } elseif ($Actions.Count -gt 0) {
+                $backup = Save-EVNViewBackup
+                EVN-AddLog "Folder-view backup: $backup" 'OK'
+                foreach ($action in $Actions) {
+                    & ([scriptblock]::Create($action.Code))
+                    EVN-AddLog "Applied: $($action.Label)" 'OK'
+                }
+            }
+        }).AddArgument($definitions).AddArgument($state).AddArgument($actions).AddArgument($queue).AddArgument($RestoreFile)
         try {
-            $selectedSet = @{}
-            foreach ($id in (EVN-GetSelectedOptions)) { $selectedSet[$id] = $true }
-
-            if ($selectedSet.Count -eq 0) {
-                EVN-AddLog "No settings selected. Revert-capable options will be reverted." "WARN"
-            } else {
-                EVN-AddLog "Applying selected settings globally..." "INFO"
-                EVN-AddLog "Selected count: $($selectedSet.Count)" "INFO"
-            }
-
-            foreach ($id in $script:EVN_options.Keys) {
-                $opt = $script:EVN_options[$id]
-                $isSelected = $selectedSet.ContainsKey($id)
-
-                if ($isSelected) {
-                    try {
-                        & $opt.Apply
-                        EVN-AddLog "Applied: $($opt.Label)" "OK"
-                    } catch {
-                        EVN-AddLog "Failed apply: $($opt.Label) - $_" "FAIL"
-                    }
-                    continue
+            $script:EVN_job = @{Worker=$worker; Queue=$queue; Selected=$Selected; Handle=$worker.BeginInvoke()}
+            foreach ($control in @($script:EVN_apply,$script:EVN_restore,$script:EVN_recheck,$script:EVN_selAll,$script:EVN_selNone,$script:EVN_optionsPanel)) { $control.IsEnabled=$false }
+            Register-PTSActiveOperation -ModuleId 'explorer-details' -ModuleName 'Explorer View Normalizer' -Description 'Saving/restoring Explorer view settings. Please wait until completion.'
+            $script:EVN_workTimer = [Windows.Threading.DispatcherTimer]::new()
+            $script:EVN_workTimer.Interval = [TimeSpan]::FromMilliseconds(150)
+            $script:EVN_workTimer.Add_Tick({
+                $job = $script:EVN_job
+                $entry = $null
+                while ($job.Queue.TryDequeue([ref]$entry)) { EVN-AddLog $entry.Message $entry.Type }
+                if (-not $job.Handle.IsCompleted) { return }
+                $script:EVN_workTimer.Stop()
+                try {
+                    $null = $job.Worker.EndInvoke($job.Handle)
+                    while ($job.Queue.TryDequeue([ref]$entry)) { EVN-AddLog $entry.Message $entry.Type }
+                    if ($job.Worker.Streams.Error.Count) { throw ($job.Worker.Streams.Error -join '; ') }
+                    if ($job.Selected -contains 'restart_explorer') { EVN-RestartExplorer }
+                    EVN-AddLog 'Finished. Reopen applications with file dialogs; running apps may retain older views.' 'OK'
+                } catch { EVN-AddLog "Operation failed; previous steps may have applied. View backups are available. $_" 'FAIL' }
+                finally {
+                    $job.Worker.Dispose()
+                    $script:EVN_job = $null
+                    Unregister-PTSActiveOperation -ModuleId 'explorer-details'
+                    foreach ($control in @($script:EVN_apply,$script:EVN_restore,$script:EVN_recheck,$script:EVN_selAll,$script:EVN_selNone,$script:EVN_optionsPanel)) { $control.IsEnabled=$true }
+                    try { EVN-RecheckOptionStates } catch { EVN-AddLog "State check failed: $_" 'FAIL' }
                 }
-
-                if ($null -ne $opt.Revert) {
-                    try {
-                        & $opt.Revert
-                        EVN-AddLog "Reverted (unchecked): $($opt.Label)" "INFO"
-                    } catch {
-                        EVN-AddLog "Failed revert: $($opt.Label) - $_" "FAIL"
-                    }
-                } else {
-                    EVN-AddLog "Skipped unchecked (no revert action): $($opt.Label)" "INFO"
-                }
-            }
-
-            if (-not $selectedSet.ContainsKey("restart_explorer")) {
-                EVN-AddLog "Explorer was not restarted. Some changes may require reopening Explorer windows." "WARN"
-            }
-
-            # Always recheck after apply/revert so UI shows new state immediately.
-            EVN-RecheckOptionStates
-            EVN-AddLog "Recheck completed after apply." "INFO"
+            })
+            $script:EVN_workTimer.Start()
+        } catch {
+            if ($script:EVN_job) { $worker.Stop(); $script:EVN_job=$null }
+            $worker.Dispose()
+            Unregister-PTSActiveOperation -ModuleId 'explorer-details'
+            foreach ($control in @($script:EVN_apply,$script:EVN_restore,$script:EVN_recheck,$script:EVN_selAll,$script:EVN_selNone,$script:EVN_optionsPanel)) { $control.IsEnabled=$true }
+            EVN-AddLog "Could not start operation: $_" 'FAIL'
         }
-        catch {
-            EVN-AddLog "Error: $_" "FAIL"
+    }
+
+    $script:EVN_apply.Add_Click({
+        $selected = @(EVN-GetSelectedOptions)
+        if ($selected.Count -eq 0) { EVN-AddLog 'No settings selected. Nothing changed.'; return }
+        if ($selected -contains 'clear_saved_views' -or $selected -contains 'disable_grouping') {
+            $answer = [Windows.MessageBox]::Show('Close Explorer windows and all Open/Save dialogs first. A folder-view backup will be saved. Disable grouping clears legacy Apply-to-Folders defaults but keeps saved columns. Reset saved views also removes saved layouts and dialog history. Continue?', 'Explorer View Normalizer', 'YesNo', 'Warning')
+            if ($answer -ne 'Yes') { return }
         }
+        EVN-StartWork -Selected $selected
+    })
+
+    $script:EVN_restore.Add_Click({
+        $file = Get-EVNLatestBackup
+        if (-not $file) { EVN-AddLog 'No view backup available.' 'WARN'; return }
+        $picker = [Microsoft.Win32.OpenFileDialog]::new()
+        $picker.Title = 'Select Explorer view backup'
+        $picker.Filter = 'Explorer view backup (*.json)|*.json'
+        $picker.InitialDirectory = (Get-EVNPaths).BackupDirectory
+        $picker.FileName = $file
+        if ($picker.ShowDialog() -ne $true) { return }
+        $file = $picker.FileName
+        $answer = [Windows.MessageBox]::Show("Restore folder-view backup?`n$file`n`nThis replaces saved folder views, templates and dialog history, including newer customizations. Other Explorer options are not restored. Close Explorer and file dialogs first. Current views are backed up before restore.", 'Restore Explorer Views', 'YesNo', 'Warning')
+        if ($answer -eq 'Yes') { EVN-StartWork -RestoreFile $file }
     })
 
     $script:EVN_recheck.Add_Click({
@@ -814,5 +1068,6 @@ Register-PowerToolsModule `
         EVN-AddLog "Log cleared." "INFO"
     })
 
+    $script:EVN_view = $view
     return $view
 }

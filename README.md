@@ -63,7 +63,7 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1.2`
+**Current version:** `v2.1.3`
 
 ---
 
@@ -121,7 +121,7 @@ The application requests administrator privileges at startup. Module labels belo
 - Checks all settings on module load and shows current state immediately
 - Reset saved Explorer folder views
 - Force **Details view** across all normal folder types
-- Disable grouping completely (`Last week`, `Last month`, etc.)
+- Set grouping to **None** in discovered Windows folder-type defaults and existing Explorer/Open/Save view records
 - Sort by **Name (ASC)**
 - Apply columns: **Name**, **Date modified**, **Type**, **Size**
 - Show hidden files
@@ -131,14 +131,21 @@ The application requests administrator privileges at startup. Module labels belo
 - Enable Details Pane and keep Preview Pane available
 - Optional: use **small desktop icons** (`IconSize=32`)
 - Disable Folder Type Discovery with `FolderType = NotSpecified`
-- Apply to all folder types (Generic, Downloads, Documents, Pictures, Music, Videos, UserFiles, Searches)
+- Discover installed folder types rather than using a fixed GUID list, including Downloads, libraries, storage-provider and search variants
 - Clear Shell Bags, BagMRU, Desktop/Defaults Streams, and common Open/Save dialog view caches
 - Optionally restart the current user's desktop Explorer shell after applying settings
-- Apply now supports **apply + revert**: unchecked options are reverted when possible
+- Apply changes **selected options only**; unchecked options remain unchanged
+- Save a typed, current-user folder-view backup before applying; abort if the backup fails
+- **Restore View Backup** lets you select a view snapshot (latest preselected) and confirm restore, first saving the pre-restore state as a rescue snapshot
+- Apply/restore runs in a background worker with navigation protection; a failure stops subsequent steps
 - Automatic recheck runs immediately after apply so new states are shown without manual refresh
 
 ⚠️ **Important**
-> This resets saved Explorer folder views. Existing custom folder layouts are removed and replaced with the WindowsAcolyte defaults.
+> Close Explorer windows and applications with Open/Save dialogs before applying, then reopen them (or select the optional Explorer restart). Running applications can retain old views in memory. **Disable grouping** preserves saved per-folder columns and other unrelated values, but clears legacy binary Apply-to-Folders defaults. The separate **Reset saved folder views/cache** action removes saved layouts and dialog history. Both are covered by view backups.
+>
+> Backups are stored in `%LOCALAPPDATA%\WindowsAcolyte\ExplorerViewBackups`. Restore replaces captured view/template/history keys, including newer customizations; it does not restore unrelated Explorer options such as hidden-file visibility. Backups can contain folder history: keep them private.
+>
+> Registry status checks template coverage and stored conflicts; it does not inspect live windows. Special Shell views and custom application dialogs can differ. Major Windows upgrades or repair installs can remove user templates; reapply if necessary. `UseAutoGrouping=0` is a legacy hint, not a universal grouping lock. The experimental `FWF_NOGROUPING` flag is not applied without a validated runtime path.
 
 ### 🧠 Registry Changes
 ```reg
@@ -153,13 +160,29 @@ HKCU:\...\Shell\Bags\AllFolders\Shell\*
   ColInfo          = Name, Date modified, Type, Size (REG_BINARY)
   FolderType       = NotSpecified
 
+HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FolderTypes\<type>\TopViews\<view>
+  GroupBy          = "" (REG_SZ; explicit None, not deletion)
+  GroupAscending   = 1
+
+HKCU:\...\Shell\Bags\<bag>\{Shell,ComDlg,ComDlgLegacy}\<type>
+  GroupView        = 0
+  GroupByKey:FMTID = {00000000-0000-0000-0000-000000000000}
+  GroupByKey:PID   = 0
+
+HKCU:\...\Explorer\Streams\Defaults
+  Removed after backup when disabling grouping (legacy binary template overrides)
+
 HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
   Hidden           = 1
   HideFileExt      = 0
   ShowSuperHidden  = 0
   UseCompactMode   = 0
-  UseAutoGrouping  = 0
+  UseAutoGrouping  = 0 (optional legacy hint)
 ```
+
+The grouping repair merges missing machine folder-type defaults into the current user's template catalog, leaves existing unrelated values intact, and also sets AllFolders defaults for Shell, ComDlg and ComDlgLegacy. Machine-wide HKLM defaults are never changed. Other checkboxes retain their individual registry actions.
+
+Technical background: [WinSetView implementation](https://github.com/LesFerch/WinSetView/blob/main/src/WinSetView.ps1), [folder-view behavior and limitations](https://lesferch.github.io/WinSetView/Manual.html), [Microsoft FOLDERFLAGS](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/ne-shobjidl_core-folderflags).
 
 ---
 
@@ -766,7 +789,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1.2 (Current) - 2026-11-09
+## v2.1.3 (Current) - 2026-11-18
+- Repair grouping in dynamically discovered folder-type defaults and existing Explorer/modern/legacy file-dialog views; preserve saved columns and report stored conflicts.
+- Add typed current-user view backups and confirmed restore, background operations, and selected-only apply. Document special-view, in-memory cache and Windows-upgrade limits.
+
+## v2.1.2 (Previous) - 2026-11-09
 - Launch elevated from a protected, commit-verified copy. Keep local installation files as a per-user cache.
 - Preserve older rescue ISOs when replacement fails, verify power-plan activation, quote Sandboxie browser paths, and restart only the current user's Explorer shell.
 
@@ -880,7 +907,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1.2 • November 2026
+Version 2.1.3 • November 2026
 
 ---
 
