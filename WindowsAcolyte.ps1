@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 2.1.3
+    Version : 2.1.4
 #>
 
 param([string]$LogRoot, [switch]$Development)
@@ -311,6 +311,9 @@ function Global:Register-PTSActiveOperation {
         [scriptblock]$Cancel
     )
 
+    if ($Global:PTS_ProcessingService -and $Global:PTS_ActiveOperations.ContainsKey($ModuleId)) {
+        $Global:PTS_ProcessingService.End($Global:PTS_ActiveOperations[$ModuleId].ProcessingId)
+    }
     $Global:PTS_ActiveOperations[$ModuleId] = [PSCustomObject]@{
         ModuleId        = $ModuleId
         ModuleName      = $ModuleName
@@ -318,6 +321,11 @@ function Global:Register-PTSActiveOperation {
         Cancel          = $Cancel
         CancelRequested = $false
         StartedAt       = Get-Date
+        ProcessingId    = ('background:' + [guid]::NewGuid().ToString('N'))
+    }
+    if ($Global:PTS_ProcessingService) {
+        $operation = $Global:PTS_ActiveOperations[$ModuleId]
+        $Global:PTS_ProcessingService.Begin($operation.ProcessingId, $Description, ($null -ne $Cancel))
     }
     Set-PTSFooterStatus "Running: $ModuleName"
 }
@@ -326,6 +334,9 @@ function Global:Unregister-PTSActiveOperation {
     param([Parameter(Mandatory)][string]$ModuleId)
 
     if ($Global:PTS_ActiveOperations.ContainsKey($ModuleId)) {
+        if ($Global:PTS_ProcessingService) {
+            $Global:PTS_ProcessingService.EndAfterRender($Global:PTS_ActiveOperations[$ModuleId].ProcessingId)
+        }
         $Global:PTS_ActiveOperations.Remove($ModuleId)
     }
 
@@ -440,6 +451,7 @@ function Global:Apply-PTSTheme {
         Update-PTSStyles
         Build-PTSSidebar
     }
+    if ($Global:PTS_ProcessingService) { $Global:PTS_ProcessingService.SetPalette((Get-PTSProcessingPalette)) }
 }
  
 function Global:Update-PTSStyles {
@@ -754,7 +766,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v2.1.3  |  Administrator"
+                           Text="v2.1.4  |  Administrator"
                            Foreground="#3C5669" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
@@ -1057,6 +1069,7 @@ function Global:Show-PTSModuleView {
     $Global:PTS_UI.BackBtn.Visibility = "Visible"
     Set-PTSFooterStatus "Module: $($Module.Id)"
 
+    $processingId = Start-PTSProcessing -Detail ("Loading {0}..." -f $Module.Name)
     try {
         $view = & $Module.Show
         $Global:PTS_UI.ContentHost.Content = $view
@@ -1080,6 +1093,7 @@ function Global:Show-PTSModuleView {
             Show-PTSCategoryView -DisplayName ($Global:PTS_ActiveSidebarBtn.Tag.DisplayName)
         }
     }
+    finally { Stop-PTSProcessing -Id $processingId }
 }
 
 function Global:Show-PTSCategoryView {
@@ -1178,6 +1192,8 @@ $Global:PTS_UI.BackBtn.Add_Click({
 # ===========================================================================
 # LAUNCH
 # ===========================================================================
+Initialize-PTSProcessingOverlay
+
 if ($Global:PTS_Modules.Count -eq 0) {
     [System.Windows.MessageBox]::Show(
         "No modules found in:`n$Global:PTS_ModulesPath`n`nEnsure the 'modules' folder exists next to this script.",
