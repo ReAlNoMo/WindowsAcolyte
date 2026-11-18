@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.1.8` (2026-11-18).
+Current version: `v2.1.9` (2026-11-18).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -27,7 +27,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 
 The Linux ISO downloader does not verify checksums or resume interrupted downloads. The AV scanner downloader checks the file size and MZ executable header, not a checksum or publisher signature. Verify downloads independently using official publisher checksums or signatures before use.
 
-The Gaming Optimizer keeps PC details and a three-line activity-log viewport visible. Risk labels use green/orange/red; enlarged status text and side-by-side Details/Reset controls keep rows readable and compact. The profile menu separates Load/Save commands with themed rows and a divider.
+The Gaming Optimizer keeps PC details, Tools & backup and a three-line activity-log viewport visible. Tools & backup has no expander; the backup shortcut focuses the first preference. Risk labels use green/orange/red; enlarged status text and side-by-side Details/Reset controls keep rows readable and compact. The profile menu separates Load/Save commands with themed rows and a divider.
 
 The shell uses logo-aligned navy/gold Light and Dark themes with tonal backgrounds and labeled green/red status colors. Each launch starts in Dark mode, with a full logo frame and a one-time request to bring the rendered main window to the foreground and give it keyboard focus. Switching themes preserves the open view and selections; the hardware HTML report follows the same palette. The shell also supports category tiles, JSONL exception logging and an active-operation guard for downloads/hash/report work during theme changes, navigation and app close. Documentation screenshots may show an earlier version.
 

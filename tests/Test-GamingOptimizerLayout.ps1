@@ -57,8 +57,12 @@ foreach($theme in @('PTS_Theme','PTS_ThemeDark')){
         Assert-Layout ($script:GO_cardViews.Count -eq 35 -and $script:GO_categoryButtons.Count -eq 10) "35 settings, eight categories plus All/Selected: $theme/$width"
         Assert-Layout (((Get-VisibleIds) -join ',') -eq '12,13,14,15') "Default shows four graphics settings: $theme/$width"
         Assert-Layout (-not $script:GO_applyBtn.IsEnabled) "No automatic pending changes: $theme/$width"
-        Assert-Layout ($script:GO_detailsPane.Visibility -eq 'Collapsed' -and -not $script:GO_tools.IsExpanded) "Secondary tools and details start closed: $theme/$width"
-        Assert-Layout ($script:GO_hwInfo.Visibility -eq 'Visible' -and $script:GO_hwInfo.Parent -eq $script:GO_tools.Parent) "PC information is outside collapsed tools: $theme/$width"
+        Assert-Layout ($script:GO_detailsPane.Visibility -eq 'Collapsed') "Details start closed: $theme/$width"
+        Assert-Layout ($script:GO_tools -is [Windows.Controls.Border] -and $script:GO_tools.Visibility -eq 'Visible' -and -not $view.FindName('ToolsExpander')) "Tools and backup are always visible without an expander: $theme/$width"
+        $backupPreference=$script:GO_cbRestore.IsChecked
+        $view.FindName('BackupOptionsBtn').RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent))
+        Assert-Layout ($script:GO_tools.Visibility -eq 'Visible' -and $script:GO_cbRestore.IsChecked -eq $backupPreference) "Backup shortcut preserves visibility and preferences: $theme/$width"
+        Assert-Layout ($script:GO_hwInfo.Visibility -eq 'Visible' -and $script:GO_hwInfo.Parent -eq $script:GO_tools.Parent) "PC information remains independently visible: $theme/$width"
         Assert-Layout ($script:GO_logArea.Visibility -eq 'Visible' -and -not $view.FindName('LogExpander')) "Log is permanently visible: $theme/$width"
         Assert-Layout ($script:GO_logScroller.ActualHeight -eq 54 -and $script:GO_logBox.LineHeight -eq 18 -and $script:GO_logBox.LineStackingStrategy -eq 'BlockLineHeight') "Log viewport is exactly three text lines: $theme/$width"
         Assert-Layout ($script:GO_logBox.Text -like '*Synthetic activity line 1*' -and $script:GO_logBox.Text -like '*Synthetic activity line 8*') "Older log messages remain available by scrolling: $theme/$width"

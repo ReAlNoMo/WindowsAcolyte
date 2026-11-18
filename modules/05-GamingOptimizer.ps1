@@ -41,10 +41,11 @@ Register-PowerToolsModule `
             <ComboBox x:Name="CategoryPicker" Visibility="Collapsed" MinWidth="175" Margin="0,0,8,4" AutomationProperties.Name="Settings category"/>
             <Button x:Name="ProfilesBtn" Content="Profiles ▾" Style="{DynamicResource SecondaryButton}" Padding="10,4" Margin="0,0,6,4"/>
         </WrapPanel>
-        <Expander x:Name="ToolsExpander" Header="Tools &amp; backup" Foreground="{DynamicResource DynTextDark}" Margin="0,0,0,8">
-            <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="8">
-                    <WrapPanel Margin="0,8,0,4">
+        <Border x:Name="ToolsPanel" Padding="8,4" Margin="0,0,0,8" CornerRadius="6" BorderThickness="1"
+                Background="{DynamicResource DynSurface}" BorderBrush="{DynamicResource DynBorder}">
+                <StackPanel>
+                    <TextBlock Text="Tools &amp; backup" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DynTextDark}" Margin="0,0,0,4"/>
+                    <WrapPanel Margin="0,0,0,2">
                         <CheckBox x:Name="CbRestorePoint" Content="Create restore point" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
                         <CheckBox x:Name="CbRegBackup" Content="Export registry (.reg)" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
                         <CheckBox x:Name="CbAutoReboot" Content="Prompt for reboot" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
@@ -57,8 +58,7 @@ Register-PowerToolsModule `
                         <Button x:Name="RevertBtn" Content="Reset managed settings" Style="{DynamicResource SecondaryButton}" Padding="8,4" Margin="0,0,6,4"/>
                     </WrapPanel>
                 </StackPanel>
-            </ScrollViewer>
-        </Expander>
+        </Border>
     </StackPanel>
     <Grid x:Name="WorkspaceBody" Grid.Row="1">
         <Grid.ColumnDefinitions><ColumnDefinition Width="185"/><ColumnDefinition Width="*"/><ColumnDefinition Width="0"/></Grid.ColumnDefinitions>
@@ -126,7 +126,7 @@ Register-PowerToolsModule `
             clearLog='ClearLogBtn'; logBox='LogBox'; logScroller='LogScroller'; search='SearchBox'; statusFilter='StatusFilter'
             categoryPicker='CategoryPicker'; categoryList='CategoryList'; categoryRail='CategoryRail'; listHeading='ListHeading'
             listScroller='ListScroller'; emptyMessage='EmptyMessage'; body='WorkspaceBody'; listArea='ListArea'
-            detailsPane='DetailsPane'; detailsContent='DetailsContent'; tools='ToolsExpander'; hwInfo='HWInfoBorder'; logArea='LogAreaBorder'
+            detailsPane='DetailsPane'; detailsContent='DetailsContent'; tools='ToolsPanel'; hwInfo='HWInfoBorder'; logArea='LogAreaBorder'
             inputExtras='InputExtras'; extraList='ExtraList'
         }
         foreach($key in $bindings.Keys){Set-Variable -Name "GO_$key" -Scope Script -Value $view.FindName($bindings[$key])}
@@ -184,7 +184,7 @@ Register-PowerToolsModule `
                 $script:GO_view.FindName('CloseDetailsBtn').RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent));$eventArgs.Handled=$true
             }
         })
-        $view.FindName('BackupOptionsBtn').Add_Click({$script:GO_tools.IsExpanded=-not $script:GO_tools.IsExpanded})
+        $view.FindName('BackupOptionsBtn').Add_Click({[void]$script:GO_cbRestore.Focus()})
         $view.Add_SizeChanged({GO-UpdateResponsive})
         return $view
     }
