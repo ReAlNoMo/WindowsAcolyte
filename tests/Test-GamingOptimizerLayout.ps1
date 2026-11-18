@@ -49,17 +49,33 @@ foreach($theme in @('PTS_Theme','PTS_ThemeDark')){
     $palette=& ([scriptblock]::Create($paletteAst.Right.Extent.Text))
     $Global:PTS_Brush=@{};foreach($key in $palette.Keys){$Global:PTS_Brush[$key]=[Windows.Media.BrushConverter]::new().ConvertFromString($palette[$key])}
     foreach($width in @(540,900,1280)){
-        $view=GO-NewWorkspace;GO-RenderList -States $states;Arrange-Workspace $view $width 700
+        $view=GO-NewWorkspace
+        $script:GO_hwText.Text="CPU: Example processor`nGPU: Example graphics`nRAM: 32 GB | Windows Build: 26100"
+        GO-RenderList -States $states
+        foreach($line in 1..8){GO-AddLog "Synthetic activity line $line" 'INFO'}
+        Arrange-Workspace $view $width 700
         Assert-Layout ($script:GO_cardViews.Count -eq 35 -and $script:GO_categoryButtons.Count -eq 10) "35 settings, eight categories plus All/Selected: $theme/$width"
         Assert-Layout (((Get-VisibleIds) -join ',') -eq '12,13,14,15') "Default shows four graphics settings: $theme/$width"
         Assert-Layout (-not $script:GO_applyBtn.IsEnabled) "No automatic pending changes: $theme/$width"
-        Assert-Layout ($script:GO_detailsPane.Visibility -eq 'Collapsed' -and -not $script:GO_tools.IsExpanded -and -not $script:GO_logExpander.IsExpanded) "Secondary information starts closed: $theme/$width"
+        Assert-Layout ($script:GO_detailsPane.Visibility -eq 'Collapsed' -and -not $script:GO_tools.IsExpanded) "Secondary tools and details start closed: $theme/$width"
+        Assert-Layout ($script:GO_hwInfo.Visibility -eq 'Visible' -and $script:GO_hwInfo.Parent -eq $script:GO_tools.Parent) "PC information is outside collapsed tools: $theme/$width"
+        Assert-Layout ($script:GO_logArea.Visibility -eq 'Visible' -and -not $view.FindName('LogExpander')) "Log is permanently visible: $theme/$width"
+        Assert-Layout ($script:GO_logScroller.ActualHeight -eq 54 -and $script:GO_logBox.LineHeight -eq 18 -and $script:GO_logBox.LineStackingStrategy -eq 'BlockLineHeight') "Log viewport is exactly three text lines: $theme/$width"
+        Assert-Layout ($script:GO_logBox.Text -like '*Synthetic activity line 1*' -and $script:GO_logBox.Text -like '*Synthetic activity line 8*') "Older log messages remain available by scrolling: $theme/$width"
+        $menu=$view.FindName('ProfilesBtn').ContextMenu
+        Assert-Layout ($menu.Items.Count -eq 3 -and $menu.Items[1] -is [Windows.Controls.Separator] -and $menu.Template -and $menu.Items[0].Template -and $menu.Items[2].Template) "Profile commands have gutter-free rows and a divider: $theme/$width"
         Assert-Layout ($script:GO_cardViews[12].ActualHeight -le 100) "Compact GPU row: $theme/$width"
         foreach($t in $script:GO_tweaks){
             $row=$script:GO_cardViews[$t.Id]
             Assert-Layout ($row.Child.Children[1].Children[0].Text -like 'Risk:*') "Visible risk: #$($t.Id)/$theme/$width"
+            Assert-Layout ([object]::ReferenceEquals($row.Child.Children[1].Children[0].Foreground,(GO-GetRiskColor $t.Risk))) "Semantic risk color: #$($t.Id)/$theme/$width"
+            Assert-Layout ($script:GO_checkboxes[$t.Id].Parent.Children[0].Child.FontSize -ge 13) "Readable status font: #$($t.Id)/$theme/$width"
             if($t.NeedsReboot){Assert-Layout ('Restart required' -in $row.Child.Children[1].Children.Text) "Visible restart: #$($t.Id)/$theme/$width"}
         }
+        $actions=$script:GO_cardViews[13].Child.Children[0].Children[3]
+        $detailPoint=$actions.Children[0].TranslatePoint([Windows.Point]::new(0,0),$actions)
+        $resetPoint=$actions.Children[1].TranslatePoint([Windows.Point]::new(0,0),$actions)
+        Assert-Layout ($actions.Orientation -eq 'Horizontal' -and $detailPoint.Y -eq $resetPoint.Y -and $resetPoint.X -gt $detailPoint.X) "Details and Reset share one horizontal row: $theme/$width"
         $script:GO_checkboxes[12].IsChecked=$true
         GO-SetCategory 'Power & CPU';$script:GO_checkboxes[9].IsChecked=$true
         Assert-Layout ($script:GO_checkboxes[12].IsChecked -and @(Get-VisibleIds).Count -eq 7) "Category switch preserves hidden selection: $theme/$width"
@@ -108,6 +124,10 @@ foreach($theme in @('PTS_Theme','PTS_ThemeDark')){
         $script:GO_applyBtn.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent))
         Assert-Layout (($script:reviewedIds -join ',') -eq '9,12') "Cancel review applies nothing: $theme/$width"
         if($PreviewDirectory){Arrange-Workspace $view $width 700;Save-LayoutPreview $view $width 700 (Join-Path $PreviewDirectory "$theme-$width.png")}
+        if($PreviewDirectory){
+            $menu.Measure([Windows.Size]::new(200,100));$menu.Arrange([Windows.Rect]::new(0,0,200,100));$menu.UpdateLayout()
+            Save-LayoutPreview $menu 200 100 (Join-Path $PreviewDirectory "$theme-profiles.png")
+        }
         # Exercise the actual shell ScrollViewer/ContentControl hierarchy, including its margins.
         $outer=$script:hostWindow.FindName('ContentScroller');$hostContent=$script:hostWindow.FindName('ContentHost')
         $outer.VerticalScrollBarVisibility='Disabled';$hostContent.Content=$view

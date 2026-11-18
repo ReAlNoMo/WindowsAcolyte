@@ -63,7 +63,7 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1.7`
+**Current version:** `v2.1.8`
 
 ### Shared processing indicator
 
@@ -298,7 +298,7 @@ Search matches names, categories and technical explanations across all categorie
 
 Risk is not a benefit rating. Checkboxes select pending changes, rather than acting as an on/off-state indicator. Optional input/USB controls remain manual opt-in. The fixed action bar opens **Review changes**, listing every selected target, expected effect, risk, restart requirement, shared/reset consequences and backup choices before **Apply reviewed changes**. Existing high-risk/accessibility confirmations and backup-failure gates still apply. No configuration Apply/Check/Reset scripts or risk/opt-in/mutual-exclusion rules were changed for this layout.
 
-**Profiles** groups load/save commands. **Tools & backup** groups hardware information, backup preferences, bulk selection, Recheck and Reset. **Activity log** starts collapsed and opens for warnings/errors. The optional pointer-speed and local-update controls remain under a collapsed section in **Input & USB**; pointer speed still uses its separate explicit Apply/Reset buttons.
+PC details remain visible above search. **Profiles** groups load/save commands in separate highlighted rows with a divider and no icon gutter. **Tools & backup** groups backup preferences, bulk selection, Recheck and Reset. **Activity log** stays visible with a fixed three-line text viewport; scroll to read earlier messages. Risk labels use green/orange/red for LOW/MODERATE/HIGH, configuration status uses a larger font, and **Details**/**Reset** share a horizontal row. The optional pointer-speed and local-update controls remain under a collapsed section in **Input & USB**; pointer speed still uses its separate explicit Apply/Reset buttons.
 
 The settings list scrolls independently while navigation and actions stay in the viewport. Narrow workspaces use a category picker and wrapping action controls. Layout tests exercise 540/900/1280-pixel workspaces in both themes, short viewports, search, persistent selection, review cancellation and the actual shell container with synthetic states. These tests do not change Windows settings. The screenshot above illustrates the workspace using synthetic configuration states.
 
@@ -801,7 +801,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1.7 (Current) - 2026-11-18
+## v2.1.8 (Current) - 2026-11-18
+- Keep Gaming Optimizer PC details and a three-line activity log visible, separate profile commands visually, color all risk labels, enlarge configuration status and place Details/Reset side by side.
+
+## v2.1.7 (Previous) - 2026-11-18
 - Frame the logo on all four sides, default to Dark mode on every launch and activate/focus the main window once after its first render.
 
 ## v2.1.6 (Previous) - 2026-11-18
@@ -935,7 +938,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1.7 • November 2026
+Version 2.1.8 • November 2026
 
 ---
 

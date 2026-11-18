@@ -18,6 +18,10 @@ Register-PowerToolsModule `
         <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <StackPanel>
+        <Border x:Name="HWInfoBorder" Padding="10,6" Margin="0,0,0,8" CornerRadius="6" BorderThickness="1"
+                Background="{DynamicResource DynSurface}" BorderBrush="{DynamicResource DynBorder}">
+            <TextBlock x:Name="HardwareText" Text="Detecting hardware..." FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource DynTextMid}"/>
+        </Border>
         <TextBlock Text="Search all 35 settings" Foreground="{DynamicResource DynTextMid}" FontSize="11" Margin="0,0,0,4"/>
         <Grid Margin="0,0,0,8">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -40,7 +44,6 @@ Register-PowerToolsModule `
         <Expander x:Name="ToolsExpander" Header="Tools &amp; backup" Foreground="{DynamicResource DynTextDark}" Margin="0,0,0,8">
             <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="8">
-                    <Border x:Name="HWInfoBorder"><TextBlock x:Name="HardwareText" Text="Detecting hardware..." TextWrapping="Wrap" Foreground="{DynamicResource DynTextMid}"/></Border>
                     <WrapPanel Margin="0,8,0,4">
                         <CheckBox x:Name="CbRestorePoint" Content="Create restore point" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
                         <CheckBox x:Name="CbRegBackup" Content="Export registry (.reg)" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
@@ -97,14 +100,19 @@ Register-PowerToolsModule `
             <TextBlock x:Name="ImpactText" Visibility="Collapsed"/>
         </StackPanel>
     </Border>
-    <Expander x:Name="LogExpander" Grid.Row="3" Header="Activity log" Foreground="{DynamicResource DynTextDark}">
-        <Border x:Name="LogAreaBorder" Height="110" Background="{DynamicResource DynLogBg}">
-            <DockPanel>
-                <Button x:Name="ClearLogBtn" DockPanel.Dock="Top" Content="Clear log" HorizontalAlignment="Right" Style="{DynamicResource SecondaryButton}" Padding="8,3"/>
-                <ScrollViewer x:Name="LogScroller" VerticalScrollBarVisibility="Auto"><TextBlock x:Name="LogBox" Text="Ready." FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" Padding="8" Foreground="{DynamicResource DynTextMuted}"/></ScrollViewer>
+    <Border x:Name="LogAreaBorder" Grid.Row="3" Padding="8,4" BorderThickness="1" CornerRadius="6"
+            BorderBrush="{DynamicResource DynBorder}" Background="{DynamicResource DynLogBg}">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="54"/></Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,3">
+                <Button x:Name="ClearLogBtn" DockPanel.Dock="Right" Content="Clear log" Style="{DynamicResource SecondaryButton}" Padding="8,2"/>
+                <TextBlock Text="Activity log" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource DynTextDark}"/>
             </DockPanel>
-        </Border>
-    </Expander>
+            <ScrollViewer x:Name="LogScroller" Grid.Row="1" Height="54" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock x:Name="LogBox" Text="Ready." FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" LineHeight="18" LineStackingStrategy="BlockLineHeight" Foreground="{DynamicResource DynTextMuted}"/>
+            </ScrollViewer>
+        </Grid>
+    </Border>
 </Grid>
 "@
         $view=[Windows.Markup.XamlReader]::Load([System.Xml.XmlNodeReader]::new($viewXaml))
@@ -118,7 +126,7 @@ Register-PowerToolsModule `
             clearLog='ClearLogBtn'; logBox='LogBox'; logScroller='LogScroller'; search='SearchBox'; statusFilter='StatusFilter'
             categoryPicker='CategoryPicker'; categoryList='CategoryList'; categoryRail='CategoryRail'; listHeading='ListHeading'
             listScroller='ListScroller'; emptyMessage='EmptyMessage'; body='WorkspaceBody'; listArea='ListArea'
-            detailsPane='DetailsPane'; detailsContent='DetailsContent'; tools='ToolsExpander'; logExpander='LogExpander'
+            detailsPane='DetailsPane'; detailsContent='DetailsContent'; tools='ToolsExpander'; hwInfo='HWInfoBorder'; logArea='LogAreaBorder'
             inputExtras='InputExtras'; extraList='ExtraList'
         }
         foreach($key in $bindings.Keys){Set-Variable -Name "GO_$key" -Scope Script -Value $view.FindName($bindings[$key])}
@@ -126,10 +134,38 @@ Register-PowerToolsModule `
         $script:GO_checkboxes=@{}; $script:GO_cardViews=@{}; $script:GO_detailWindows=@{}
         $script:GO_categoryButtons=@{}; $script:GO_rendering=$false
         $menu=[System.Windows.Controls.ContextMenu]::new()
+        foreach($key in $Global:PTS_Brush.Keys){$menu.Resources["Dyn$key"]=$Global:PTS_Brush[$key]}
         $menu.Background=Get-PowerToolsBrush 'Surface';$menu.Foreground=Get-PowerToolsBrush 'TextDark'
+        # Remove the default icon gutter and give each command a full-width hover/focus row.
+        [xml]$profileStyleXaml=@'
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style x:Key="ProfileCommand" TargetType="MenuItem">
+        <Setter Property="MinHeight" Value="34"/><Setter Property="Padding" Value="12,8"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource DynTextDark}"/>
+        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="MenuItem">
+            <Border x:Name="Row" Background="{DynamicResource DynSurface}" Padding="{TemplateBinding Padding}">
+                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"/>
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource DynSidebarHover}"/></Trigger>
+                <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Row" Property="Opacity" Value="0.5"/></Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <ControlTemplate x:Key="ProfilePopup" TargetType="ContextMenu">
+        <Border Background="{DynamicResource DynSurface}" BorderBrush="{DynamicResource DynBorder}" BorderThickness="1" CornerRadius="4" Padding="3"><ItemsPresenter/></Border>
+    </ControlTemplate>
+    <ControlTemplate x:Key="ProfileDivider" TargetType="Separator"><Border Height="1" Margin="8,3" Background="{DynamicResource DynBorder}"/></ControlTemplate>
+</ResourceDictionary>
+'@
+        $profileStyles=[Windows.Markup.XamlReader]::Load([System.Xml.XmlNodeReader]::new($profileStyleXaml))
+        $menu.Template=$profileStyles['ProfilePopup'];$menu.MinWidth=180
         $script:GO_loadProfBtn=[System.Windows.Controls.MenuItem]::new();$script:GO_loadProfBtn.Header='Load profile'
         $script:GO_saveProfBtn=[System.Windows.Controls.MenuItem]::new();$script:GO_saveProfBtn.Header='Save profile'
-        [void]$menu.Items.Add($script:GO_loadProfBtn);[void]$menu.Items.Add($script:GO_saveProfBtn)
+        $script:GO_loadProfBtn.Style=$profileStyles['ProfileCommand'];$script:GO_saveProfBtn.Style=$profileStyles['ProfileCommand']
+        $divider=[System.Windows.Controls.Separator]::new();$divider.Template=$profileStyles['ProfileDivider']
+        [void]$menu.Items.Add($script:GO_loadProfBtn);[void]$menu.Items.Add($divider);[void]$menu.Items.Add($script:GO_saveProfBtn)
         $view.FindName('ProfilesBtn').ContextMenu=$menu
         $view.FindName('ProfilesBtn').Add_Click({param($sender,$eventArgs) $sender.ContextMenu.PlacementTarget=$sender;$sender.ContextMenu.IsOpen=$true})
         $script:GO_initText='Ready.'
@@ -159,12 +195,11 @@ Register-PowerToolsModule `
 
     function Global:GO-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
-        if($Type -in @('FAIL','WARN') -and $script:GO_logExpander){$script:GO_logExpander.IsExpanded=$true}
         $ts  = Get-Date -Format "HH:mm:ss"
         $tag = switch ($Type) { "OK"{"[OK]  "} "FAIL"{"[FAIL]"} "WARN"{"[WARN]"} default{"[INFO]"} }
-        $entry = "[$ts]  $tag  $Msg`n"
-        if ($script:GO_logBox.Text -eq $script:GO_initText) { $script:GO_logBox.Text = $entry }
-        else { $script:GO_logBox.Text += $entry }
+        $entry = "[$ts]  $tag  $Msg".TrimEnd()
+        if ([string]::IsNullOrEmpty($script:GO_logBox.Text) -or $script:GO_logBox.Text -eq $script:GO_initText) { $script:GO_logBox.Text = $entry }
+        else { $script:GO_logBox.Text += "`n$entry" }
         $script:GO_logScroller.Dispatcher.Invoke([action]{ $script:GO_logScroller.ScrollToEnd() })
     }
 
@@ -706,7 +741,6 @@ namespace WindowsAcolyteInputV1 {
 
         $text = "CPU: $cpu`nGPU: $gpu`nRAM: $ramGB GB | Windows Build: $build"
         if ($isX3D)           { $text += "`n[!] AMD X3D detected - Xbox Game Bar and Game Mode must stay ACTIVE" }
-        if ($build -ge 26100) { $text += "`n[i] Windows 11 24H2+ - Native NVMe Stack available" }
 
         $script:GO_hwText.Text = $text
         return @{
@@ -1615,7 +1649,7 @@ namespace WindowsAcolyteInputV1 {
                 $header=[System.Windows.Controls.Grid]::new()
                 foreach($width in @('106','28','*','Auto')){$col=[System.Windows.Controls.ColumnDefinition]::new();$col.Width=$width;[void]$header.ColumnDefinitions.Add($col)}
                 $badge=[System.Windows.Controls.Border]::new();$badge.Padding='3';$badge.VerticalAlignment='Top'
-                $status=GO-NewText $(if($presentation.Status -eq 'MISSING'){'NOT APPLIED'}else{$presentation.Status}) 10 $presentation.Brush -Bold
+                $status=GO-NewText $(if($presentation.Status -eq 'MISSING'){'NOT APPLIED'}else{$presentation.Status}) 13 $presentation.Brush -Bold
                 $status.Name='TweakStatus';$badge.Child=$status;$badge.ToolTip=$presentation.Message
                 [void]$header.Children.Add($badge)
                 $cb=[System.Windows.Controls.CheckBox]::new();$cb.Tag=$t.Id;$cb.Margin='2,2,4,0';$cb.VerticalAlignment='Top'
@@ -1633,20 +1667,22 @@ namespace WindowsAcolyteInputV1 {
                 $metadata=[System.Windows.Controls.WrapPanel]::new();$metadata.Margin='134,5,0,0'
                 foreach($label in @("Risk: $(GO-GetRiskLabel $t.Risk)",$(if($t.NeedsReboot){'Restart required'}),$(if($t.Optional){'Manual opt-in'}))){
                     if(-not $label){continue}
-                    $item=GO-NewText $label 10 $(if($label -like 'Risk:*' -and $t.Risk -gt 0){if($t.Risk -eq 2){'Danger'}else{'Warning'}}else{'TextMid'})
+                    $isRisk=$label -like 'Risk:*'
+                    $brush=if($isRisk){switch($t.Risk){0{'Success'}1{'Warning'}2{'Danger'}}}else{'TextMid'}
+                    $item=GO-NewText $label 11 $brush -Bold:$isRisk
                     $item.Margin='0,0,12,3';[void]$metadata.Children.Add($item)
                 }
                 [void]$content.Children.Add($metadata)
                 if($state.Status -in @('UNAVAILABLE','CHECK ERROR')){
                     $message=GO-NewText $state.Message 11 'TextMid';$message.Margin='134,2,0,5';[void]$content.Children.Add($message)
                 }
-                $actions=[System.Windows.Controls.StackPanel]::new();$actions.Margin='8,0,0,0';$actions.VerticalAlignment='Top'
+                $actions=[System.Windows.Controls.StackPanel]::new();$actions.Orientation='Horizontal';$actions.Margin='8,0,0,0';$actions.VerticalAlignment='Top'
                 $details=[System.Windows.Controls.Button]::new();$details.Content='Details';$details.Padding='8,3';$details.Margin='0,0,6,0'
                 $details.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
                 $tweak=$t;$details.Add_Click({GO-ShowDetailWindow $tweak}.GetNewClosure());[void]$actions.Children.Add($details)
                 $backup=$null;if($t.Optional){try{$backup=GO-ReadUsbBackup $t.Id}catch{}}
                 if($state.Applied -or $null -ne $backup){
-                    $reset=[System.Windows.Controls.Button]::new();$reset.Content='Reset';$reset.Padding='8,3';$reset.Margin='0,4,6,0';$reset.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+                    $reset=[System.Windows.Controls.Button]::new();$reset.Content='Reset';$reset.Padding='8,3';$reset.Margin='0,0,6,0';$reset.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
                     if($t.Optional -and -not $backup){$reset.IsEnabled=$false;$reset.ToolTip='No saved original state; pre-existing settings will not be reset.'}
                     $capturedTweak3=$t
                     $reset.Add_Click({
@@ -1668,7 +1704,7 @@ namespace WindowsAcolyteInputV1 {
             foreach($category in @('All settings','Graphics & Gaming','Power & CPU','Input & USB','Network','Windows & Lighting','Storage','Privacy','Security & Recording','Selected')){
                 $count=if($category -eq 'All settings'){$script:GO_tweaks.Count}elseif($category -eq 'Selected'){0}else{@($script:GO_tweaks | Where-Object {(GO-GetCategory $_) -eq $category}).Count}
                 $button=[System.Windows.Controls.Button]::new();$button.Content="$category  ($count)";$button.Tag=$category
-                $button.HorizontalContentAlignment='Left';$button.Padding='8,9';$button.Margin='0,0,0,5';$button.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+                $button.HorizontalContentAlignment='Left';$button.Padding='8,4';$button.Margin='0,0,0,3';$button.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
                 $key=$category;$button.Add_Click({GO-SetCategory $key}.GetNewClosure())
                 $script:GO_categoryButtons[$category]=$button;[void]$script:GO_categoryList.Children.Add($button)
                 $item=[System.Windows.Controls.ComboBoxItem]::new();$item.Content="$category ($count)";$item.Tag=$category
