@@ -186,7 +186,7 @@ try {
     }
     $script:GO_checkboxes[31].IsChecked=$true
     GO-UpdateApplyState
-    Assert-Usb ($script:GO_estimate.Text -like '*stability*' -and $script:GO_estimate.Text -notlike '*FPS gain:*') 'USB-only selection makes no estimated FPS claim'
+    Assert-Usb ($script:GO_estimate.Text -eq '1 selected' -and $script:GO_estimate.Text -notlike '*FPS gain:*') 'USB-only selection shows its count without an estimated FPS claim'
     $profile='{"SelectedTweakIds":[31]}' | ConvertFrom-Json
     $loaded=GO-ApplyProfileSelection $profile
     Assert-Usb ($loaded.Loaded -eq 1 -and $script:GO_checkboxes[31].IsChecked) 'Explicit profile selection can opt into the hub setting'

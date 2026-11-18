@@ -188,6 +188,7 @@ try {
     function Global:Get-PowerToolsBrush {param($Name) [System.Windows.Media.Brushes]::Gray}
     function Global:GO-AddLog {param($Msg,$Type) $script:lastLog=$Msg}
     $script:GO_tweakList=[System.Windows.Controls.ItemsControl]::new()
+    $script:GO_extraList=[System.Windows.Controls.ItemsControl]::new()
     $script:GO_checkboxes=@{}; $script:GO_applyBtn=[System.Windows.Controls.Button]::new()
     $script:GO_estimate=[System.Windows.Controls.TextBlock]::new(); $script:GO_impactText=[System.Windows.Controls.TextBlock]::new()
     GO-RenderList

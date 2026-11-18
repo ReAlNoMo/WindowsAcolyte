@@ -9,7 +9,7 @@ if ($parseErrors.Count) { throw ($parseErrors.Message -join '; ') }
 foreach ($name in @('GO-GetReg', 'GO-SetDW', 'GO-TestDWord', 'GO-ApplyVerifiedTweak', 'GO-IsRecommended',
     'GO-RenderList', 'GO-ApplyRecommendedPreselection', 'GO-HandleMutex', 'GO-UpdateApplyState',
     'GO-GetRiskColor', 'GO-GetRiskLabel', 'GO-GetTweakState', 'GO-GetStateSnapshot', 'GO-SelectTweaks',
-    'GO-NewText', 'GO-AddDescriptionSection', 'GO-GetPresentationState',
+    'GO-NewText', 'GO-AddDescriptionSection', 'GO-GetPresentationState', 'GO-GetCategory', 'GO-GetRowTitle', 'GO-ApplyFilter', 'GO-FillDetails',
     'GO-GetProfileSelection', 'GO-ApplyProfileSelection')) {
     $definition = $ast.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq "Global:$name"
@@ -119,7 +119,9 @@ try {
     $script:GO_checkboxes[10].IsChecked = $true
     GO-UpdateApplyState
     Assert-Result ($script:GO_impactText.Text -like '*Replaces Competitive*') 'Selection impact is visible before applying'
-    Assert-Result (@($script:GO_cardViews[10].Child.Children | Where-Object { $_ -is [System.Windows.Controls.TextBlock] -and $_.Text -eq $aaa.Note }).Count -eq 1) 'Conflict note remains visible in the priority card'
+    $detailPanel=[System.Windows.Controls.StackPanel]::new()
+    GO-FillDetails $detailPanel $aaa
+    Assert-Result (@($detailPanel.Children | Where-Object { $_ -is [System.Windows.Controls.TextBlock] -and $_.Text -eq $aaa.Note }).Count -eq 1) 'Conflict note remains available in details before applying'
     $profileIds = @(GO-GetProfileSelection)
     Assert-Result (8 -in $profileIds -and 10 -in $profileIds -and 9 -notin $profileIds) 'Profile save includes applied settings and pending priority replacement without conflict'
     GO-SelectTweaks None

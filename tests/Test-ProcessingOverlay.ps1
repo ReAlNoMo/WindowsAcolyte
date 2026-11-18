@@ -159,6 +159,10 @@ try {
     . ([scriptblock]::Create($node.Extent.Text.Replace('[System.Windows.MessageBox]','[ProcessingTestDialogs]')))
     Show-PTSModuleView ([pscustomobject]@{Id='fixture';Name='Slow Fixture';Category='Fixture';Description='Test';Show={ Start-Sleep -Milliseconds 350; $script:loaderVisible=$Global:PTS_ProcessingService.Visible; [Windows.Controls.TextBlock]::new() }})
     Assert-Processing ($script:loaderVisible -and $Global:PTS_UI.ContentHost.Content -is [Windows.Controls.TextBlock]) 'Central loader covers module setup and installs the returned view'
+    Show-PTSModuleView ([pscustomobject]@{Id='viewport-fixture';Name='Viewport Fixture';Category='Fixture';Description='Test';Show={ $grid=[Windows.Controls.Grid]::new();$grid.Tag='OwnScroll';$grid }})
+    Assert-Processing ($Global:PTS_UI.ContentScroller.VerticalScrollBarVisibility -eq 'Disabled') 'A module with internal scrolling receives a finite shell viewport'
+    Show-PTSModuleView ([pscustomobject]@{Id='normal-fixture';Name='Normal Fixture';Category='Fixture';Description='Test';Show={ [Windows.Controls.TextBlock]::new() }})
+    Assert-Processing ($Global:PTS_UI.ContentScroller.VerticalScrollBarVisibility -eq 'Auto') 'Switching to a normal module restores shell scrolling'
     Pump-UI 100
     function Write-PTSExceptionReport { param($Context,$ModuleId,$Exception,$ErrorRecord); $script:lastReport=$Context }
     function Get-PowerToolsErrorLogPath { 'isolated-test-log' }

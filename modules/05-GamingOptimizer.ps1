@@ -1,5 +1,5 @@
 # Module: Windows 11 Gaming Optimizer v2.1
-# Comprehensive gaming tweaks with profile support, backup, and detailed info.
+# Compact category workspace with profile support, backup and details on demand.
 
 Register-PowerToolsModule `
     -Id            "gaming-optimizer" `
@@ -9,193 +9,157 @@ Register-PowerToolsModule `
     -RequiresAdmin $true `
     -Show          {
 
-    [xml]$viewXaml = @"
+    function Global:GO-NewWorkspace {
+        [xml]$viewXaml = @"
 <Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Tag="OwnScroll" Background="{DynamicResource DynBackground}">
     <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-
-    <!-- ROW 0: Hardware Info -->
-    <Border Grid.Row="0" x:Name="HWInfoBorder"
-            BorderThickness="1.5" CornerRadius="8" Padding="12,8" Margin="0,0,0,6">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="DETECTED HARDWARE" Foreground="{DynamicResource DynSectionLabel}" FontSize="9"
-                           FontWeight="Bold" Margin="0,0,0,2"/>
-                <TextBlock x:Name="HardwareText" FontSize="11" TextWrapping="Wrap" Text="Detecting..."/>
-            </StackPanel>
+    <StackPanel>
+        <TextBlock Text="Search all 35 settings" Foreground="{DynamicResource DynTextMid}" FontSize="11" Margin="0,0,0,4"/>
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchBox" MinHeight="32" Padding="9,5" Margin="0,0,8,0"
+                     Background="{DynamicResource DynInputBg}" Foreground="{DynamicResource DynInputFg}"
+                     BorderBrush="{DynamicResource DynInputBorder}" ToolTip="Search all 35 settings, including technical terms"
+                     AutomationProperties.Name="Search all settings"/>
+            <Button x:Name="ClearSearchBtn" Grid.Column="1" Content="Clear search" Style="{DynamicResource SecondaryButton}" Padding="10,5"/>
         </Grid>
-    </Border>
-
-    <!-- ROW 1: Backup Options (intentional warning colors) -->
-    <Border Grid.Row="1" Background="{DynamicResource DynAccentSoft}" BorderBrush="{DynamicResource DynAccent}"
-            BorderThickness="1.5" CornerRadius="8" Padding="12,6" Margin="0,0,0,6">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="BACKUP:" Foreground="{DynamicResource DynTextDark}" FontSize="10"
-                       FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0"/>
-            <CheckBox Grid.Column="1" x:Name="CbRestorePoint"
-                      Content="Create Restore Point" IsChecked="True"
-                      FontSize="11" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center"/>
-            <CheckBox Grid.Column="2" x:Name="CbRegBackup"
-                      Content="Export Registry (.reg)" IsChecked="True"
-                      FontSize="11" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center"/>
-            <CheckBox Grid.Column="3" x:Name="CbAutoReboot"
-                      Content="Prompt for Reboot" IsChecked="True"
-                      FontSize="11" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center"/>
-        </Grid>
-    </Border>
-
-    <!-- ROW 2: Selection toolbar; wraps instead of hiding controls at narrow widths. -->
-    <WrapPanel Grid.Row="2" Margin="0,0,0,8">
-        <TextBlock Text="SELECT CHANGES:" Foreground="{DynamicResource DynSectionLabel}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,6"/>
-        <Button x:Name="SelectAllBtn" Content="All" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
-        <Button x:Name="SelectMissingBtn" Content="Missing Only" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
-        <Button x:Name="SelectSafeBtn" Content="Low Risk Only" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
-        <Button x:Name="SelectNoneBtn" Content="None" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,12,6"/>
-        <Button x:Name="LoadProfileBtn" Content="Load Profile" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
-        <Button x:Name="SaveProfileBtn" Content="Save Profile" Style="{DynamicResource SecondaryButton}" Padding="10,5" FontSize="11" Margin="0,0,4,6"/>
-    </WrapPanel>
-    <!-- ROW 3: TWEAK LIST -->
-    <Border Grid.Row="3" x:Name="TweakListBorder"
-            BorderThickness="1.5" CornerRadius="8" Margin="0,0,0,6">
-        <ItemsControl x:Name="TweakList" Margin="6,6,6,6"/>
-    </Border>
-
-    <!-- ROW 4: Estimate bar -->
-    <Border Grid.Row="4" x:Name="EstimateBar"
-            BorderThickness="1" CornerRadius="6" Padding="12,6" Margin="0,6,0,6">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                <TextBlock x:Name="EstimateText" FontSize="11" TextWrapping="Wrap"
-                           Text="No changes selected. Read the descriptions and choose only what you need."/>
-                <TextBlock x:Name="ImpactText" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
-                           Foreground="{DynamicResource DynTextDark}"
-                           Text="APPLIED = configuration verified. Reboot-marked settings may not be effective until restart."/>
-            </StackPanel>
-            <TextBlock Grid.Column="1" Text="Details = plain-English + technical explanation"
-                       Foreground="{DynamicResource DynTextMuted}" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
-        </Grid>
-    </Border>
-
-    <!-- ROW 5: Action buttons -->
-    <Grid Grid.Row="5" Margin="0,0,0,6">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="140"/>
-            <ColumnDefinition Width="180"/>
-        </Grid.ColumnDefinitions>
-        <Button Grid.Column="0" x:Name="ApplyBtn" Content="Apply Selected"
-                Style="{DynamicResource PrimaryButton}" Height="40" FontSize="13"
-                Margin="0,0,6,0" IsEnabled="False"/>
-        <Button Grid.Column="1" x:Name="RecheckBtn" Content="Recheck All"
-                Style="{DynamicResource SecondaryButton}" Height="40" FontSize="11" Margin="0,0,6,0"/>
-        <Button Grid.Column="2" x:Name="RevertBtn" Content="Reset Managed Settings"
-                Style="{DynamicResource SecondaryButton}" Height="40" FontSize="11"/>
-    </Grid>
-
-    <!-- ROW 6: Activity Log (fixed height) -->
-    <Border Grid.Row="6" x:Name="LogAreaBorder"
-            BorderThickness="1.5" CornerRadius="8" Height="140">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0" Margin="12,6,12,2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="ACTIVITY LOG" Foreground="{DynamicResource DynSectionLabel}" FontSize="9"
-                           FontWeight="Bold" VerticalAlignment="Center"/>
-                <Button x:Name="ClearLogBtn" Grid.Column="1" Content="Clear"
-                        Style="{DynamicResource SecondaryButton}" Padding="8,3" FontSize="10"/>
-            </Grid>
-            <ScrollViewer Grid.Row="1" x:Name="LogScroller" VerticalScrollBarVisibility="Auto">
-                <TextBlock x:Name="LogBox"
-                           FontFamily="Cascadia Code, Consolas, Courier New"
-                           FontSize="10" Padding="12,2,12,8" TextWrapping="Wrap"
-                           LineHeight="16" Text="Ready. Detecting hardware and checking current status..."/>
+        <WrapPanel Margin="0,0,0,8">
+            <TextBlock Text="Show:" Foreground="{DynamicResource DynTextMid}" VerticalAlignment="Center" Margin="0,0,6,4"/>
+            <ComboBox x:Name="StatusFilter" MinWidth="135" Margin="0,0,8,4" SelectedIndex="0" AutomationProperties.Name="Filter by configuration status">
+                <ComboBoxItem Content="All statuses" Tag="All"/><ComboBoxItem Content="Not applied" Tag="MISSING"/>
+                <ComboBoxItem Content="Applied" Tag="APPLIED"/><ComboBoxItem Content="Alternative" Tag="ALTERNATIVE"/>
+                <ComboBoxItem Content="Unavailable" Tag="UNAVAILABLE"/><ComboBoxItem Content="Check error" Tag="CHECK ERROR"/>
+            </ComboBox>
+            <ComboBox x:Name="CategoryPicker" Visibility="Collapsed" MinWidth="175" Margin="0,0,8,4" AutomationProperties.Name="Settings category"/>
+            <Button x:Name="ProfilesBtn" Content="Profiles ▾" Style="{DynamicResource SecondaryButton}" Padding="10,4" Margin="0,0,6,4"/>
+        </WrapPanel>
+        <Expander x:Name="ToolsExpander" Header="Tools &amp; backup" Foreground="{DynamicResource DynTextDark}" Margin="0,0,0,8">
+            <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="8">
+                    <Border x:Name="HWInfoBorder"><TextBlock x:Name="HardwareText" Text="Detecting hardware..." TextWrapping="Wrap" Foreground="{DynamicResource DynTextMid}"/></Border>
+                    <WrapPanel Margin="0,8,0,4">
+                        <CheckBox x:Name="CbRestorePoint" Content="Create restore point" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="CbRegBackup" Content="Export registry (.reg)" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="CbAutoReboot" Content="Prompt for reboot" IsChecked="True" Foreground="{DynamicResource DynTextDark}" Margin="0,0,16,6"/>
+                    </WrapPanel>
+                    <WrapPanel>
+                        <Button x:Name="SelectAllBtn" Content="Select all standard" Style="{DynamicResource SecondaryButton}" Padding="8,4" Margin="0,0,6,4"/>
+                        <Button x:Name="SelectMissingBtn" Content="Select missing standard" Style="{DynamicResource SecondaryButton}" Padding="8,4" Margin="0,0,6,4"/>
+                        <Button x:Name="SelectSafeBtn" Content="Select low risk" Style="{DynamicResource SecondaryButton}" Padding="8,4" Margin="0,0,6,4"/>
+                        <Button x:Name="RecheckBtn" Content="Recheck all" Style="{DynamicResource SecondaryButton}" Padding="8,4" Margin="0,0,6,4"/>
+                        <Button x:Name="RevertBtn" Content="Reset managed settings" Style="{DynamicResource SecondaryButton}" Padding="8,4" Margin="0,0,6,4"/>
+                    </WrapPanel>
+                </StackPanel>
             </ScrollViewer>
+        </Expander>
+    </StackPanel>
+    <Grid x:Name="WorkspaceBody" Grid.Row="1">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="185"/><ColumnDefinition Width="*"/><ColumnDefinition Width="0"/></Grid.ColumnDefinitions>
+        <ScrollViewer x:Name="CategoryRail" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,12,0">
+            <StackPanel x:Name="CategoryList"/>
+        </ScrollViewer>
+        <Grid x:Name="ListArea" Grid.Column="1">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <TextBlock x:Name="ListHeading" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5" Foreground="{DynamicResource DynTextDark}"/>
+            <TextBlock Grid.Row="1" Text="Select pending changes. Not applied does not mean a problem." FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8" Foreground="{DynamicResource DynTextMid}"/>
+            <Border x:Name="TweakListBorder" Grid.Row="2" BorderThickness="1" CornerRadius="6" Background="{DynamicResource DynSurface}" BorderBrush="{DynamicResource DynBorder}">
+                <ScrollViewer x:Name="ListScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <ItemsControl x:Name="TweakList"/>
+                        <Expander x:Name="InputExtras" Header="Pointer speed &amp; local update status" Visibility="Collapsed" Foreground="{DynamicResource DynTextDark}" Margin="10">
+                            <ItemsControl x:Name="ExtraList"/>
+                        </Expander>
+                        <TextBlock x:Name="EmptyMessage" Text="No matching settings. Clear search or change the status filter." Visibility="Collapsed" TextWrapping="Wrap" Margin="16" Foreground="{DynamicResource DynTextMid}"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
         </Grid>
+        <Border x:Name="DetailsPane" Grid.Column="2" Visibility="Collapsed" Margin="12,0,0,0" Padding="12" BorderThickness="1" CornerRadius="6" Background="{DynamicResource DynSurface}" BorderBrush="{DynamicResource DynBorder}">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Button x:Name="CloseDetailsBtn" Content="Close details" Style="{DynamicResource SecondaryButton}" HorizontalAlignment="Right" Padding="10,4" Margin="0,0,0,8"/>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="DetailsContent"/></ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+    <Border Grid.Row="2" x:Name="EstimateBar" Padding="0,10,0,8">
+        <StackPanel>
+            <WrapPanel>
+                <TextBlock x:Name="EstimateText" Text="0 selected" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource DynTextDark}" VerticalAlignment="Center" Margin="0,0,12,6"/>
+                <Button x:Name="SelectNoneBtn" Content="Clear selection" Style="{DynamicResource SecondaryButton}" Padding="10,6" Margin="0,0,6,6"/>
+                <Button x:Name="BackupOptionsBtn" Content="Backup options" Style="{DynamicResource SecondaryButton}" Padding="10,6" Margin="0,0,6,6"/>
+                <Button x:Name="ApplyBtn" Content="Review changes (0)" Style="{DynamicResource PrimaryButton}" Padding="16,6" Margin="0,0,0,6" IsEnabled="False"/>
+            </WrapPanel>
+            <TextBlock x:Name="ImpactText" Visibility="Collapsed"/>
+        </StackPanel>
     </Border>
+    <Expander x:Name="LogExpander" Grid.Row="3" Header="Activity log" Foreground="{DynamicResource DynTextDark}">
+        <Border x:Name="LogAreaBorder" Height="110" Background="{DynamicResource DynLogBg}">
+            <DockPanel>
+                <Button x:Name="ClearLogBtn" DockPanel.Dock="Top" Content="Clear log" HorizontalAlignment="Right" Style="{DynamicResource SecondaryButton}" Padding="8,3"/>
+                <ScrollViewer x:Name="LogScroller" VerticalScrollBarVisibility="Auto"><TextBlock x:Name="LogBox" Text="Ready." FontFamily="Consolas" FontSize="11" TextWrapping="Wrap" Padding="8" Foreground="{DynamicResource DynTextMuted}"/></ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Expander>
 </Grid>
 "@
-
-    $win    = Get-PowerToolsWindow
-    $reader = New-Object System.Xml.XmlNodeReader $viewXaml
-    $view   = [Windows.Markup.XamlReader]::Load($reader)
-
-    foreach ($k in @("PrimaryButton","SecondaryButton")) {
-        $view.Resources.Add($k, $win.FindResource($k))
+        $view=[Windows.Markup.XamlReader]::Load([System.Xml.XmlNodeReader]::new($viewXaml))
+        foreach($key in $Global:PTS_Brush.Keys){$view.Resources["Dyn$key"]=$Global:PTS_Brush[$key]}
+        foreach($key in @('PrimaryButton','SecondaryButton')){$view.Resources[$key]=(Get-PowerToolsWindow).FindResource($key)}
+        $bindings=@{
+            hwText='HardwareText'; cbRestore='CbRestorePoint'; cbRegBkp='CbRegBackup'; cbAutoReb='CbAutoReboot'
+            tweakList='TweakList'; estimate='EstimateText'; impactText='ImpactText'; applyBtn='ApplyBtn'
+            recheckBtn='RecheckBtn'; revertBtn='RevertBtn'; selAll='SelectAllBtn'; selMissing='SelectMissingBtn'
+            selSafe='SelectSafeBtn'; selNone='SelectNoneBtn'
+            clearLog='ClearLogBtn'; logBox='LogBox'; logScroller='LogScroller'; search='SearchBox'; statusFilter='StatusFilter'
+            categoryPicker='CategoryPicker'; categoryList='CategoryList'; categoryRail='CategoryRail'; listHeading='ListHeading'
+            listScroller='ListScroller'; emptyMessage='EmptyMessage'; body='WorkspaceBody'; listArea='ListArea'
+            detailsPane='DetailsPane'; detailsContent='DetailsContent'; tools='ToolsExpander'; logExpander='LogExpander'
+            inputExtras='InputExtras'; extraList='ExtraList'
+        }
+        foreach($key in $bindings.Keys){Set-Variable -Name "GO_$key" -Scope Script -Value $view.FindName($bindings[$key])}
+        $script:GO_view=$view; $script:GO_category='Graphics & Gaming'; $script:GO_detailId=$null
+        $script:GO_checkboxes=@{}; $script:GO_cardViews=@{}; $script:GO_detailWindows=@{}
+        $script:GO_categoryButtons=@{}; $script:GO_rendering=$false
+        $menu=[System.Windows.Controls.ContextMenu]::new()
+        $menu.Background=Get-PowerToolsBrush 'Surface';$menu.Foreground=Get-PowerToolsBrush 'TextDark'
+        $script:GO_loadProfBtn=[System.Windows.Controls.MenuItem]::new();$script:GO_loadProfBtn.Header='Load profile'
+        $script:GO_saveProfBtn=[System.Windows.Controls.MenuItem]::new();$script:GO_saveProfBtn.Header='Save profile'
+        [void]$menu.Items.Add($script:GO_loadProfBtn);[void]$menu.Items.Add($script:GO_saveProfBtn)
+        $view.FindName('ProfilesBtn').ContextMenu=$menu
+        $view.FindName('ProfilesBtn').Add_Click({param($sender,$eventArgs) $sender.ContextMenu.PlacementTarget=$sender;$sender.ContextMenu.IsOpen=$true})
+        $script:GO_initText='Ready.'
+        $script:GO_search.Add_TextChanged({GO-ApplyFilter})
+        $script:GO_statusFilter.Add_SelectionChanged({GO-ApplyFilter})
+        $script:GO_categoryPicker.Add_SelectionChanged({
+            if($script:GO_categoryPicker.SelectedItem){GO-SetCategory ([string]$script:GO_categoryPicker.SelectedItem.Tag)}
+        })
+        $view.FindName('ClearSearchBtn').Add_Click({$script:GO_search.Clear(); $script:GO_search.Focus() | Out-Null})
+        $view.FindName('CloseDetailsBtn').Add_Click({
+            $script:GO_detailId=$null;GO-UpdateResponsive;$script:GO_view.UpdateLayout()
+            if($script:GO_returnFocus -and $script:GO_returnFocus.IsVisible){[void]$script:GO_returnFocus.Focus()}
+        })
+        $view.Add_PreviewKeyDown({param($sender,$eventArgs)
+            if($eventArgs.Key -eq 'Escape' -and $null -ne $script:GO_detailId){
+                $script:GO_view.FindName('CloseDetailsBtn').RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent));$eventArgs.Handled=$true
+            }
+        })
+        $view.FindName('BackupOptionsBtn').Add_Click({$script:GO_tools.IsExpanded=-not $script:GO_tools.IsExpanded})
+        $view.Add_SizeChanged({GO-UpdateResponsive})
+        return $view
     }
 
-    $script:GO_hwText          = $view.FindName("HardwareText")
-    $script:GO_hwInfoBorder    = $view.FindName("HWInfoBorder")
-    $script:GO_cbRestore       = $view.FindName("CbRestorePoint")
-    $script:GO_cbRegBkp        = $view.FindName("CbRegBackup")
-    $script:GO_cbAutoReb       = $view.FindName("CbAutoReboot")
-    $script:GO_tweakList       = $view.FindName("TweakList")
-    $script:GO_tweakListBorder = $view.FindName("TweakListBorder")
-    $script:GO_estimateBar     = $view.FindName("EstimateBar")
-    $script:GO_estimate        = $view.FindName("EstimateText")
-    $script:GO_impactText      = $view.FindName("ImpactText")
-    $script:GO_logAreaBorder   = $view.FindName("LogAreaBorder")
-    $script:GO_applyBtn        = $view.FindName("ApplyBtn")
-    $script:GO_recheckBtn      = $view.FindName("RecheckBtn")
-    $script:GO_revertBtn       = $view.FindName("RevertBtn")
-    $script:GO_selAll          = $view.FindName("SelectAllBtn")
-    $script:GO_selMissing      = $view.FindName("SelectMissingBtn")
-    $script:GO_selSafe         = $view.FindName("SelectSafeBtn")
-    $script:GO_selNone         = $view.FindName("SelectNoneBtn")
-    $script:GO_loadProfBtn     = $view.FindName("LoadProfileBtn")
-    $script:GO_saveProfBtn     = $view.FindName("SaveProfileBtn")
-    $script:GO_clearLog        = $view.FindName("ClearLogBtn")
-    $script:GO_logBox          = $view.FindName("LogBox")
-    $script:GO_logScroller     = $view.FindName("LogScroller")
-    $script:GO_initText        = "Ready. Detecting hardware and checking current status..."
-    $script:GO_checkboxes      = @{}
-    $script:GO_detailWindows   = @{}
-    $script:GO_profilePath     = Join-Path $env:LOCALAPPDATA "WindowsAcolyte\GamingOptimizer"
-    if (-not (Test-Path $script:GO_profilePath)) { New-Item -ItemType Directory -Path $script:GO_profilePath -Force | Out-Null }
-
-    # Apply theme-aware colors
-    $script:GO_hwInfoBorder.Background     = $Global:PTS_Brush["Surface"]
-    $script:GO_hwInfoBorder.BorderBrush    = $Global:PTS_Brush["Border"]
-    $script:GO_hwText.Foreground           = $Global:PTS_Brush["TextDark"]
-    $script:GO_tweakListBorder.Background  = $Global:PTS_Brush["Surface"]
-    $script:GO_tweakListBorder.BorderBrush = $Global:PTS_Brush["Border"]
-    $script:GO_estimateBar.Background      = $Global:PTS_Brush["LogBg"]
-    $script:GO_estimateBar.BorderBrush     = $Global:PTS_Brush["LogBorder"]
-    $script:GO_estimate.Foreground         = $Global:PTS_Brush["TextDark"]
-    $script:GO_logAreaBorder.Background    = $Global:PTS_Brush["LogBg"]
-    $script:GO_logAreaBorder.BorderBrush   = $Global:PTS_Brush["LogBorder"]
-    $script:GO_logBox.Foreground           = $Global:PTS_Brush["TextMuted"]
-
+    $view=GO-NewWorkspace
+    $script:GO_profilePath=Join-Path $env:LOCALAPPDATA 'WindowsAcolyte\GamingOptimizer'
+    if(-not(Test-Path -LiteralPath $script:GO_profilePath)){New-Item -ItemType Directory -Path $script:GO_profilePath -Force | Out-Null}
 
     function Global:GO-AddLog {
         param([string]$Msg, [string]$Type = "INFO")
+        if($Type -in @('FAIL','WARN') -and $script:GO_logExpander){$script:GO_logExpander.IsExpanded=$true}
         $ts  = Get-Date -Format "HH:mm:ss"
         $tag = switch ($Type) { "OK"{"[OK]  "} "FAIL"{"[FAIL]"} "WARN"{"[WARN]"} default{"[INFO]"} }
         $entry = "[$ts]  $tag  $Msg`n"
@@ -1212,7 +1176,7 @@ namespace WindowsAcolyteInputV1 {
            Apply={ GO-ApplyInputOption 35 }; Revert={ GO-ResetInputOption 35 } }
     )
 
-    # Notes stay visible next to controls, including consequences of Reset.
+    # Relation notes remain available in details, review and Reset confirmations.
     $notes = @{
         1 = 'Also sets VBS OFF (#2). Reset enables HVCI + VBS and undoes #2.'
         2 = 'Shared with HVCI (#1). Reset enables VBS and invalidates the combined HVCI-OFF setting.'
@@ -1248,8 +1212,13 @@ namespace WindowsAcolyteInputV1 {
     function Global:GO-UpdateApplyState {
         $selected=@($script:GO_tweaks | Where-Object { $cb=$script:GO_checkboxes[$_.Id];$cb -and $cb.IsEnabled -and $cb.IsChecked })
         $script:GO_applyBtn.IsEnabled=$selected.Count -gt 0
-        $scope=if(@($selected | Where-Object { -not $_.Optional }).Count -eq 0){'input/USB stability or comfort '}else{''}
-        $script:GO_estimate.Text=if($selected.Count){"$($selected.Count) ${scope}change(s) selected. No FPS or latency improvement is guaranteed."}else{'No changes selected. Read the descriptions and choose only what you need.'}
+        $script:GO_applyBtn.Content="Review changes ($($selected.Count))"
+        $script:GO_estimate.Text="$($selected.Count) selected"
+        if($script:GO_categoryButtons -and $script:GO_categoryButtons.ContainsKey('Selected')){
+            $script:GO_categoryButtons['Selected'].Content="Selected  ($($selected.Count))"
+            foreach($item in $script:GO_categoryPicker.Items){if($item.Tag -eq 'Selected'){$item.Content="Selected ($($selected.Count))"}}
+        }
+        if(-not $script:GO_rendering){GO-ApplyFilter}
         if($script:GO_impactText){
             $notes=@($selected | Where-Object Note | ForEach-Object {"#$($_.Id): $($_.Note)"})
             $script:GO_impactText.Text=if($notes.Count){$notes -join "`n"}else{'APPLIED means the requested configuration is present, including OFF targets. Restart may still be required.'}
@@ -1324,7 +1293,7 @@ namespace WindowsAcolyteInputV1 {
             'UNAVAILABLE' {'This option cannot be used on the currently detected setup.'}
             default {'The current setting could not be checked. It is unknown, rather than confirmed missing. Apply is blocked.'}
         }
-        $brush=if ($state.Applied) {'Success'} elseif ($status -eq 'CHECK ERROR') {'Danger'} else {'Warning'}
+        $brush=if ($state.Applied) {'Success'} elseif ($status -eq 'CHECK ERROR') {'Danger'} else {'TextMid'}
         return @{Status=$status;Applied=$state.Applied;Message=$explanation;CheckMessage=$state.Message;Brush=$brush}
     }
 
@@ -1368,6 +1337,14 @@ namespace WindowsAcolyteInputV1 {
 
     function Global:GO-ShowDetailWindow {
         param($Tweak)
+        if($script:GO_detailsContent){
+            $script:GO_returnFocus=[System.Windows.Input.Keyboard]::FocusedElement
+            $script:GO_detailId=$Tweak.Id
+            GO-FillDetails $script:GO_detailsContent $Tweak
+            GO-UpdateResponsive
+            $script:GO_view.UpdateLayout();[void]$script:GO_view.FindName('CloseDetailsBtn').Focus()
+            return
+        }
         if ($script:GO_detailWindows.ContainsKey($Tweak.Id) -and $script:GO_detailWindows[$Tweak.Id].IsVisible) {
             $script:GO_detailWindows[$Tweak.Id].Close()
         }
@@ -1375,6 +1352,72 @@ namespace WindowsAcolyteInputV1 {
         $dw.Owner=Get-PowerToolsWindow
         $script:GO_detailWindows[$Tweak.Id]=$dw
         $dw.Show()
+    }
+
+    function Global:GO-FillDetails {
+        param($Panel,$Tweak)
+        $Panel.Children.Clear()
+        $presentation=GO-GetPresentationState $Tweak $script:GO_states
+        [void]$Panel.Children.Add((GO-NewText $Tweak.Label 18 'TextDark' -Bold))
+        GO-AddDescriptionSection $Panel 'CONFIGURATION STATUS' $(if($presentation.Status -eq 'MISSING'){'NOT APPLIED'}else{$presentation.Status})
+        [void]$Panel.Children.Add((GO-NewText $presentation.Message 11 'TextMid'))
+        GO-AddDescriptionSection $Panel 'IN PLAIN ENGLISH' $Tweak.SimpleShort
+        GO-AddDescriptionSection $Panel 'RISK / RESTART' ("$(GO-GetRiskLabel $Tweak.Risk) risk. " + $(if($Tweak.NeedsReboot){'Restart required.'}else{'No restart requested.'}))
+        GO-AddDescriptionSection $Panel 'EXPECTED EFFECT' $Tweak.Impact
+        if($Tweak.Note){GO-AddDescriptionSection $Panel 'BEFORE APPLY / RESET' $Tweak.Note}
+        if($presentation.Status -in @('UNAVAILABLE','CHECK ERROR') -or $Tweak.Id -eq 34){GO-AddDescriptionSection $Panel 'CHECK INFORMATION' $presentation.CheckMessage}
+        foreach($section in @(
+            @{Title='More explanation';Text=$Tweak.SimpleLong},
+            @{Title='Technical details';Text=($Tweak.ShortDesc+"`n`n"+$Tweak.LongDesc)}
+        )){
+            $expander=[System.Windows.Controls.Expander]::new();$expander.Header=$section.Title
+            $expander.Foreground=Get-PowerToolsBrush 'TextDark';$expander.Margin='0,12,0,0'
+            $expander.Content=GO-NewText $section.Text 12 'TextMid'
+            [void]$Panel.Children.Add($expander)
+        }
+    }
+
+    function Global:GO-CreateReviewWindow {
+        param([array]$Selected)
+        $dialog=[System.Windows.Window]::new();$dialog.Title='Review pending changes'
+        $dialog.Width=690;$dialog.Height=650;$dialog.MinWidth=420;$dialog.MinHeight=350
+        $dialog.WindowStartupLocation='CenterOwner';$dialog.FontFamily='Segoe UI'
+        $dialog.Background=Get-PowerToolsBrush 'Background'
+        $layout=[System.Windows.Controls.Grid]::new();$layout.Margin=18
+        foreach($height in @('Auto','*','Auto')){$row=[System.Windows.Controls.RowDefinition]::new();$row.Height=$height;[void]$layout.RowDefinitions.Add($row)}
+        $summary=[System.Windows.Controls.StackPanel]::new()
+        [void]$summary.Children.Add((GO-NewText ("Review $($Selected.Count) changes") 20 'TextDark' -Bold))
+        [void]$summary.Children.Add((GO-NewText 'Nothing has been changed yet. No FPS or latency improvement is guaranteed.' 12 'TextMid'))
+        $backup="Restore point: $([bool]$script:GO_cbRestore.IsChecked) · Registry export: $([bool]$script:GO_cbRegBkp.IsChecked) · Reboot prompt: $([bool]$script:GO_cbAutoReb.IsChecked)"
+        GO-AddDescriptionSection $summary 'BACKUP OPTIONS' $backup
+        if(-not $script:GO_cbRestore.IsChecked -and -not $script:GO_cbRegBkp.IsChecked){
+            [void]$summary.Children.Add((GO-NewText 'Both optional system backups are disabled. Original states for optional input/USB changes are still saved separately.' 12 'Warning' -Bold))
+        }
+        [void]$layout.Children.Add($summary)
+        $scroll=[System.Windows.Controls.ScrollViewer]::new();$scroll.VerticalScrollBarVisibility='Auto';$scroll.HorizontalScrollBarVisibility='Disabled';$scroll.Margin='0,12,0,12'
+        $panel=[System.Windows.Controls.StackPanel]::new()
+        foreach($t in $Selected){
+            GO-AddDescriptionSection $panel ("#$($t.Id) · $($t.Label)") ("Risk: $(GO-GetRiskLabel $t.Risk) · Restart: $([bool]$t.NeedsReboot)" + $(if($t.Optional){' · Manual opt-in'}))
+            [void]$panel.Children.Add((GO-NewText $t.SimpleShort 12))
+            [void]$panel.Children.Add((GO-NewText $t.Impact 11 'TextMid'))
+            if($t.Note){[void]$panel.Children.Add((GO-NewText $t.Note 11 'Warning'))}
+        }
+        $scroll.Content=$panel;[System.Windows.Controls.Grid]::SetRow($scroll,1);[void]$layout.Children.Add($scroll)
+        $buttons=[System.Windows.Controls.WrapPanel]::new();$buttons.HorizontalAlignment='Right'
+        $cancel=[System.Windows.Controls.Button]::new();$cancel.Content='Back';$cancel.IsCancel=$true;$cancel.Padding='16,7';$cancel.Margin='0,0,8,0';$cancel.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+        $apply=[System.Windows.Controls.Button]::new();$apply.Content='Apply reviewed changes';$apply.Padding='16,7';$apply.Style=(Get-PowerToolsWindow).FindResource('PrimaryButton')
+        $captured=$dialog;$apply.Add_Click({$captured.DialogResult=$true}.GetNewClosure())
+        [void]$buttons.Children.Add($cancel);[void]$buttons.Children.Add($apply)
+        [System.Windows.Controls.Grid]::SetRow($buttons,2);[void]$layout.Children.Add($buttons)
+        $dialog.Content=$layout
+        return $dialog
+    }
+
+    function Global:GO-ConfirmSelection {
+        param([array]$Selected)
+        $dialog=GO-CreateReviewWindow $Selected
+        $dialog.Owner=Get-PowerToolsWindow
+        return $dialog.ShowDialog() -eq $true
     }
 
 
@@ -1464,89 +1507,183 @@ namespace WindowsAcolyteInputV1 {
             catch { GO-AddLog "Could not open Windows Update: $_" 'FAIL' }
         })
         $panel.Children.Add($buttons) | Out-Null
-        $script:GO_tweakList.Items.Add($panel) | Out-Null
+        $script:GO_extraList.Items.Add($panel) | Out-Null
+    }
+
+    function Global:GO-GetCategory {
+        param($Tweak)
+        switch($Tweak.Group){
+            'Graphics / Gaming' {'Graphics & Gaming'}
+            'Power / CPU' {'Power & CPU'}
+            'Input & USB Stability' {'Input & USB'}
+            'UI / Visual' {'Windows & Lighting'}
+            'Dynamic Lighting' {'Windows & Lighting'}
+            'Filesystem / Storage' {'Storage'}
+            'Privacy / Telemetry' {'Privacy'}
+            default {$Tweak.Group}
+        }
+    }
+
+    function Global:GO-GetRowTitle {
+        param($Tweak)
+        $titles=@{
+            1='Memory integrity → Off';2='VBS → Off';3='Game recording → Off';4='CPU attack mitigations → Off'
+            5='Power plan → Ultimate Performance';6='Power throttling → Off';7='System responsiveness → 10'
+            8='Network throttling → Off';9='CPU priority → Competitive (36)';10='CPU priority → AAA (24)';11='Startup delay → Off'
+            12='GPU scheduling → On';13='Windows Game Mode → On';14='Fullscreen → Legacy flags';15='Games task scheduling → High'
+            16='Nagle algorithm → Off';17='TCP → Advanced preset';18='Transparency → Off';19='Window animations → Off'
+            20='Menu delay → 0';21='Taskbar animations → Off';22='NTFS last-access updates → Off';23='NTFS 8.3 names → Off'
+            24='NVMe feature override → Experimental';25='Paging executive → Disabled';26='Telemetry → Restricted'
+            27='Search history → Off';28='Share across devices → Off';29='Dynamic lighting → Off'
+            30='USB suspend override → Experimental';31='USB root-hub power-off → Prevent'
+            32='Filter Keys & shortcut → Off';33='Sticky Keys & shortcut → Off';34='USB selective suspend → Off (AC/DC)'
+            35='Pointer acceleration → Off'
+        }
+        if($titles.ContainsKey([int]$Tweak.Id)){return $titles[[int]$Tweak.Id]}
+        return $Tweak.Label
+    }
+
+    function Global:GO-SetCategory {
+        param([string]$Category)
+        if($script:GO_category -eq $Category -and (-not $script:GO_search -or -not $script:GO_search.Text)){return}
+        $script:GO_category=$Category
+        if($script:GO_categoryPicker){
+            foreach($item in $script:GO_categoryPicker.Items){if($item.Tag -eq $Category){$script:GO_categoryPicker.SelectedItem=$item;break}}
+        }
+        if($script:GO_search){$script:GO_search.Clear()}
+        GO-ApplyFilter
+        if($script:GO_listScroller){$script:GO_listScroller.ScrollToTop()}
+    }
+
+    function Global:GO-ApplyFilter {
+        if(-not $script:GO_search -or -not $script:GO_cardViews){return}
+        $query=$script:GO_search.Text.Trim()
+        $filter=if($script:GO_statusFilter.SelectedItem){[string]$script:GO_statusFilter.SelectedItem.Tag}else{'All'}
+        $count=0
+        foreach($t in $script:GO_tweaks){
+            $card=$script:GO_cardViews[$t.Id];if(-not $card){continue}
+            $category=GO-GetCategory $t
+            $categoryMatch=$query -or $script:GO_category -eq 'All settings' -or $script:GO_category -eq $category -or
+                ($script:GO_category -eq 'Selected' -and $script:GO_checkboxes[$t.Id].IsChecked)
+            $haystack="$(GO-GetRowTitle $t) $($t.Label) $category $($t.ShortDesc) $($t.LongDesc) $($t.SimpleShort)"
+            $searchMatch=-not $query -or $haystack.IndexOf($query,[StringComparison]::OrdinalIgnoreCase) -ge 0
+            $statusMatch=$filter -eq 'All' -or (GO-GetPresentationState $t $script:GO_states).Status -eq $filter
+            $show=$categoryMatch -and $searchMatch -and $statusMatch
+            $card.Visibility=if($show){'Visible'}else{'Collapsed'}
+            if($show){$count++}
+        }
+        if($script:GO_listHeading){
+            $heading=if($query){'Search all settings'}else{$script:GO_category}
+            $script:GO_listHeading.Text="$heading  ·  $count settings"
+            $script:GO_emptyMessage.Visibility=if($count){'Collapsed'}else{'Visible'}
+            $script:GO_inputExtras.Visibility=if(-not $query -and $filter -eq 'All' -and $script:GO_category -eq 'Input & USB'){'Visible'}else{'Collapsed'}
+        }
+        foreach($key in $script:GO_categoryButtons.Keys){
+            $button=$script:GO_categoryButtons[$key]
+            $button.BorderThickness=if($key -eq $script:GO_category -and -not $query){'3,1,1,1'}else{'1'}
+            $button.BorderBrush=Get-PowerToolsBrush $(if($key -eq $script:GO_category -and -not $query){'Accent'}else{'Border'})
+        }
+    }
+
+    function Global:GO-UpdateResponsive {
+        if(-not $script:GO_view){return}
+        $wide=$script:GO_view.ActualWidth -ge 760
+        $side=$script:GO_view.ActualWidth -ge 1040
+        $open=$null -ne $script:GO_detailId
+        $script:GO_body.ColumnDefinitions[0].Width=if($wide -and (-not $open -or $side)){185}else{0}
+        $script:GO_categoryRail.Visibility=if($wide -and (-not $open -or $side)){'Visible'}else{'Collapsed'}
+        $script:GO_categoryPicker.Visibility=if($wide){'Collapsed'}else{'Visible'}
+        $script:GO_listArea.Visibility=if($open -and -not $side){'Collapsed'}else{'Visible'}
+        $script:GO_body.ColumnDefinitions[1].Width=if($open -and -not $side){0}else{'*'}
+        $script:GO_body.ColumnDefinitions[2].Width=if(-not $open){0}elseif($side){340}else{'*'}
+        $script:GO_detailsPane.Visibility=if($open){'Visible'}else{'Collapsed'}
+        $script:GO_detailsPane.Margin=if($side){'12,0,0,0'}else{'0'}
     }
 
     function Global:GO-RenderList {
         param($States)
-        $script:GO_states=if ($States) {$States} else {GO-GetStateSnapshot}
-        $script:GO_tweakList.Items.Clear();$script:GO_checkboxes.Clear();$script:GO_cardViews=@{};$lastGroup=''
-        $guide=[System.Windows.Controls.Border]::new();$guide.Padding=14;$guide.Margin='8,4,8,10';$guide.CornerRadius=8
-        $guide.Background=Get-PowerToolsBrush 'AccentSoft';$guide.BorderBrush=Get-PowerToolsBrush 'Accent';$guide.BorderThickness=1
-        $guidePanel=[System.Windows.Controls.StackPanel]::new()
-        [void]$guidePanel.Children.Add((GO-NewText 'HOW TO READ THIS PAGE' 12 'TextDark' -Bold))
-        [void]$guidePanel.Children.Add((GO-NewText 'APPLIED = the requested setting is present (including OFF settings). MISSING = that target is not present, not necessarily a problem. ALTERNATIVE = another exclusive preset is active. UNAVAILABLE / CHECK ERROR = cannot apply or cannot verify.' 12))
-        $guideNote=GO-NewText 'Checkboxes select pending changes; they are not on/off switches. Risk describes possible downsides, not FPS benefit. Low risk is not risk-free. Restart labels matter even when a setting says APPLIED.' 11 'TextMid';$guideNote.Margin='0,8,0,0';[void]$guidePanel.Children.Add($guideNote)
-        $guide.Child=$guidePanel;[void]$script:GO_tweakList.Items.Add($guide)
-        foreach ($t in $script:GO_tweaks) {
-            if ($t.Group -ne $lastGroup) {
-                $heading=GO-NewText $t.Group.ToUpper() 15 'Primary' -Bold;$heading.Margin='8,18,8,6'
-                [void]$script:GO_tweakList.Items.Add($heading);$lastGroup=$t.Group
-            }
-            $state=$script:GO_states[$t.Id]
-            $presentation=GO-GetPresentationState $t $script:GO_states
-            $isOk=$state.Applied
-            $card=[System.Windows.Controls.Border]::new();$card.Padding=14;$card.Margin='8,4,8,6';$card.CornerRadius=8;$card.BorderThickness=1
-            $card.Background=Get-PowerToolsBrush 'Surface';$card.BorderBrush=Get-PowerToolsBrush 'Border';$card.Tag=$t.Id
-            $content=[System.Windows.Controls.StackPanel]::new()
-            $header=[System.Windows.Controls.Grid]::new()
-            foreach ($width in @('112','26','*')) {$col=[System.Windows.Controls.ColumnDefinition]::new();$col.Width=$width;[void]$header.ColumnDefinitions.Add($col)}
-            $badge=[System.Windows.Controls.Border]::new();$badge.Padding='7,5';$badge.Margin='0,0,10,0';$badge.CornerRadius=4;$badge.BorderThickness='4,1,1,1'
-            $badge.VerticalAlignment='Top';$badge.BorderBrush=Get-PowerToolsBrush $presentation.Brush
-            $badge.ToolTip=$presentation.Message
-            $status=GO-NewText $presentation.Status 10 'TextDark' -Bold;$status.Name='TweakStatus';$badge.Child=$status
-            [System.Windows.Controls.Grid]::SetColumn($badge,0);[void]$header.Children.Add($badge)
-            $cb=[System.Windows.Controls.CheckBox]::new();$cb.Tag=$t.Id;$cb.Margin='0,5,6,0';$cb.VerticalAlignment='Top'
-            $cb.ToolTip='Select this target for Apply Selected. This checkbox does not show the current Windows on/off state.'
-            [System.Windows.Automation.AutomationProperties]::SetName($cb,('Select change: ' + $t.Label))
-            if ($isOk -or $state.Status -in @('UNAVAILABLE','CHECK ERROR')) {$cb.IsEnabled=$false}
-            else {
-                $capturedId=$t.Id
-                $cb.Add_Checked({param($s,$e) GO-HandleMutex -ChangedId $capturedId -IsChecked $true;GO-UpdateApplyState}.GetNewClosure())
+        $pending=@($script:GO_checkboxes.Keys | Where-Object {$script:GO_checkboxes[$_].IsEnabled -and $script:GO_checkboxes[$_].IsChecked})
+        $script:GO_rendering=$true
+        try {
+            $script:GO_states=if($States){$States}else{GO-GetStateSnapshot}
+            $script:GO_tweakList.Items.Clear();$script:GO_checkboxes.Clear();$script:GO_cardViews=@{}
+            foreach($t in $script:GO_tweaks){
+                $state=$script:GO_states[$t.Id];$presentation=GO-GetPresentationState $t $script:GO_states
+                $card=[System.Windows.Controls.Border]::new();$card.Padding='10,9';$card.BorderThickness='0,0,0,1'
+                $card.BorderBrush=Get-PowerToolsBrush 'Divider';$card.Tag=$t.Id
+                $content=[System.Windows.Controls.StackPanel]::new()
+                $header=[System.Windows.Controls.Grid]::new()
+                foreach($width in @('106','28','*','Auto')){$col=[System.Windows.Controls.ColumnDefinition]::new();$col.Width=$width;[void]$header.ColumnDefinitions.Add($col)}
+                $badge=[System.Windows.Controls.Border]::new();$badge.Padding='3';$badge.VerticalAlignment='Top'
+                $status=GO-NewText $(if($presentation.Status -eq 'MISSING'){'NOT APPLIED'}else{$presentation.Status}) 10 $presentation.Brush -Bold
+                $status.Name='TweakStatus';$badge.Child=$status;$badge.ToolTip=$presentation.Message
+                [void]$header.Children.Add($badge)
+                $cb=[System.Windows.Controls.CheckBox]::new();$cb.Tag=$t.Id;$cb.Margin='2,2,4,0';$cb.VerticalAlignment='Top'
+                $cb.ToolTip='Select a pending change; this is not the current on/off state.'
+                [System.Windows.Automation.AutomationProperties]::SetName($cb,('Select change: '+$t.Label))
+                if($state.Applied -or $state.Status -in @('UNAVAILABLE','CHECK ERROR')){$cb.IsEnabled=$false}
+                $cb.IsChecked=$cb.IsEnabled -and $t.Id -in $pending
+                $id=$t.Id
+                $cb.Add_Checked({GO-HandleMutex $id $true;GO-UpdateApplyState}.GetNewClosure())
                 $cb.Add_Unchecked({GO-UpdateApplyState})
+                [System.Windows.Controls.Grid]::SetColumn($cb,1);[void]$header.Children.Add($cb)
+                $title=GO-NewText (GO-GetRowTitle $t) 12 'TextDark' -Bold
+                [System.Windows.Controls.Grid]::SetColumn($title,2);[void]$header.Children.Add($title)
+                [void]$content.Children.Add($header)
+                $metadata=[System.Windows.Controls.WrapPanel]::new();$metadata.Margin='134,5,0,0'
+                foreach($label in @("Risk: $(GO-GetRiskLabel $t.Risk)",$(if($t.NeedsReboot){'Restart required'}),$(if($t.Optional){'Manual opt-in'}))){
+                    if(-not $label){continue}
+                    $item=GO-NewText $label 10 $(if($label -like 'Risk:*' -and $t.Risk -gt 0){if($t.Risk -eq 2){'Danger'}else{'Warning'}}else{'TextMid'})
+                    $item.Margin='0,0,12,3';[void]$metadata.Children.Add($item)
+                }
+                [void]$content.Children.Add($metadata)
+                if($state.Status -in @('UNAVAILABLE','CHECK ERROR')){
+                    $message=GO-NewText $state.Message 11 'TextMid';$message.Margin='134,2,0,5';[void]$content.Children.Add($message)
+                }
+                $actions=[System.Windows.Controls.StackPanel]::new();$actions.Margin='8,0,0,0';$actions.VerticalAlignment='Top'
+                $details=[System.Windows.Controls.Button]::new();$details.Content='Details';$details.Padding='8,3';$details.Margin='0,0,6,0'
+                $details.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+                $tweak=$t;$details.Add_Click({GO-ShowDetailWindow $tweak}.GetNewClosure());[void]$actions.Children.Add($details)
+                $backup=$null;if($t.Optional){try{$backup=GO-ReadUsbBackup $t.Id}catch{}}
+                if($state.Applied -or $null -ne $backup){
+                    $reset=[System.Windows.Controls.Button]::new();$reset.Content='Reset';$reset.Padding='8,3';$reset.Margin='0,4,6,0';$reset.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+                    if($t.Optional -and -not $backup){$reset.IsEnabled=$false;$reset.ToolTip='No saved original state; pre-existing settings will not be reset.'}
+                    $capturedTweak3=$t
+                    $reset.Add_Click({
+                        $resetInfo=if($capturedTweak3.Optional){'Restore the saved original input/USB configuration. Disconnected hubs or missing plans keep their baseline for a later retry. Accessibility Reset may re-enable previously active assistive features.'}else{'Reset may also affect settings sharing the same values. Original pre-app values are not restored.'}
+                        $r=[System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)'?`n`n$($capturedTweak3.Note)`n`n$resetInfo",'Confirm Reset',[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
+                        if($r -eq [System.Windows.MessageBoxResult]::Yes){
+                            $before=GO-GetStateSnapshot
+                            try{GO-ResetTweak $capturedTweak3;GO-AddLog "Reset: $($capturedTweak3.Label)" 'OK'}catch{GO-AddLog "Reset failed: $($capturedTweak3.Label) - $_" 'FAIL'}
+                            $after=GO-GetStateSnapshot;GO-LogStateChanges $before $after "Reset '$($capturedTweak3.Label)'";GO-RenderList -States $after
+                        }
+                    }.GetNewClosure())
+                    [void]$actions.Children.Add($reset)
+                }
+                [System.Windows.Controls.Grid]::SetColumn($actions,3);[void]$header.Children.Add($actions);$card.Child=$content
+                [void]$script:GO_tweakList.Items.Add($card);$script:GO_cardViews[$t.Id]=$card;$script:GO_checkboxes[$t.Id]=$cb
             }
-            [System.Windows.Controls.Grid]::SetColumn($cb,1);[void]$header.Children.Add($cb)
-            $title=GO-NewText $t.Label 14 'TextDark' -Bold;$title.Cursor=[System.Windows.Input.Cursors]::Hand;$title.ToolTip='Open simple and technical details'
-            $capturedTweak=$t;$title.Add_MouseLeftButtonUp({param($s,$e) GO-ShowDetailWindow $capturedTweak;$e.Handled=$true}.GetNewClosure())
-            [System.Windows.Controls.Grid]::SetColumn($title,2);[void]$header.Children.Add($title)
-            [void]$content.Children.Add($header)
-            $metadata=[System.Windows.Controls.WrapPanel]::new();$metadata.Margin='0,9,0,0'
-            foreach ($value in @("RISK: $(GO-GetRiskLabel $t.Risk)", "RESTART: $(if($t.NeedsReboot){'Required'}else{'Not requested'})", "SELECTION: $(if($t.Optional){'Manual opt-in'}else{'Standard'})")) {
-                $item=GO-NewText $value 10 'TextDark' -Bold;$item.Margin='0,0,18,4';[void]$metadata.Children.Add($item)
+        } finally {$script:GO_rendering=$false}
+        if($script:GO_categoryList -and -not $script:GO_categoryList.Children.Count){
+            foreach($category in @('All settings','Graphics & Gaming','Power & CPU','Input & USB','Network','Windows & Lighting','Storage','Privacy','Security & Recording','Selected')){
+                $count=if($category -eq 'All settings'){$script:GO_tweaks.Count}elseif($category -eq 'Selected'){0}else{@($script:GO_tweaks | Where-Object {(GO-GetCategory $_) -eq $category}).Count}
+                $button=[System.Windows.Controls.Button]::new();$button.Content="$category  ($count)";$button.Tag=$category
+                $button.HorizontalContentAlignment='Left';$button.Padding='8,9';$button.Margin='0,0,0,5';$button.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
+                $key=$category;$button.Add_Click({GO-SetCategory $key}.GetNewClosure())
+                $script:GO_categoryButtons[$category]=$button;[void]$script:GO_categoryList.Children.Add($button)
+                $item=[System.Windows.Controls.ComboBoxItem]::new();$item.Content="$category ($count)";$item.Tag=$category
+                [void]$script:GO_categoryPicker.Items.Add($item)
+                if($category -eq $script:GO_category){$script:GO_categoryPicker.SelectedItem=$item}
             }
-            [void]$content.Children.Add($metadata)
-            GO-AddDescriptionSection $content 'IN PLAIN ENGLISH' $(if($t.SimpleShort){$t.SimpleShort}else{$t.ShortDesc})
-            GO-AddDescriptionSection $content 'TECHNICAL SUMMARY' $t.ShortDesc
-            GO-AddDescriptionSection $content 'IMPACT / EXPECTED EFFECT' $(if($t.Impact){$t.Impact}else{'Effect depends on your system; no measured improvement is established here.'})
-            $noteText=if($state.Status -in @('UNAVAILABLE','CHECK ERROR') -or ($t.Id -eq 34 -and $t.Optional)){$state.Message}else{$t.Note}
-            if ($noteText) {GO-AddDescriptionSection $content 'IMPORTANT BEFORE APPLY / RESET' $noteText}
-            $actions=[System.Windows.Controls.WrapPanel]::new();$actions.Margin='0,12,0,0'
-            $details=[System.Windows.Controls.Button]::new();$details.Content='Details';$details.Padding='12,5';$details.Margin='0,0,8,0';$details.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
-            $capturedTweak2=$t;$details.Add_Click({GO-ShowDetailWindow $capturedTweak2}.GetNewClosure());[void]$actions.Children.Add($details)
-            $usbBackup=$null
-            if($t.Optional){try{$usbBackup=GO-ReadUsbBackup $t.Id}catch{}}
-            if($isOk -or $null -ne $usbBackup){
-                $reset=[System.Windows.Controls.Button]::new();$reset.Content='Reset';$reset.Padding='12,5';$reset.Style=(Get-PowerToolsWindow).FindResource('SecondaryButton')
-                if($t.Optional -and -not $usbBackup){$reset.IsEnabled=$false;$reset.ToolTip='No original state saved by WindowsAcolyte; this pre-existing setting will not be reset.'}
-                $capturedTweak3=$t
-                $reset.Add_Click({
-                    $resetInfo=if($capturedTweak3.Optional){'Restore the saved original input/USB configuration. Disconnected hubs or missing plans keep their baseline for a later retry. Accessibility Reset may re-enable previously active assistive features.'}else{'Reset may also affect settings sharing the same values. Original pre-app values are not restored.'}
-                    $r=[System.Windows.MessageBox]::Show("Reset '$($capturedTweak3.Label)'?`n`n$($capturedTweak3.Note)`n`n$resetInfo",'Confirm Reset',[System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Question)
-                    if($r -eq [System.Windows.MessageBoxResult]::Yes){
-                        $before=GO-GetStateSnapshot
-                        try{GO-ResetTweak $capturedTweak3;GO-AddLog "Reset: $($capturedTweak3.Label)" 'OK'}catch{GO-AddLog "Reset failed: $($capturedTweak3.Label) - $_" 'FAIL'}
-                        $after=GO-GetStateSnapshot;GO-LogStateChanges $before $after "Reset '$($capturedTweak3.Label)'";GO-RenderList -States $after
-                    }
-                }.GetNewClosure())
-                [void]$actions.Children.Add($reset)
-            }
-            [void]$content.Children.Add($actions);$card.Child=$content
-            [void]$script:GO_tweakList.Items.Add($card);$script:GO_cardViews[$t.Id]=$card;$script:GO_checkboxes[$t.Id]=$cb
         }
-        if($script:GO_tweaks.Id -contains 35){GO-RenderInputExtras}
+        if($script:GO_extraList -and $script:GO_tweaks.Id -contains 35){$script:GO_extraList.Items.Clear();GO-RenderInputExtras}
+        if($script:GO_detailId){
+            $detailTweak=$script:GO_tweaks | Where-Object Id -eq $script:GO_detailId
+            if($detailTweak){GO-FillDetails $script:GO_detailsContent $detailTweak}
+        }
         GO-UpdateApplyState
+        GO-ApplyFilter
     }
-
 
     function Global:GO-ApplyRecommendedPreselection {
         GO-SelectTweaks -Mode Recommended
@@ -1679,8 +1816,7 @@ namespace WindowsAcolyteInputV1 {
     }
 
     GO-RenderList
-    GO-ApplyRecommendedPreselection
-    GO-AddLog "Status check complete. Pre-selection applied based on detected hardware - please verify before applying." "INFO"
+    GO-AddLog "Status check complete. Choose a category or search all 35 settings. No changes are preselected." "INFO"
 
     $script:GO_selAll.Add_Click({ GO-SelectTweaks All })
     $script:GO_selMissing.Add_Click({ GO-SelectTweaks Missing })
@@ -1699,6 +1835,7 @@ namespace WindowsAcolyteInputV1 {
             GO-AddLog "Select only one Win32PrioritySeparation preset before applying." "FAIL"
             return
         }
+        if(-not (GO-ConfirmSelection @($selected))){return}
         $accessibility = @($selected | Where-Object { $_.Id -in @(32,33) })
         if ($accessibility.Count) {
             $names = ($accessibility.Label) -join "`n- "

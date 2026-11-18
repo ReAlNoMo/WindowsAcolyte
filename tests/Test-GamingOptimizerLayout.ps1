@@ -1,9 +1,10 @@
-# PowerShell 7 -STA. Render real educational views with synthetic read-only state.
+# PowerShell 7 -STA. Real WPF workspace with synthetic states; no system changes.
 param([string]$PreviewDirectory)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName PresentationFramework
 $root=Split-Path $PSScriptRoot -Parent
-function Assert-Layout($Condition,$Message){if(-not $Condition){throw $Message};"PASS: $Message"}
+$script:checks=0
+function Assert-Layout($Condition,$Message){if(-not $Condition){throw $Message};$script:checks++;"PASS: $Message"}
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $root 'modules/05-GamingOptimizer.ps1'),[ref]$tokens,[ref]$errors)
 if($errors.Count){throw ($errors.Message -join '; ')}
@@ -14,72 +15,106 @@ $assignment=$ast.Find({param($n)$n -is [Management.Automation.Language.Assignmen
 $next=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Global:GO-GetRiskColor'},$true)
 . ([scriptblock]::Create($ast.Extent.Text.Substring($assignment.Extent.StartOffset,$next.Extent.StartOffset-$assignment.Extent.StartOffset)))
 function Global:GO-ReadUsbBackup {param($Id) return $null}
-function Global:GO-RenderInputExtras {}
-function Global:GO-ShowDetailWindow {param($Tweak) $script:openedDetailId=$Tweak.Id}
+function Global:GO-RenderInputExtras {[void]$script:GO_extraList.Items.Add('Synthetic pointer/update fixture')}
 function Global:Get-PowerToolsBrush {param($Name) return $Global:PTS_Brush[$Name]}
 function Global:Get-PowerToolsWindow {return $script:hostWindow}
 function Get-LayoutTexts($Element){
-    if($Element -is [System.Windows.Controls.TextBlock]){$Element.Text}
-    $count=[System.Windows.Media.VisualTreeHelper]::GetChildrenCount($Element)
-    for($i=0;$i -lt $count;$i++){Get-LayoutTexts ([System.Windows.Media.VisualTreeHelper]::GetChild($Element,$i))}
+    if($Element -is [Windows.Controls.TextBlock]){$Element.Text}
+    $count=[Windows.Media.VisualTreeHelper]::GetChildrenCount($Element)
+    for($i=0;$i -lt $count;$i++){Get-LayoutTexts ([Windows.Media.VisualTreeHelper]::GetChild($Element,$i))}
 }
 function Save-LayoutPreview($Element,[int]$Width,[int]$Height,[string]$Path){
-    $bitmap=[System.Windows.Media.Imaging.RenderTargetBitmap]::new($Width,$Height,96,96,[System.Windows.Media.PixelFormats]::Pbgra32)
+    $bitmap=[Windows.Media.Imaging.RenderTargetBitmap]::new($Width,$Height,96,96,[Windows.Media.PixelFormats]::Pbgra32)
     $bitmap.Render($Element)
-    $encoder=[System.Windows.Media.Imaging.PngBitmapEncoder]::new();$encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
+    $encoder=[Windows.Media.Imaging.PngBitmapEncoder]::new();$encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
     $stream=[IO.File]::Create($Path);try{$encoder.Save($stream)}finally{$stream.Dispose()}
+}
+function Get-VisibleIds {@($script:GO_tweaks | Where-Object {$script:GO_cardViews[$_.Id].Visibility -eq 'Visible'} | ForEach-Object Id)}
+function Arrange-Workspace($View,[int]$Width,[int]$Height){
+    $View.Measure([Windows.Size]::new($Width,$Height));$View.Arrange([Windows.Rect]::new(0,0,$Width,$Height));$View.UpdateLayout()
+    GO-UpdateResponsive;$View.UpdateLayout()
 }
 $shell=[Management.Automation.Language.Parser]::ParseFile((Join-Path $root 'WindowsAcolyte.ps1'),[ref]$tokens,[ref]$errors)
 $xamlAssignment=$shell.Find({param($n)$n -is [Management.Automation.Language.AssignmentStatementAst] -and $n.Left.Extent.Text -match '^\[xml\]\$xaml$'},$true)
 . ([scriptblock]::Create($xamlAssignment.Extent.Text))
 $script:hostWindow=[Windows.Markup.XamlReader]::Load([System.Xml.XmlNodeReader]::new($xaml))
-$script:GO_checkboxes=@{};$script:GO_applyBtn=[System.Windows.Controls.Button]::new();$script:GO_estimate=[System.Windows.Controls.TextBlock]::new();$script:GO_impactText=[System.Windows.Controls.TextBlock]::new()
 $states=@{}
 foreach($t in $script:GO_tweaks){
-    Assert-Layout ($t.SimpleShort -and $t.SimpleLong -and $t.ShortDesc -and $t.LongDesc -and $t.Impact -and $t.SimpleShort -ne $t.ShortDesc) "Separate simple/technical summaries and details: #$($t.Id)"
+    Assert-Layout ($t.SimpleShort -and $t.SimpleLong -and $t.ShortDesc -and $t.LongDesc -and $t.Impact) "Explanations retained: #$($t.Id)"
     $status=if($t.Id -in @(1,3,10,13,32)){'APPLIED'}elseif($t.Id -eq 24){'CHECK ERROR'}elseif($t.Id -eq 31){'UNAVAILABLE'}else{'MISSING'}
-    $states[$t.Id]=@{Status=$status;Applied=$status -eq 'APPLIED';Message='Synthetic status for layout verification.'}
+    $states[$t.Id]=@{Status=$status;Applied=$status -eq 'APPLIED';Message='Synthetic check information.'}
 }
 foreach($theme in @('PTS_Theme','PTS_ThemeDark')){
     $paletteAst=$shell.Find({param($n)$n -is [Management.Automation.Language.AssignmentStatementAst] -and $n.Left.Extent.Text -eq ('$Global:'+$theme)},$true)
     $palette=& ([scriptblock]::Create($paletteAst.Right.Extent.Text))
-    $Global:PTS_Brush=@{};foreach($key in $palette.Keys){$Global:PTS_Brush[$key]=[System.Windows.Media.BrushConverter]::new().ConvertFromString($palette[$key])}
-    foreach($width in @(540,900)){
-        $script:GO_tweakList=[System.Windows.Controls.ItemsControl]::new();$script:GO_tweakList.Width=$width
-        $script:GO_tweakList.Background=Get-PowerToolsBrush 'Background'
-        foreach($key in $Global:PTS_Brush.Keys){$script:GO_tweakList.Resources["Dyn$key"]=$Global:PTS_Brush[$key]}
-        [System.Windows.Documents.TextElement]::SetFontFamily($script:GO_tweakList,[System.Windows.Media.FontFamily]::new('Segoe UI'))
-        GO-RenderList -States $states
-        $script:GO_tweakList.Measure([System.Windows.Size]::new($width,[double]::PositiveInfinity))
-        $height=$script:GO_tweakList.DesiredSize.Height
-        $script:GO_tweakList.Arrange([System.Windows.Rect]::new(0,0,$width,$height));$script:GO_tweakList.UpdateLayout()
-        Assert-Layout ($script:GO_cardViews.Count -eq 35) "All 35 cards rendered: $theme / $width"
+    $Global:PTS_Brush=@{};foreach($key in $palette.Keys){$Global:PTS_Brush[$key]=[Windows.Media.BrushConverter]::new().ConvertFromString($palette[$key])}
+    foreach($width in @(540,900,1280)){
+        $view=GO-NewWorkspace;GO-RenderList -States $states;Arrange-Workspace $view $width 700
+        Assert-Layout ($script:GO_cardViews.Count -eq 35 -and $script:GO_categoryButtons.Count -eq 10) "35 settings, eight categories plus All/Selected: $theme/$width"
+        Assert-Layout (((Get-VisibleIds) -join ',') -eq '12,13,14,15') "Default shows four graphics settings: $theme/$width"
+        Assert-Layout (-not $script:GO_applyBtn.IsEnabled) "No automatic pending changes: $theme/$width"
+        Assert-Layout ($script:GO_detailsPane.Visibility -eq 'Collapsed' -and -not $script:GO_tools.IsExpanded -and -not $script:GO_logExpander.IsExpanded) "Secondary information starts closed: $theme/$width"
+        Assert-Layout ($script:GO_cardViews[12].ActualHeight -le 100) "Compact GPU row: $theme/$width"
         foreach($t in $script:GO_tweaks){
-            $header=$script:GO_checkboxes[$t.Id].Parent
-            Assert-Layout ([System.Windows.Controls.Grid]::GetColumn($header.Children[0]) -eq 0 -and $header.Children[0].Child.Name -eq 'TweakStatus' -and [System.Windows.Controls.Grid]::GetColumn($header.Children[2]) -eq 2) "Status precedes checkbox and title: #$($t.Id) / $theme / $width"
-            Assert-Layout ($script:GO_cardViews[$t.Id].ActualWidth -le $width -and $header.Children[2].ActualWidth -gt 100) "Card and title fit available width: #$($t.Id) / $theme / $width"
-            $metadata=$script:GO_cardViews[$t.Id].Child.Children[1]
-            Assert-Layout ($metadata.Children.Count -eq 3 -and $metadata.Children[0].Text -like 'RISK:*' -and $metadata.Children[1].Text -like 'RESTART:*') "Risk/restart/selection are separately labeled: #$($t.Id) / $theme / $width"
+            $row=$script:GO_cardViews[$t.Id]
+            Assert-Layout ($row.Child.Children[1].Children[0].Text -like 'Risk:*') "Visible risk: #$($t.Id)/$theme/$width"
+            if($t.NeedsReboot){Assert-Layout ('Restart required' -in $row.Child.Children[1].Children.Text) "Visible restart: #$($t.Id)/$theme/$width"}
         }
-        Assert-Layout (-not $script:GO_checkboxes[1].IsEnabled -and $script:GO_checkboxes[1].Parent.Children[0].Child.Text -eq 'APPLIED') "OFF target is clearly APPLIED: $theme / $width"
-        $detailButton=$script:GO_cardViews[1].Child.Children[-1].Children[0]
-        $detailButton.RaiseEvent([System.Windows.RoutedEventArgs]::new([System.Windows.Controls.Button]::ClickEvent))
-        Assert-Layout ($detailButton.IsEnabled -and $script:openedDetailId -eq 1) "Details remain accessible for an applied target: $theme / $width"
-        Assert-Layout ($script:GO_checkboxes[9].Parent.Children[0].Child.Text -eq 'ALTERNATIVE') "Exclusive alternate preset retained: $theme / $width"
-        Assert-Layout (-not $script:GO_checkboxes[24].IsEnabled -and -not $script:GO_checkboxes[31].IsEnabled) "Unknown/unavailable controls remain disabled: $theme / $width"
-        $script:GO_checkboxes[9].IsChecked=$true
-        Assert-Layout ($script:GO_applyBtn.IsEnabled -and $script:GO_estimate.Text -notmatch 'Estimated FPS|\d+%' -and $script:GO_impactText.Text -like '*Replaces AAA*') "Selection works and preserves conflict notes without adding FPS estimates: $theme / $width"
-        $detail=GO-CreateDetailWindow ($script:GO_tweaks | Where-Object Id -eq 1)
-        $detail.Content.Measure([System.Windows.Size]::new(660,620));$detail.Content.Arrange([System.Windows.Rect]::new(0,0,660,620));$detail.Content.UpdateLayout()
-        $texts=@(Get-LayoutTexts $detail.Content)
-        Assert-Layout ('IN PLAIN ENGLISH' -in $texts -and 'TECHNICAL DETAILS' -in $texts -and 'RISK LEVEL' -in $texts -and 'IMPACT / EXPECTED EFFECT' -in $texts -and 'STATUS: APPLIED' -in $texts) "Scrollable details expose both explanations and status: $theme / $width"
-        $first=$script:GO_tweaks | Where-Object Id -eq 1
-        Assert-Layout ($first.SimpleLong -in $texts -and $first.LongDesc -in $texts) "Full simple and technical text is present in details: $theme / $width"
-        if($PreviewDirectory){
-            [void][IO.Directory]::CreateDirectory($PreviewDirectory)
-            Save-LayoutPreview $script:GO_tweakList $width 1100 (Join-Path $PreviewDirectory "$theme-$width.png")
-            Save-LayoutPreview $detail.Content 660 620 (Join-Path $PreviewDirectory "$theme-detail.png")
-        }
-        $detail.Close()
+        $script:GO_checkboxes[12].IsChecked=$true
+        GO-SetCategory 'Power & CPU';$script:GO_checkboxes[9].IsChecked=$true
+        Assert-Layout ($script:GO_checkboxes[12].IsChecked -and @(Get-VisibleIds).Count -eq 7) "Category switch preserves hidden selection: $theme/$width"
+        $script:GO_search.Text='AutoGameModeEnabled'
+        Assert-Layout (((Get-VisibleIds) -join ',') -eq '13') "Global technical search: $theme/$width"
+        $script:GO_statusFilter.SelectedIndex=1
+        Assert-Layout (@(Get-VisibleIds).Count -eq 0 -and $script:GO_emptyMessage.Visibility -eq 'Visible') "Explicit empty filter result: $theme/$width"
+        $script:GO_statusFilter.SelectedIndex=0;GO-SetCategory 'Power & CPU'
+        Assert-Layout (-not $script:GO_search.Text -and @(Get-VisibleIds).Count -eq 7) "Current category clears search: $theme/$width"
+        GO-SetCategory 'Selected'
+        Assert-Layout (((Get-VisibleIds) -join ',') -eq '9,12') "Selected view spans categories: $theme/$width"
+        GO-RenderList -States $states
+        Assert-Layout ($script:GO_checkboxes[9].IsChecked -and $script:GO_checkboxes[12].IsChecked) "Recheck retains valid selection: $theme/$width"
+        GO-SetCategory 'All settings'
+        Assert-Layout (@(Get-VisibleIds).Count -eq 35) "All settings reachable: $theme/$width"
+        Assert-Layout (-not $script:GO_checkboxes[1].IsEnabled -and $script:GO_checkboxes[1].Parent.Children[0].Child.Text -eq 'APPLIED') "OFF target remains APPLIED: $theme/$width"
+        Assert-Layout ($script:GO_checkboxes[9].Parent.Children[0].Child.Text -eq 'ALTERNATIVE') "Exclusive preset status: $theme/$width"
+        Assert-Layout (-not $script:GO_checkboxes[24].IsEnabled -and -not $script:GO_checkboxes[31].IsEnabled) "Unknown/unavailable targets blocked: $theme/$width"
+        GO-SetCategory 'Windows & Lighting'
+        Assert-Layout (((Get-VisibleIds) -join ',') -eq '18,19,20,21,29') "Merged visuals/lighting category: $theme/$width"
+        GO-SetCategory 'Input & USB'
+        Assert-Layout ($script:GO_inputExtras.Visibility -eq 'Visible' -and -not $script:GO_inputExtras.IsExpanded) "Optional tools on demand: $theme/$width"
+        GO-SetCategory 'Graphics & Gaming'
+        $detailButton=$script:GO_cardViews[12].Child.Children[0].Children[3].Children[0]
+        $detailButton.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent));Arrange-Workspace $view $width 700
+        Assert-Layout ($script:GO_detailsPane.Visibility -eq 'Visible') "Actual Details button opens content: $theme/$width"
+        Assert-Layout (($script:GO_listArea.Visibility -eq 'Visible') -eq ($width -ge 1120)) "Adaptive detail pane: $theme/$width"
+        $expanders=@($script:GO_detailsContent.Children | Where-Object {$_ -is [Windows.Controls.Expander]})
+        Assert-Layout ($expanders.Count -eq 2 -and -not $expanders[1].IsExpanded -and $expanders[1].Content.Text -like '*HwSchMode*') "Technical detail accessible but initially collapsed: $theme/$width"
+        if($PreviewDirectory){[void][IO.Directory]::CreateDirectory($PreviewDirectory);Save-LayoutPreview $view $width 700 (Join-Path $PreviewDirectory "$theme-$width-details.png")}
+        $view.FindName('CloseDetailsBtn').RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent));Arrange-Workspace $view $width 400
+        Assert-Layout ($script:GO_listArea.Visibility -eq 'Visible' -and $script:GO_checkboxes[12].IsChecked) "Closing details preserves context: $theme/$width"
+        $footer=$view.FindName('EstimateBar');$point=$footer.TranslatePoint([Windows.Point]::new(0,0),$view)
+        Assert-Layout ($point.Y -ge 0 -and ($point.Y+$footer.ActualHeight) -le 400) "Fixed actions inside short viewport: $theme/$width"
+        $review=GO-CreateReviewWindow @($script:GO_tweaks | Where-Object Id -in @(9,12))
+        $review.Content.Measure([Windows.Size]::new(640,570));$review.Content.Arrange([Windows.Rect]::new(0,0,640,570));$review.Content.UpdateLayout()
+        $texts=@(Get-LayoutTexts $review.Content)
+        Assert-Layout (@($texts | Where-Object {$_ -like '*Replaces AAA*'}).Count -eq 1 -and 'BACKUP OPTIONS' -in $texts) "Review includes effects and backup choices: $theme/$width"
+        $review.Close()
+        # Bind the actual production apply handler; cancellation must precede any IO.
+        $handler=$ast.Find({param($n)$n -is [Management.Automation.Language.InvokeMemberExpressionAst] -and $n.Expression.Extent.Text -eq '$script:GO_applyBtn' -and $n.Member.Value -eq 'Add_Click'},$true)
+        . ([scriptblock]::Create($handler.Extent.Text))
+        function Global:GO-ConfirmSelection {param($Selected) $script:reviewedIds=@($Selected.Id);return $false}
+        function Global:GO-CreateBackup {throw 'Unexpected backup IO'}
+        function Global:GO-ApplyVerifiedTweak {throw 'Unexpected system IO'}
+        $script:GO_applyBtn.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent))
+        Assert-Layout (($script:reviewedIds -join ',') -eq '9,12') "Cancel review applies nothing: $theme/$width"
+        if($PreviewDirectory){Arrange-Workspace $view $width 700;Save-LayoutPreview $view $width 700 (Join-Path $PreviewDirectory "$theme-$width.png")}
+        # Exercise the actual shell ScrollViewer/ContentControl hierarchy, including its margins.
+        $outer=$script:hostWindow.FindName('ContentScroller');$hostContent=$script:hostWindow.FindName('ContentHost')
+        $outer.VerticalScrollBarVisibility='Disabled';$hostContent.Content=$view
+        $outer.Measure([Windows.Size]::new($width,500));$outer.Arrange([Windows.Rect]::new(0,0,$width,500));$outer.UpdateLayout()
+        $footerPoint=$view.FindName('EstimateBar').TranslatePoint([Windows.Point]::new(0,0),$outer)
+        Assert-Layout ($footerPoint.Y -ge 0 -and ($footerPoint.Y+$view.FindName('EstimateBar').ActualHeight) -le 500) "Actions remain in actual shell viewport: $theme/$width"
+        $hostContent.Content=$null
     }
 }
+"PASS: $script:checks layout/navigation assertions"

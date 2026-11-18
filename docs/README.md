@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.1.5` (2026-11-18).
+Current version: `v2.1.6` (2026-11-18).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -16,7 +16,7 @@ WindowsAcolyte is a Windows PowerShell 7 + WPF desktop toolkit for administratio
 | Explorer View Normalizer | Windows Tools | Discover folder templates, repair saved Explorer/dialog grouping, conflict readback, selected-only apply, view backups/restore, optional small desktop icons |
 | Hardware Inventory | Diagnostics | CIM/WMI inventory and desktop HTML report |
 | Sandboxie Browser Launcher | Security | Detect browsers and Sandboxie, start supported browsers sandboxed |
-| Windows 11 Gaming Optimizer | Gaming Performance | 35 selectable settings with status-first cards, plain-English + technical summaries/details, separate risk/effect/restart labels, profiles, backup/reset and optional input/USB controls |
+| Windows 11 Gaming Optimizer | Gaming Performance | 35 settings in eight categories, compact rows, global search/status filters, persistent selection, adaptive details and pre-Apply review; profiles, backup/reset and optional input/USB controls |
 | Linux ISO Downloader | Downloader | Distro variants, desktop/server presets, per-ISO progress, parallel downloads and fallback |
 | AV Scanner Downloader | Downloader | Portable scanner downloads, source checks and progress |
 | WindowsAcolyte Desktop Shortcut Creator | Windows Tools | Create Install or Online shortcuts using either the GitHub or Website starter |
@@ -163,7 +163,7 @@ pwsh -NoProfile -File .\tests\Test-LocalUpdater.ps1
 powershell.exe -NoProfile -File .\tests\Test-LocalUpdater.ps1
 ```
 
-These scripts cover isolated temporary HKCU/file IO, simulated system writes/hub providers/power plans, WPF views and link routing, status-first Gaming Optimizer cards and scrollable simple/technical details at 540/900 pixels in both themes, plus updater online-check gating, changed/missing files, document synchronization, corrupt downloads, syntax errors, locks and rollback. They do not establish full live hardware, driver, download-source or game-performance correctness. `Test-GamingOptimizerAudit.ps1 -ReadOnly` additionally reads production status from the current machine.
+These scripts cover isolated temporary HKCU/file IO, simulated system writes/hub providers/power plans, WPF views and link routing, compact Gaming Optimizer navigation/search/filtering, selection persistence, adaptive details and review cancellation at 540/900/1280 pixels in both themes, plus short/actual shell viewports and updater online-check gating, changed/missing files, document synchronization, corrupt downloads, syntax errors, locks and rollback. They do not establish full live hardware, driver, download-source or game-performance correctness. `Test-GamingOptimizerAudit.ps1 -ReadOnly` additionally reads production status from the current machine.
 
 ## Build and deployment
 

@@ -63,7 +63,7 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1.5`
+**Current version:** `v2.1.6`
 
 ### Shared processing indicator
 
@@ -282,21 +282,25 @@ Desktop\Hardware_Report_YYYY-MM-DD_HH-MM.html
 
 ---
 
-### Clear status and explanations
+### Compact navigation and details on demand
 
-Each option now appears as a wrapping card, with its configuration status **before** the checkbox and title. All 35 options include both a short **IN PLAIN ENGLISH** explanation and a **TECHNICAL SUMMARY** directly in the list. **Details** opens a scrollable explanation with separate plain-English and technical sections, plus risk, expected effect, restart and Apply/Reset notes. Applied and unavailable cards remain readable and their Details button stays usable.
+Eight categories provide direct access to all 35 options. **Windows & Lighting** combines the former UI/Visual and Dynamic Lighting groups. Compact rows show the target, configuration status, risk, restart requirement and manual opt-in marker. **All settings** provides the complete list; **Selected** gathers pending changes across categories. Opening the module makes no automatic selections.
+
+Search matches names, categories and technical explanations across all categories; the status filter narrows results further. Category buttons clear a search, while the visible status filter remains active. Category/search/filter changes preserve pending choices. **Details** opens a side pane in wide workspaces or a full-width detail page in smaller ones. Close details or press Escape to return. Plain-English explanations, expected effects and Apply/Reset notes remain available; longer explanations and technical details start collapsed. Applied/unavailable rows still allow Details.
 
 | Status | Meaning |
 |---|---|
 | APPLIED | The requested target configuration is present. For an OFF option, the feature is configured OFF; this is not a claim that the feature is enabled. |
-| MISSING | The target is not present. The existing configuration can still be a valid default; users do not need to apply everything. |
+| NOT APPLIED | The target is not present (internally MISSING). The existing configuration can still be a valid default; users do not need to apply everything. |
 | ALTERNATIVE | The other mutually exclusive priority preset is active. Applying this preset replaces it. |
 | UNAVAILABLE | The current setup does not support this control. |
 | CHECK ERROR | Current state is unknown because readback failed; it is not labeled MISSING and selection is disabled. |
 
-**Risk**, **Impact / Expected effect**, **Restart** and **Selection** are separate labels. Risk is not a benefit rating. Checkboxes select pending changes, rather than acting as an on/off-state indicator. Optional input/USB controls remain manual opt-in. The selection overview shows the number of changes and shared/reset consequences; it no longer adds speculative FPS percentages or promises ping improvements. No Apply/Check/Reset scripts or risk/opt-in/mutual-exclusion rules were changed for this layout.
+Risk is not a benefit rating. Checkboxes select pending changes, rather than acting as an on/off-state indicator. Optional input/USB controls remain manual opt-in. The fixed action bar opens **Review changes**, listing every selected target, expected effect, risk, restart requirement, shared/reset consequences and backup choices before **Apply reviewed changes**. Existing high-risk/accessibility confirmations and backup-failure gates still apply. No configuration Apply/Check/Reset scripts or risk/opt-in/mutual-exclusion rules were changed for this layout.
 
-The selection toolbar wraps at narrow widths. Layout tests render all 35 cards at 540 and 900 pixels in both themes using synthetic state; they do not change Windows settings. Pointer-speed and local Windows Update controls also explain their purpose in plain English and technical terms.
+**Profiles** groups load/save commands. **Tools & backup** groups hardware information, backup preferences, bulk selection, Recheck and Reset. **Activity log** starts collapsed and opens for warnings/errors. The optional pointer-speed and local-update controls remain under a collapsed section in **Input & USB**; pointer speed still uses its separate explicit Apply/Reset buttons.
+
+The settings list scrolls independently while navigation and actions stay in the viewport. Narrow workspaces use a category picker and wrapping action controls. Layout tests exercise 540/900/1280-pixel workspaces in both themes, short viewports, search, persistent selection, review cancellation and the actual shell container with synthetic states. These tests do not change Windows settings. The screenshot above illustrates the workspace using synthetic configuration states.
 
 Technical wording was checked against the source operations and relevant Microsoft documentation: [memory integrity](https://learn.microsoft.com/en-us/windows/security/hardware-security/enable-virtualization-based-protection-of-code-integrity), [MMCSS](https://learn.microsoft.com/en-us/windows/win32/procthread/multimedia-class-scheduler-service), [USB selective suspend](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/usb-selective-suspend), [windowed-games optimization](https://support.microsoft.com/en-us/windows/hardware/display-graphics/optimizations-for-windowed-games-in-windows-11). Readback still does not prove runtime activation or a game-performance improvement.
 
@@ -357,7 +361,7 @@ The project does not supply benchmark evidence for universal FPS, latency or pin
 
 ### Input & USB Stability - Optional
 
-All six options (#30-35) target troubleshooting, prevention of accidental accessibility activation or desktop comfort, not higher FPS. They start unselected and are excluded from **All**, **Missing Only**, **Low Risk Only** and recommended pre-selection. Select them individually; explicitly saved profiles can also select them. No settings are changed merely by opening the module or checking status.
+All six options (#30-35) target troubleshooting, prevention of accidental accessibility activation or desktop comfort, not higher FPS. They start unselected and are excluded from **Select all standard**, **Select missing standard** and **Select low risk**. Select them individually; explicitly saved profiles can also select them. No settings are changed merely by opening the module or checking status.
 
 - **USBHUB3 override (experimental):** sets `HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\DisableSelectiveSuspend` to DWORD `1`. This exact driver override is not reliably documented across Windows versions. `APPLIED` confirms the stored value/type, not that the driver honors it or disconnects are fixed.
 - **Root-hub power permission:** clears the device power-off permission on all currently present USB root hubs with an unambiguous supported WMI provider. Unsupported hubs block Apply before any device write. Other USB devices and wake permissions are untouched; devices are not disabled or reconnected.
@@ -388,7 +392,7 @@ API references: [WMI power management](https://learn.microsoft.com/en-us/windows
 - Numeric NTFS checks avoid language/output-format mismatches; 8.3 policy `1` is correctly recognized as globally disabled
 - Multi-value settings verify every managed field; TCP checks all five configured values, and telemetry checks the DiagTrack service too
 - Native command exit codes and registry/service errors are checked before reporting success
-- Conflicts and reset effects appear directly below options, in selection details and in reset confirmations
+- Conflicts and reset effects appear in Details, the review before Apply and reset confirmations
 - Apply/Reset compares before/after states and logs previously applied options that become inactive
 - Bulk selection preserves the active priority preset; unavailable options and failed checks cannot be selected
 - 🔄 Re-scan button
@@ -397,7 +401,7 @@ API references: [WMI power management](https://learn.microsoft.com/en-us/windows
 - 🔧 Restore Points auto-creation
 - 📋 Registry backup before changes
 - 🎨 Dark Mode support
-- ✨ Recommended pre-selection based on hardware
+- No automatic pre-selection; choose individual changes or explicitly use bulk/profile selection
 
 ---
 
@@ -419,7 +423,7 @@ API references: [WMI power management](https://learn.microsoft.com/en-us/windows
 > 🧠 **AMD X3D CPUs** → Keep Game Mode enabled; its Reset action disables it
 > 🔒 **High-Risk tweaks** → User confirmation popup required
 > 💾 **Selected backups** → Created before Apply; failed selected backups stop Apply. Restore-point creation is verified (including Windows creation-frequency limits).
-> ⚡ **Competitive vs AAA** → Only one Win32Priority mode can be active: Competitive = 36 (`0x24`), AAA = 24 (`0x18`). The other mode is an alternative, not a missing setting; automatic pre-selection preserves the active mode.
+> ⚡ **Competitive vs AAA** → Only one Win32Priority mode can be active: Competitive = 36 (`0x24`), AAA = 24 (`0x18`). The other mode is an alternative, not a missing setting; bulk selection preserves the active mode.
 > 📊 **Verification** → Measure before/after on your system; stored configuration alone does not prove a performance gain.
 
 `APPLIED` confirms stored configuration, not a measured FPS improvement or proof that a reboot-dependent feature is already effective. The NVMe option only checks an experimental feature override and is never automatically recommended.
@@ -797,7 +801,12 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1.5 (Current) - 2026-11-18
+## v2.1.6 (Current) - 2026-11-18
+- Replace the long Gaming Optimizer cards with eight categories, compact rows, global search, status filtering and a persistent Selected view.
+- Add adaptive details, collapsed auxiliary tools, a fixed action bar and a review before applying. Preserve all 35 configuration operations, risk gates, profiles and optional input/USB baselines; start with no automatic selections.
+- Cover navigation, hidden selections, empty results, responsive details, review cancellation and shell viewport scrolling in isolated WPF tests.
+
+## v2.1.5 (Previous) - 2026-11-18
 - Remove the overlay's cross-thread native owner, which blocked display while Explorer View Normalizer was building its real view. Preserve app-relative position/order, non-activation, modal dialog precedence and minimize/restore behavior explicitly.
 - Add a non-pumping CPU regression and real Explorer module-load tests for both normal and modal shell windows. Sleep-only tests did not reproduce this failure.
 
@@ -923,7 +932,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1.5 • November 2026
+Version 2.1.6 • November 2026
 
 ---
 

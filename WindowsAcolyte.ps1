@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 2.1.5
+    Version : 2.1.6
 #>
 
 param([string]$LogRoot, [switch]$Development)
@@ -751,7 +751,7 @@ function Global:Update-PTSStyles {
                               HorizontalScrollBarVisibility="Disabled"
                               CanContentScroll="False"
                               Background="#F2F5F7">
-                    <ContentControl x:Name="ContentHost" Margin="28,24,28,24"/>
+                    <ContentControl x:Name="ContentHost" Margin="28,24,28,24" VerticalContentAlignment="Stretch"/>
                 </ScrollViewer>
             </Grid>
         </Grid>
@@ -766,7 +766,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v2.1.5  |  Administrator"
+                           Text="v2.1.6  |  Administrator"
                            Foreground="#3C5669" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
@@ -1072,6 +1072,8 @@ function Global:Show-PTSModuleView {
     $processingId = Start-PTSProcessing -Detail ("Loading {0}..." -f $Module.Name)
     try {
         $view = & $Module.Show
+        # Views with their own scroll areas need a finite viewport for fixed actions.
+        $Global:PTS_UI.ContentScroller.VerticalScrollBarVisibility = if ($view -is [System.Windows.FrameworkElement] -and $view.Tag -eq 'OwnScroll') { 'Disabled' } else { 'Auto' }
         $Global:PTS_UI.ContentHost.Content = $view
         $Global:PTS_UI.ContentScroller.ScrollToTop()
     }
@@ -1098,6 +1100,8 @@ function Global:Show-PTSModuleView {
 
 function Global:Show-PTSCategoryView {
     param([string]$DisplayName)
+
+    $Global:PTS_UI.ContentScroller.VerticalScrollBarVisibility = 'Auto'
 
     $internalKey = $null
     foreach ($entry in $Global:PTS_CategoryDisplayNames.GetEnumerator()) {
