@@ -2,6 +2,24 @@
 param([string]$RenderDirectory)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName PresentationFramework
+Add-Type @'
+public static class ProcessingBusyProbe {
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern System.IntPtr GetWindow(System.IntPtr h, uint command);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern System.IntPtr GetTopWindow(System.IntPtr h);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern System.IntPtr GetForegroundWindow();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool SetWindowPos(System.IntPtr h, System.IntPtr after, int x, int y, int w, int height, uint flags);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] public static extern System.IntPtr SendMessage(System.IntPtr h, uint message, System.IntPtr w, System.IntPtr l);
+    public static int Rank(System.IntPtr h) {
+        var next=GetTopWindow(System.IntPtr.Zero);
+        for(int rank=0; rank<10000 && next!=System.IntPtr.Zero; rank++,next=GetWindow(next,2)) if(next==h) return rank;
+        return -1;
+    }
+    public static void Hold(int milliseconds) {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        while (clock.ElapsedMilliseconds < milliseconds) System.Threading.Thread.SpinWait(1000);
+    }
+}
+'@
 . (Join-Path $PSScriptRoot '..\modules\00-ProcessingOverlay.ps1')
 $Global:PTS_Theme=@{Surface='#FFFFFF';Border='#6C8799';Primary='#00375F';TextDark='#00375F';TextMuted='#3C5669'}
 $Global:PTS_ThemeDark=@{Surface='#003050';Border='#7292A6';Primary='#D69A25';TextDark='#FFFFFF';TextMuted='#CDDBE6'}
@@ -34,11 +52,28 @@ try {
     Pump-UI 100
     Assert-Processing (-not $service.Visible -and $service.Count -eq 0) 'Fast operations finish without showing the overlay'
     $first=Start-PTSProcessing 'Long work'
-    Start-Sleep -Milliseconds 450 # Deliberately block the main dispatcher.
+    [ProcessingBusyProbe]::Hold(600) # No STA wait/message pumping: this reproduces real module work.
     Assert-Processing $service.Visible 'Overlay appears while the main UI thread is blocked'
     $angle=$service.Angle
     Start-Sleep -Milliseconds 180
     Assert-Processing ([Math]::Abs($service.Angle-$angle) -gt 2) 'Ring continues rotating on its independent dispatcher'
+    $ownerHandle=[Windows.Interop.WindowInteropHelper]::new($Global:PTS_Window).Handle
+    Assert-Processing ([ProcessingBusyProbe]::GetWindow($service.Handle,4) -ne $ownerHandle) 'Overlay has no cross-thread native owner'
+    Assert-Processing ([ProcessingBusyProbe]::GetWindow($ownerHandle,3) -eq $service.Handle) 'Peer overlay is positioned immediately above the main window'
+    Assert-Processing ([ProcessingBusyProbe]::SendMessage($service.Handle,0x21,[IntPtr]::Zero,[IntPtr]::Zero).ToInt64() -eq 3) 'Mouse activation is rejected without discarding the click'
+    Assert-Processing ([ProcessingBusyProbe]::GetForegroundWindow() -ne $service.Handle) 'Showing the overlay does not take foreground focus'
+    $cover=[Windows.Window]::new(); $cover.WindowStartupLocation='Manual'; $cover.Left=-20000; $cover.Top=-20000
+    $cover.ShowActivated=$false; $cover.ShowInTaskbar=$false; $cover.Show()
+    $coverHandle=[Windows.Interop.WindowInteropHelper]::new($cover).Handle
+    [ProcessingBusyProbe]::SetWindowPos($coverHandle,[IntPtr]::Zero,-20000,-20000,200,100,0x10) | Out-Null
+    Pump-UI 100
+    Assert-Processing (([ProcessingBusyProbe]::Rank($coverHandle) -lt [ProcessingBusyProbe]::Rank($service.Handle)) -and
+        ([ProcessingBusyProbe]::Rank($service.Handle) -lt [ProcessingBusyProbe]::Rank($ownerHandle))) 'Another window above the app remains above its overlay'
+    $cover.Close()
+    $Global:PTS_Window.WindowState='Minimized'; Pump-UI 100
+    Assert-Processing (-not $service.Visible) 'Minimizing the app hides the peer overlay'
+    $Global:PTS_Window.WindowState='Normal'; Pump-UI 150
+    Assert-Processing $service.Visible 'Restoring the app restores its busy overlay'
     $second=Start-PTSProcessing 'Overlapping work'
     Stop-PTSProcessing $first; Pump-UI
     Assert-Processing ($service.Visible -and $service.Count -eq 1) 'Finishing one operation does not hide another'
@@ -142,6 +177,7 @@ try {
     Assert-Processing (-not $service.Visible -and $service.Count -eq 0) 'Owner close shuts down and clears the service'
     "PASS: $script:checks Processing overlay assertions"
 } finally {
+    if($cover){$cover.Close()}
     if($Global:PTS_ProcessingPoll){$Global:PTS_ProcessingPoll.Stop()}
     if($Global:PTS_ProcessingService){$Global:PTS_ProcessingService.Dispose()}
     if($Global:PTS_Window){$Global:PTS_Window.Close()}

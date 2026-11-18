@@ -41,6 +41,8 @@ namespace WindowsAcolyte {
         [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
         [DllImport("user32.dll")] static extern bool IsWindowEnabled(IntPtr h);
         [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+        [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr h, uint command);
+        [DllImport("user32.dll", EntryPoint="GetWindowLongW")] static extern int GetWindowLong(IntPtr h, int index);
         [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int w, int hgt, uint flags);
         readonly Window owner;
         readonly IntPtr ownerHandle;
@@ -72,6 +74,7 @@ namespace WindowsAcolyte {
         public int Count { get { return operations.Count; } }
         public string Fault { get { return fault; } }
         public int ThreadId { get; private set; }
+        public IntPtr Handle { get; private set; }
         public double Angle { get { return dispatcher.Invoke(() => rotation.Angle); } }
 
         public ProcessingOverlay(Window owner, string[] colors, int delayMilliseconds) {
@@ -182,8 +185,18 @@ namespace WindowsAcolyte {
         }
         void PositionWindow() {
             RECT rect; POINT point = new POINT();
-            if (GetClientRect(ownerHandle, out rect) && ClientToScreen(ownerHandle, ref point))
-                SetWindowPos(new WindowInteropHelper(window).EnsureHandle(), IntPtr.Zero, point.X, point.Y, rect.Right, rect.Bottom, 0x0010 | 0x0004);
+            if (GetClientRect(ownerHandle, out rect) && ClientToScreen(ownerHandle, ref point)) {
+                Handle = new WindowInteropHelper(window).EnsureHandle();
+                // Peer window: immediately above the app, below windows already above
+                // the app. Never attach the two UI threads or make this globally topmost.
+                var previous = GetWindow(ownerHandle, 3); // GW_HWNDPREV
+                bool alreadyPlaced = previous == Handle;
+                if (previous != IntPtr.Zero && (GetWindowLong(previous,-20) & 8) != 0) previous = IntPtr.Zero;
+                uint flags = 0x0010 | 0x0200 | 0x4000; // NOACTIVATE | NOOWNERZORDER | ASYNCWINDOWPOS
+                if (alreadyPlaced) flags |= 0x0004; // NOZORDER
+                if (!SetWindowPos(Handle, previous, point.X, point.Y, rect.Right, rect.Bottom, flags))
+                    throw new InvalidOperationException("Cannot position the processing overlay.");
+            }
         }
         static Brush Brush(string color) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(color)); }
         void Run() {
@@ -192,8 +205,16 @@ namespace WindowsAcolyte {
                 dispatcher = Dispatcher.CurrentDispatcher;
                 window = new Window { WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize,
                     AllowsTransparency = true, Background = Brushes.Transparent, ShowInTaskbar = false,
-                    ShowActivated = false, Focusable = false, Title = "WindowsAcolyte - Processing..." };
-                new WindowInteropHelper(window).Owner = ownerHandle;
+                    ShowActivated = false, Focusable = false, Opacity = 0, Title = "WindowsAcolyte - Processing..." };
+                // A native owner on the main UI thread makes Window.Show wait for
+                // that thread. Keep this peer on its own queue instead.
+                window.SourceInitialized += (s,e) => {
+                    var source = HwndSource.FromHwnd(new WindowInteropHelper(window).Handle);
+                    source.AddHook((IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam, ref bool handled) => {
+                        if (message == 0x0021) { handled = true; return new IntPtr(3); } // WM_MOUSEACTIVATE / MA_NOACTIVATE
+                        return IntPtr.Zero;
+                    });
+                };
                 surface = new Grid();
                 AutomationProperties.SetName(surface, "Processing... Please wait.");
                 card = new Border { Width = 396, MinHeight = 146, CornerRadius = new CornerRadius(16),
@@ -244,7 +265,11 @@ namespace WindowsAcolyte {
                 cancel.IsEnabled = cancellable && !pending; cancel.Content = pending ? "Cancelling..." : "Cancel";
                 PositionWindow();
                 if (!visible) {
-                    window.Show(); visible = true;
+                    window.Opacity = 0;
+                    window.Show();
+                    PositionWindow();
+                    window.Opacity = 1;
+                    visible = true;
                     var animation = new DoubleAnimation(0,360,TimeSpan.FromSeconds(1)) { RepeatBehavior = RepeatBehavior.Forever };
                     rotation.BeginAnimation(RotateTransform.AngleProperty, animation);
                 }

@@ -1,6 +1,6 @@
 # WindowsAcolyte - Project Overview
 
-Current version: `v2.1.4` (2026-11-18).
+Current version: `v2.1.5` (2026-11-18).
 
 This overview accompanies the [main README](https://github.com/ReAlNoMo/WindowsAcolyte/blob/main/README.md). Paths below are relative to the Git repository root. The local workspace also keeps a matching copy of this overview one directory above the checkout.
 
@@ -29,7 +29,7 @@ The Linux ISO downloader does not verify checksums or resume interrupted downloa
 
 The shell uses logo-aligned navy/gold Light and Dark themes with tonal backgrounds and labeled green/red status colors. Switching themes preserves the open view and selections; the hardware HTML report follows the same palette. The shell also supports category tiles, JSONL exception logging and an active-operation guard for downloads/hash/report work during theme changes, navigation and app close. Documentation screenshots may show an earlier version.
 
-The shared **Processing...** overlay appears after about 200 ms for module loading, synchronous button/toggle/menu/selection events and registered background tasks. Its independent STA dispatcher keeps the ring animated during legacy synchronous hardware/status checks; it does not make the underlying work asynchronous or faster. Owned modal dialogs take precedence. Overlapping operation IDs hold the overlay until the final completion and queued UI work; cancellable jobs forward Cancel/Escape to their existing callback on the main dispatcher. The main window's client area is covered without activating another taskbar window or moving module-owned WPF controls between threads.
+The shared **Processing...** overlay appears after about 200 ms for module loading, synchronous button/toggle/menu/selection events and registered background tasks. Its independent STA dispatcher uses a non-activating peer window without a native owner on the main UI thread; that owner link could block display during real synchronous module builds. Client bounds and app-relative Z order are synchronized explicitly. Minimizing hides the overlay and owned modal dialogs take precedence. The ring remains animated during legacy synchronous hardware/status checks; it does not make the underlying work asynchronous or faster. Overlapping operation IDs hold the overlay until the final completion and queued UI work; cancellable jobs forward Cancel/Escape to their existing callback on the main dispatcher. Module-owned WPF controls stay on their original thread.
 
 ## Tech stack and architecture
 
@@ -59,7 +59,7 @@ Start-WindowsAcolyte.ps1        Online update gate and local startup
 README.md                      User guide and version history
 docs/README.md                 This architecture/operator overview
 modules/                       Twelve tool modules (01-12), plus shared 00-ProcessingOverlay.ps1 service
-tests/                         Thirteen standalone PowerShell test scripts
+tests/                         Fourteen standalone PowerShell test scripts
 logo/                          Logo and app/shortcut ICO assets
 screenshots/                   README illustrations, not installed
 .github/ISSUE_TEMPLATE/        GitHub issue templates
@@ -153,6 +153,8 @@ pwsh -NoProfile -STA -File .\tests\Test-GamingOptimizerUsb.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ShortcutArrowVisibility.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ExplorerViewNormalizer.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ProcessingOverlay.ps1
+pwsh -NoProfile -STA -File .\tests\Test-ProcessingExplorerLoad.ps1
+pwsh -NoProfile -STA -File .\tests\Test-ProcessingExplorerLoad.ps1 -Modal
 pwsh -NoProfile -STA -File .\tests\Test-RecommendedTools.ps1
 pwsh -NoProfile -STA -File .\tests\Test-ThemeColors.ps1
 pwsh -NoProfile -STA -File .\tests\Test-DesktopShortcutCreator.ps1

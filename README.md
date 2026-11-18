@@ -63,13 +63,13 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1.4`
+**Current version:** `v2.1.5`
 
 ### Shared processing indicator
 
 Every module opens through the same loading scope. Button, toggle, menu-item and selection actions are tracked centrally. When work takes longer than about 200 ms, a shared **Processing...** overlay displays a rotating ring and the current task. Fast actions finish without flashing the overlay. Registered background tasks keep it visible until completion, even after their initiating click returns. Overlapping scopes do not close each other's indicator.
 
-The indicator has its own WPF STA dispatcher so it can appear and animate during existing synchronous operations, including Gaming Optimizer hardware/status checks. This does not make those operations faster or move them to a worker: the underlying module remains unavailable while it is busy. The overlay follows the main window, supports Light/Dark, blocks repeated mouse/keyboard actions and yields to owned confirmation/file dialogs. Cancellable background tasks expose **Cancel** (also Escape); the indicator remains until their normal cleanup completes. Closing uses the existing active-operation warning.
+The indicator has its own WPF STA dispatcher so it can appear and animate during existing synchronous operations, including Explorer view-cache and Gaming Optimizer hardware/status checks. It uses a non-activating peer window rather than a native owner on the main UI thread: that cross-thread owner connection could block `Window.Show()` during real module loading. Client bounds and window order are synchronized explicitly, keeping the overlay above the app and below other windows already above it. This does not make the operations faster or move them to a worker: the underlying module remains unavailable while it is busy. The overlay supports Light/Dark, blocks repeated mouse/keyboard actions, hides when the app is minimized and yields to owned confirmation/file dialogs. Cancellable background tasks expose **Cancel** (also Escape); the indicator remains until their normal cleanup completes. Closing uses the existing active-operation warning.
 
 The central tracker covers current UI entry points; future asynchronous work must use `Register-PTSActiveOperation` / `Unregister-PTSActiveOperation` for its full lifetime. Code invoked without a UI event can use `Start-PTSProcessing` / `Stop-PTSProcessing` in `try/finally`. A moving ring indicates that the display service is alive; it is not a measured percentage or a guarantee that an external process is progressing.
 
@@ -797,7 +797,11 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1.4 (Current) - 2026-11-18
+## v2.1.5 (Current) - 2026-11-18
+- Remove the overlay's cross-thread native owner, which blocked display while Explorer View Normalizer was building its real view. Preserve app-relative position/order, non-activation, modal dialog precedence and minimize/restore behavior explicitly.
+- Add a non-pumping CPU regression and real Explorer module-load tests for both normal and modal shell windows. Sleep-only tests did not reproduce this failure.
+
+## v2.1.4 (Previous) - 2026-11-18
 - Add a shared delayed Processing... overlay for module loading, synchronous UI actions and registered background jobs, with an independent WPF dispatcher, overlapping scopes, theme support and cancellation forwarding.
 - Yield to owned dialogs and retain processing through confirmation dialogs, queued UI completion and module-load errors.
 
@@ -919,7 +923,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1.4 • November 2026
+Version 2.1.5 • November 2026
 
 ---
 
