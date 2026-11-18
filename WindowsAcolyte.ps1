@@ -7,7 +7,7 @@
     single WPF shell window. Requires PowerShell 7+ and runs elevated.
 .NOTES
     Author  : ReAlNoMo
-    Version : 2.1.6
+    Version : 2.1.7
 #>
 
 param([string]$LogRoot, [switch]$Development)
@@ -55,6 +55,36 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
+
+Add-Type -TypeDefinition @'
+namespace WindowsAcolyte {
+    public static class WindowActivation {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(System.IntPtr window);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern System.IntPtr GetForegroundWindow();
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(System.IntPtr window, System.IntPtr processId);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool AttachThreadInput(uint thread, uint foregroundThread, bool attach);
+
+        public static bool TryActivate(System.IntPtr window) {
+            if (SetForegroundWindow(window)) return true;
+            uint thread = GetCurrentThreadId();
+            uint foregroundThread = GetWindowThreadProcessId(GetForegroundWindow(), System.IntPtr.Zero);
+            if (foregroundThread == 0 || foregroundThread == thread ||
+                !AttachThreadInput(thread, foregroundThread, true)) return false;
+            try {
+                return SetForegroundWindow(window);
+            } finally {
+                AttachThreadInput(thread, foregroundThread, false);
+            }
+        }
+    }
+}
+'@
 
 $Global:PTS_RootPath    = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Global:PTS_ModulesPath = Join-Path $Global:PTS_RootPath "modules"
@@ -280,7 +310,7 @@ $Global:PTS_ThemeDark = @{
     BtnDisabledFg        = "#87A3B5"
 }
 
-$Global:PTS_DarkModeEnabled = $false
+$Global:PTS_DarkModeEnabled = $true
 
 function Global:New-PTSBrush {
     param([string]$Hex)
@@ -290,8 +320,8 @@ function Global:New-PTSBrush {
 }
 
 $Global:PTS_Brush = @{}
-foreach ($k in $Global:PTS_Theme.Keys) {
-    $Global:PTS_Brush[$k] = New-PTSBrush $Global:PTS_Theme[$k]
+foreach ($k in $Global:PTS_ThemeDark.Keys) {
+    $Global:PTS_Brush[$k] = New-PTSBrush $Global:PTS_ThemeDark[$k]
 }
 
 function Global:Get-PowerToolsBrush { param([string]$Name) return $Global:PTS_Brush[$Name] }
@@ -678,8 +708,8 @@ function Global:Update-PTSStyles {
                 </Grid.RowDefinitions>
 
                 <!-- Local brand artwork -->
-                <Border Grid.Row="0" x:Name="LogoBorder" Padding="8,4,8,4"
-                        Background="#FFFFFF" BorderBrush="#6C8799" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" x:Name="LogoBorder" Padding="7,4,7,4"
+                        Background="#FFFFFF" BorderBrush="#6C8799" BorderThickness="1">
                     <Image x:Name="BrandLogoImage" Width="244" Height="112" Stretch="Uniform"
                            RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Left"/>
                 </Border>
@@ -766,7 +796,7 @@ function Global:Update-PTSStyles {
                 </Grid.ColumnDefinitions>
 
                 <TextBlock x:Name="FooterLeft" Grid.Column="0"
-                           Text="v2.1.6  |  Administrator"
+                           Text="v2.1.7  |  Administrator"
                            Foreground="#3C5669" FontSize="11" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="20,10,0,10"/>
 
@@ -1208,7 +1238,8 @@ if ($Global:PTS_Modules.Count -eq 0) {
     exit 1
 }
 
-Build-PTSSidebar
+$Global:PTS_UI.DarkModeToggle.IsChecked = $Global:PTS_DarkModeEnabled
+Apply-PTSTheme -DarkMode $Global:PTS_DarkModeEnabled
 
 $firstBtn = $Global:PTS_UI.SidebarPanel.Children |
     Where-Object { $_ -is [System.Windows.Controls.Button] } |
@@ -1220,4 +1251,20 @@ if ($firstBtn) {
     )
 }
 
+# Activate once after the initial content has rendered, including elevated starts.
+$script:PTS_StartupActivationHandler = [System.EventHandler]{
+    param($sender, $eventArgs)
+    $sender.Remove_ContentRendered($script:PTS_StartupActivationHandler)
+    try {
+        $sender.Topmost = $true
+        [void]$sender.Activate()
+    } finally {
+        $sender.Topmost = $false
+    }
+    $handle = [System.Windows.Interop.WindowInteropHelper]::new($sender).Handle
+    [void][WindowsAcolyte.WindowActivation]::TryActivate($handle)
+    [void]$sender.Activate()
+    [void]$sender.Focus()
+}
+$Global:PTS_Window.Add_ContentRendered($script:PTS_StartupActivationHandler)
 $Global:PTS_Window.ShowDialog() | Out-Null

@@ -63,7 +63,7 @@ Online sessions retain profiles, backups and logs in their persistent locations.
 | 🪟 Windows | 10 / 11 (WPF required) |
 | 🔐 Admin | The application requests administrator privileges at startup; Windows may show a UAC prompt. |
 
-**Current version:** `v2.1.6`
+**Current version:** `v2.1.7`
 
 ### Shared processing indicator
 
@@ -82,7 +82,7 @@ The application requests administrator privileges at startup. Module labels belo
 ---
 
 ## 🎨 Dark Mode
-> **Global theme toggle** for the entire UI
+> **Global theme toggle** for the entire UI. Each launch starts in Dark mode.
 
 | Light Mode | Dark Mode |
 |---|---|
@@ -801,7 +801,10 @@ Register-PowerToolsModule `
 
 # 📋 Version History
 
-## v2.1.6 (Current) - 2026-11-18
+## v2.1.7 (Current) - 2026-11-18
+- Frame the logo on all four sides, default to Dark mode on every launch and activate/focus the main window once after its first render.
+
+## v2.1.6 (Previous) - 2026-11-18
 - Replace the long Gaming Optimizer cards with eight categories, compact rows, global search, status filtering and a persistent Selected view.
 - Add adaptive details, collapsed auxiliary tools, a fixed action bar and a review before applying. Preserve all 35 configuration operations, risk gates, profiles and optional input/USB baselines; start with no automatic selections.
 - Cover navigation, hidden selections, empty results, responsive details, review cancellation and shell viewport scrolling in isolated WPF tests.
@@ -932,7 +935,7 @@ MIT
 
 # 👤 Author
 **ReAlNoMo**
-Version 2.1.6 • November 2026
+Version 2.1.7 • November 2026
 
 ---
 
