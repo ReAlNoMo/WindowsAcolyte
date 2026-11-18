@@ -8,26 +8,33 @@
 
 ## 🟢 Quick Start
 
-### ⚡ Install / Update
+Choose **Local installation** to keep the app on this PC, or **Online run** for a temporary session. Both options retrieve the starter from the web and require an internet connection at every launch.
+
+### ⚡ Local installation - install or update, then launch
+
+These commands install or update the app in `%LOCALAPPDATA%\WindowsAcolyte`, then launch it. Choose either the Website or GitHub command below. Both perform the same local installation.
 
 > Use a regular PowerShell window. Install PowerShell 7 with the system-wide Microsoft MSI or the official Microsoft Store package. The app requests Windows administrator approval.
 
 ```powershell
+# Local installation via Website
 irm https://windowsacolyte.de | iex
 
-# Alternative: GitHub
+# Local installation via GitHub
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
 ---
 
-### Run a temporary online session
+### Online run - download and launch a temporary session
+
+The `-OnlineRun` switch selects this mode. These commands download the app files into a temporary administrator-protected directory for the session. Choose either source below.
 
 ```powershell
-# windowsacolyte.de
+# Temporary online run via Website
 & ([scriptblock]::Create((irm https://windowsacolyte.de))) -OnlineRun
 
-# GitHub
+# Temporary online run via GitHub
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
 ```
 
@@ -39,9 +46,9 @@ Online mode verifies the release in a temporary administrator-protected director
 
 | Choice | What happens | Internet required? |
 |---|---|---|
-| **Install** | Installs or updates `%LOCALAPPDATA%\WindowsAcolyte`, then runs a verified copy from a protected temporary directory. | Yes |
-| **Local starter** | Starts from the installed starter, updates the per-user cache and runs a protected copy. | Yes |
-| **Online** | Downloads and runs a protected copy for this session. The per-user installation is left intact. | Yes |
+| **Local installation (commands above)** | Installs or updates `%LOCALAPPDATA%\WindowsAcolyte`, then runs a verified copy from a protected temporary directory. | Yes |
+| **Installed local starter (command below)** | Starts from the installed starter, updates the per-user cache and runs a protected copy. | Yes |
+| **Online run (`-OnlineRun`)** | Downloads and runs a protected copy for this session. The per-user installation is left intact. | Yes |
 
 **GitHub** and **Website** select where the starter is retrieved. The Website currently redirects to the GitHub starter; both modes use GitHub for the version check and application files. All four newly created desktop shortcuts download their starter from the selected source every time. The separately installed local starter is a local entry point, but still requires an online update check:
 
