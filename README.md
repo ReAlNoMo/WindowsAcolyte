@@ -16,11 +16,15 @@ These commands install or update the app in `%LOCALAPPDATA%\WindowsAcolyte`, the
 
 > Use a regular PowerShell window. Install PowerShell 7 with the system-wide Microsoft MSI or the official Microsoft Store package. The app requests Windows administrator approval.
 
-```powershell
-# Local installation via Website
-irm https://windowsacolyte.de | iex
+**Local installation via Website**
 
-# Local installation via GitHub
+```powershell
+irm https://windowsacolyte.de | iex
+```
+
+**Local installation via GitHub**
+
+```powershell
 irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1" | iex
 ```
 
@@ -30,11 +34,15 @@ irm "https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-Window
 
 The `-OnlineRun` switch selects this mode. These commands download the app files into a temporary administrator-protected directory for the session. Choose either source below.
 
-```powershell
-# Temporary online run via Website
-& ([scriptblock]::Create((irm https://windowsacolyte.de))) -OnlineRun
+**Temporary online run via Website**
 
-# Temporary online run via GitHub
+```powershell
+& ([scriptblock]::Create((irm https://windowsacolyte.de))) -OnlineRun
+```
+
+**Temporary online run via GitHub**
+
+```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/ReAlNoMo/WindowsAcolyte/main/Start-WindowsAcolyte.ps1))) -OnlineRun
 ```
 
