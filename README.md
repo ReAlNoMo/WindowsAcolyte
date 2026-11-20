@@ -10,6 +10,36 @@
 
 Choose **Local installation** to keep the app on this PC, or **Online run** for a temporary session. Both options retrieve the starter from the web and require an internet connection at every launch.
 
+### Install PowerShell 7 manually from PowerShell
+
+Open Windows PowerShell and run the following command. Accept any installation prompts. This requires WinGet (App Installer).
+
+**Install PowerShell 7**
+
+```powershell
+winget install --id Microsoft.PowerShell --exact --source winget
+```
+
+After installation, close the terminal and open a new PowerShell window so it picks up the updated environment.
+
+**Start PowerShell 7**
+
+```powershell
+pwsh
+```
+
+**Check the version inside the new PowerShell 7 session**
+
+```powershell
+$PSVersionTable.PSVersion
+```
+
+The reported major version should be `7`. Then continue with the WindowsAcolyte commands below.
+
+WinGet's default PowerShell package is installed per user. For WindowsAcolyte, use the same Windows account for the installation and administrator approval. If you use a different administrator account, choose a system-wide MSI installation. If WinGet is unavailable, use the official installation options in [Microsoft's PowerShell installation guide](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows).
+
+---
+
 ### ⚡ Local installation - install or update, then launch
 
 These commands install or update the app in `%LOCALAPPDATA%\WindowsAcolyte`, then launch it. Choose either the Website or GitHub command below. Both perform the same local installation.
